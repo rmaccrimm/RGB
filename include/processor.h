@@ -2,7 +2,6 @@
 #define PROCESSOR_H
 
 #include <map>
-#include <iostream>
 #include "definitions.h"
 #include "register8bit.h"
 #include "register16bit.h"
@@ -23,24 +22,22 @@ class Processor
 public:
 	Processor();
 	void execute(u8 instr);
+	void map_to_memory(u8 program[], size_t nbytes, size_t start);
 	
 private:
 	Register8bit A;
 	Register8bit F;
-	Register16bit AF;
-	
 	Register8bit B;
 	Register8bit C;
-	Register16bit BC;
-	
 	Register8bit D;
 	Register8bit E;
-	Register16bit DE;
-	
 	Register8bit H;
 	Register8bit L;
-	Register16bit HL;
 	
+	Register16bit AF;
+	Register16bit BC;
+	Register16bit DE;	
+	Register16bit HL;
 	Register16bit SP;
 	Register16bit PC;
 

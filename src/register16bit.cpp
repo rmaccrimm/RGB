@@ -14,17 +14,20 @@ Register16bit::~Register16bit()
 	}
 }
 
-void Register16bit::set_low(u8 x) {	r0->set(x); }
-
-void Register16bit::set_high(u8 x) { r1->set(x); }
-
 void Register16bit::set(u16 x)
 {
 	r1->set(x >> 8);
 	r0->set(x & 0xff);
 }
 
-u16 Register16bit::value(){ return r1->value() << 8 | r0->value(); }
+u16 Register16bit::value()
+{
+	return r1->value() << 8 | r0->value();
+}
+
+void Register16bit::set_low(u8 x) { r0->set(x); }
+
+void Register16bit::set_high(u8 x) { r1->set(x); }
 
 void Register16bit::inc() { set(value() + 1); }
 
