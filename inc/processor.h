@@ -3,6 +3,7 @@
 
 #include <map>
 #include "definitions.h"
+#include "flag.h"
 #include "register8bit.h"
 #include "register16bit.h"
 
@@ -10,19 +11,31 @@ class Processor
 {
 	typedef void (Processor::*opfunc)(void);
 	typedef std::map<u8, opfunc> OpcodeMap;
-
-	struct Flag
-	{
-		bool zero;
-		bool subtract;
-		bool half_carry;
-		bool carry;
-	};
 	
 public:
 	Processor();
+
+	/* Begins program execution from memory location 0
+	 */
+	void run();
+
+	/* Returns byte from memory that PC currently points to
+	 */ 
+	u8 fetch_byte();
+
+	/* Executes a non-prefixed instruction. Leaves PC at last data byte or 
+	   opcode for that instruction (i.e. before, next instruction)
+	*/
 	void execute(u8 instr);
-	void map_to_memory(u8 program[], size_t nbytes, size_t start);
+
+	/* Execute a 0xCB-prefixed instruction. Leaves PC at last data byte or 
+	   opcode for that instruction (i.e. before, next instruction)
+	*/
+	void cb_execute(u8 instr);
+
+	/* Place size bytes of data in program into memory starting at offset
+	 */
+	void map_to_memory(u8 program[], u16 size, u16 offset);
 	
 private:
 	Register8bit A;
@@ -33,7 +46,10 @@ private:
 	Register8bit E;
 	Register8bit H;
 	Register8bit L;
-	
+
+	/* 16-bit registers allow easier access to pairs of 8-bit registers. 
+	   Setting these sets corresponding 8-bit registers
+	*/
 	Register16bit AF;
 	Register16bit BC;
 	Register16bit DE;	
@@ -41,7 +57,11 @@ private:
 	Register16bit SP;
 	Register16bit PC;
 
-	Flag flag;
+	Flag zero_flag;        // Z
+	Flag subtract_flag;    // N
+	Flag half_carry_flag;  // H
+	Flag carry_flag;       // C
+	
 	u8 memory[0x10000]; // 16 kB memory
 
 	OpcodeMap opcodes;
@@ -96,7 +116,7 @@ private:
 	void opcode0x2e();
 	void opcode0x2f();
 	void opcode0x30();
-	void opcode0x31();
+	void opcode0x31(); // LD SP, nn
 	void opcode0x32();
 	void opcode0x33();
 	void opcode0x34();
@@ -222,7 +242,7 @@ private:
 	void opcode0xac();
 	void opcode0xad();
 	void opcode0xae();
-	void opcode0xaf();
+	void opcode0xaf(); // XOR A, A
 	void opcode0xb0();
 	void opcode0xb1();
 	void opcode0xb2();

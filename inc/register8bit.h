@@ -11,8 +11,8 @@ public:
 	void set(u8 x);
 	u8 value();
 	
-	void inc();
-	void dec();
+	void increment();
+	void decrement();
 	void add(u8 x);
 	void sub(u8 x);
 

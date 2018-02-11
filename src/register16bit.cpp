@@ -29,8 +29,8 @@ void Register16bit::set_low(u8 x) { r0->set(x); }
 
 void Register16bit::set_high(u8 x) { r1->set(x); }
 
-void Register16bit::inc() { set(value() + 1); }
+void Register16bit::increment() { set(value() + 1); }
 
-void Register16bit::dec() { set(value() - 1); }
+void Register16bit::decrement() { set(value() - 1); }
 
 void Register16bit::add(u16 x) { set(value() + x); }

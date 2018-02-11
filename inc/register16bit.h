@@ -18,14 +18,15 @@ public:
 	
 	u16 value();
 
-	void inc();
-	void dec();
+	void increment();
+	void decrement();
 	void add(u16 x);
 
 private:
+	const bool referencing;
 	Register8bit * const r0;
 	Register8bit * const r1;
-	const bool referencing;
+
 };
 
 #endif
