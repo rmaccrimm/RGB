@@ -4,7 +4,8 @@
 class Flag
 {
 public:
-	void is_set();
+	Flag();
+	bool is_set();
 	void set();
 	void reset();
 	

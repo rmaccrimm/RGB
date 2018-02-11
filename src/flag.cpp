@@ -2,7 +2,7 @@
 
 Flag::Flag(): f(false) {}
 
-void Flag::is_set() { return f; }
+bool Flag::is_set() { return f; }
 
 void Flag::set() { f = true; }
 

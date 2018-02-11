@@ -1,3 +1,6 @@
 old/
+bin/
+obj/
 *~
+*.o
 gb_emulator

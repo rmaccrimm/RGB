@@ -62,4 +62,5 @@ Processor::Processor():
 	opcodes[0x31] = &Processor::opcode0x31;
 	opcodes[0x31] = &Processor::opcode0x31;
 	opcodes[0xaf] = &Processor::opcode0xaf;
+	
 }
