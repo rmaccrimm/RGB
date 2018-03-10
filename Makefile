@@ -1,6 +1,6 @@
 EXC = gb_emulator
 CC = g++
-CPPFLAGS = -Iinc 
+CPPFLAGS = -Iinc
 CFLAGS = -std=c++11 -Wall
 
 SRC_DIR = src/
@@ -10,9 +10,12 @@ OBJ_DIR = obj/
 SRC = $(wildcard $(SRC_DIR)*.cpp)
 OBJ = $(SRC:$(SRC_DIR)%.cpp=$(OBJ_DIR)%.o)
 
-.PHONY: all clean
+.PHONY: all debug clean
 
 all: $(BIN_DIR)$(EXC)
+
+debug: CPPFLAGS += -DDEBUG_MODE
+debug: $(BIN_DIR)$(EXC)
 
 $(BIN_DIR)$(EXC): $(OBJ)
 	$(CC) $^ -o $@

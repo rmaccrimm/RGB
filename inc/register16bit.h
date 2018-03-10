@@ -16,16 +16,18 @@ public:
 	void set_high(u8 x);
 	void set(u16 x);
 	
-	u16 value();
+	u16 value() const;
+	u8 value_high() const;
+	u8 value_low() const;
 
 	void increment();
 	void decrement();
-	void add(u16 x);
+	void add(i16 x);
 
 private:
 	const bool referencing;
-	Register8bit * const r0;
-	Register8bit * const r1;
+	Register8bit * const rlow;
+	Register8bit * const rhigh;
 
 };
 

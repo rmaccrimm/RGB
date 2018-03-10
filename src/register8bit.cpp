@@ -2,7 +2,7 @@
 
 Register8bit::Register8bit(): byte(0) {}
 
-u8 Register8bit::value() { return byte; }
+u8 Register8bit::value() const { return byte; }
 
 void Register8bit::set(u8 x) { byte = x; }
 

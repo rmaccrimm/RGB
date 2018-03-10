@@ -9,7 +9,7 @@ public:
 	Register8bit();
 	
 	void set(u8 x);
-	u8 value();
+	u8 value() const;
 	
 	void increment();
 	void decrement();
