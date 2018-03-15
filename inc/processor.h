@@ -9,11 +9,8 @@
 
 class Processor
 {
-	/* The opfunc type defined for void member functions.
-	   OpcodeMap makes it easier to execute a function given an opcode.
-	*/  
+	// opfunc type defined as shorthand for void member functions 
 	typedef void (Processor::*opfunc)(void);
-	typedef std::map<u8, opfunc> OpcodeMap;
 	
 public:
 	Processor();
@@ -28,16 +25,7 @@ public:
 	void map_to_memory(u8 program[], u16 size, u16 offset);
 	
 private:
-
-	// Returns byte from memory that PC currently points to	and increment PC
-	u8 fetch_byte();
-
-	// Executes a non-prefixed instruction.
-	void execute(u8 instr);
-
-	// Execute a 0xCB-prefixed instruction.
-	void cb_execute(u8 instr);
-
+	
 	Register8bit A;
 	Register8bit F;
 	Register8bit B;
@@ -47,8 +35,9 @@ private:
 	Register8bit H;
 	Register8bit L;
 
-	/* 16-bit registers allow easier access to pairs of 8-bit registers. 
-	   Setting these sets corresponding 8-bit registers. Order is High, Low
+	/* 16-bit registers allow easier access to pairs of 8-bit registers. Setting
+	   these sets corresponding 8-bit registers. The first register in the pair
+	   is the high byte, second is low.
 	*/
 	Register16bit AF;
 	Register16bit BC;
@@ -64,11 +53,31 @@ private:
 	
 	u8 memory[0x10000]; // 16 kB memory
 
-	OpcodeMap opcodes;
-	OpcodeMap cb_opcodes;
+	opfunc opcodes[0x100];
+	opfunc cb_opcodes[0x100];
 
+	// Returns byte from memory that PC currently points to	and increment PC
+	u8 fetch_byte();
+
+	// Execute normal instruction. Return false if  unimplemented
+	bool execute(u8 instr, bool cb);
+
+	// Execute 0xCB-prefixed instruction. Return false if unimplemented
+	//bool cb_execute(u8 instr);
+
+	// The stack is from memory address 0xfffe downwards
 	void stack_push(u8 data);
+	
 	u8 stack_pop();
+
+	// Check if there is a carry from bit 3 to bit 4 when adding x + y
+	bool check_half_carry(int a, int b);
+
+	// Set zero flag if register is zero, reset half carry, subtract
+	void flag_reset(Register8bit const &reg);
+
+	// Increment register, reset subtract flag and set half carry flag if needed
+	void INC_register(Register8bit &reg);
 
 	// Load value of next byte in memory to 8 bit register
 	void LD_immediate(Register8bit &reg);
@@ -76,10 +85,10 @@ private:
 	// Load value of next two bytes in memory to 16 bit register 
 	void LD_immediate(Register16bit &reg);
 
-	// Load byte from memory address stored in src into dest register
+	// Load byte from memory address stored in src into dest
 	void LD_address(Register8bit &dest, Register16bit const &src);
 
-	// Load value of src register into dest register
+	// Load value from src into dest
 	void LD_register(Register8bit &dest, Register8bit const &src);
 
 	// Push value of register onto stack
@@ -88,15 +97,22 @@ private:
 	// Push values of register pair onto stack. High is pushed first, then low
 	void PUSH_register(Register16bit const &reg);
 
+	void POP_register(Register8bit &reg);
+	
+	void POP_register(Register16bit &reg);
+
 	// Rotate contents of register left through carry 
-	void RL_carry(Register8bit reg);
+	void RL_carry(Register8bit &reg);
 
 	// Rotate contents of register right through carry
-	void RR_carry(Register8bit reg);
+	void RR_carry(Register8bit &reg);
 	
-	void RL_no_carry(Register8bit reg);
+	void RL_no_carry(Register8bit &reg);
 	
-	void RR_no_carry(Register8bit reg);
+	void RR_no_carry(Register8bit &reg);
+
+	// Set zero flag if register is zero, set half carry, subtract
+	void flag_set(Register8bit const &reg);
 
 	void opcode0x00();
 	void opcode0x01();
@@ -105,15 +121,15 @@ private:
 	void opcode0x04(); // INC B
 	void opcode0x05();
 	void opcode0x06(); // LD B, n
-	void opcode0x07();
-	void opcode0x08();
+	void opcode0x07(); // RLCA
+	void opcode0x08(); 
 	void opcode0x09();
 	void opcode0x0a();
 	void opcode0x0b();
 	void opcode0x0c(); // INC C
 	void opcode0x0d();
 	void opcode0x0e(); // LD C, n
-	void opcode0x0f();
+	void opcode0x0f(); // RRCA
 	void opcode0x10();
 	void opcode0x11(); // LD DE, nn
 	void opcode0x12();
@@ -121,7 +137,7 @@ private:
 	void opcode0x14(); // INC D
 	void opcode0x15();
 	void opcode0x16();
-	void opcode0x17();
+	void opcode0x17(); // RLA
 	void opcode0x18();
 	void opcode0x19();
 	void opcode0x1a(); // LD A, (DE)
@@ -129,7 +145,7 @@ private:
 	void opcode0x1c(); // INC E
 	void opcode0x1d();
 	void opcode0x1e();
-	void opcode0x1f();
+	void opcode0x1f(); // RRA
 	void opcode0x20(); // JR NZ
 	void opcode0x21(); // LD HL, nn
 	void opcode0x22();
@@ -291,7 +307,7 @@ private:
 	void opcode0xbe();
 	void opcode0xbf();
 	void opcode0xc0();
-	void opcode0xc1();
+	void opcode0xc1(); // POP BC
 	void opcode0xc2();
 	void opcode0xc3();
 	void opcode0xc4();
@@ -307,10 +323,10 @@ private:
 	void opcode0xce();
 	void opcode0xcf();
 	void opcode0xd0();
-	void opcode0xd1();
+	void opcode0xd1(); // POP DE
 	void opcode0xd2();
 	void opcode0xd4();
-	void opcode0xd5();
+	void opcode0xd5(); // PUSH DE
 	void opcode0xd6();
 	void opcode0xd7();
 	void opcode0xd8();
@@ -320,9 +336,9 @@ private:
 	void opcode0xde();
 	void opcode0xdf();
 	void opcode0xe0(); // LD ($FF00 + n), A
-	void opcode0xe1();
+	void opcode0xe1(); // POP HL
 	void opcode0xe2(); // LD ($FF00 + C), A
-	void opcode0xe5();
+	void opcode0xe5(); // PUSH HL
 	void opcode0xe6();
 	void opcode0xe7();
 	void opcode0xe8();
@@ -331,10 +347,10 @@ private:
 	void opcode0xee();
 	void opcode0xef();
 	void opcode0xf0();
-	void opcode0xf1();
+	void opcode0xf1(); // POP AF
 	void opcode0xf2();
 	void opcode0xf3();
-	void opcode0xf5();
+	void opcode0xf5(); // PUSH AF
 	void opcode0xf6();
 	void opcode0xf7();
 	void opcode0xf8();
@@ -344,7 +360,7 @@ private:
 	void opcode0xfe();
 	void opcode0xff();
 	
-	void opcode_cb0x11(); // RL C
+	void cb_opcode0x11(); // RL C
 	void cb_opcode0x7c(); // BIT 7, H
 
 };

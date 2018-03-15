@@ -34,9 +34,9 @@ int main()
 	size_t rom_size;
 	vector<u8> rom_data = read_rom(rom_size, "DMG_ROM.bin");
 	
-	for (u8 u: rom_data)
+	/*for (u8 u: rom_data)
 		cout << std::hex << (int)u << ' ';
-	cout << std::endl;
+		cout << std::endl;*/
 	
 	gb_cpu.map_to_memory(rom_data.data(), rom_size, 0);
 	gb_cpu.run();
@@ -49,5 +49,6 @@ int main()
 	cout << endl;
 	
 	gb_cpu.print_register_values();
+	
 	return 0;
 }
