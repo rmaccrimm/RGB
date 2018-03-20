@@ -113,7 +113,7 @@ Processor::Processor():
 	opcodes[0x31] = &Processor::opcode0x31;
 	opcodes[0x32] = &Processor::opcode0x32;
 	// opcodes[0x33] = &Processor::opcode0x33;
-	opcodes[0x34] = &Processor::opcode0x34;
+	//opcodes[0x34] = &Processor::opcode0x34;
 	// opcodes[0x35] = &Processor::opcode0x35;
 	// opcodes[0x36] = &Processor::opcode0x36;
 	// opcodes[0x37] = &Processor::opcode0x37;

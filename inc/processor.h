@@ -59,15 +59,11 @@ private:
 	// Returns byte from memory that PC currently points to	and increment PC
 	u8 fetch_byte();
 
-	// Execute normal instruction. Return false if  unimplemented
+	// Return false if  unimplemented
 	bool execute(u8 instr, bool cb);
 
-	// Execute 0xCB-prefixed instruction. Return false if unimplemented
-	//bool cb_execute(u8 instr);
-
-	// The stack is from memory address 0xfffe downwards
+	// The stack is from memory address 0xfffe backwards
 	void stack_push(u8 data);
-	
 	u8 stack_pop();
 
 	// Check if there is a carry from bit 3 to bit 4 when adding x + y
@@ -76,39 +72,35 @@ private:
 	// Set zero flag if register is zero, reset half carry, subtract
 	void flag_reset(Register8bit const &reg);
 
-	// Increment register, reset subtract flag and set half carry flag if needed
+	/*Increment/decrement register, reset subtract flag and set half 
+	  carry flag if needed
+	*/
 	void INC_register(Register8bit &reg);
+	void INC_register(Register16bit &reg) {}
+	void INC_address(Register16bit &reg);
+	void DEC_register(Register8bit &reg);
+	void DEC_register(Register16bit &reg);
 
-	// Load value of next byte in memory to 8 bit register
+	/* Load instuctions. Immediate gets next 1 or 2 bytes from memory. Address
+	   loads data from address in src to dest. Register copies between registers
+	*/
 	void LD_immediate(Register8bit &reg);
-	
-	// Load value of next two bytes in memory to 16 bit register 
 	void LD_immediate(Register16bit &reg);
-
-	// Load byte from memory address stored in src into dest
 	void LD_address(Register8bit &dest, Register16bit const &src);
-
-	// Load value from src into dest
 	void LD_register(Register8bit &dest, Register8bit const &src);
 
-	// Push value of register onto stack
+	/* Stack operations. The stack is at address 0xfffe backwards.
+	   High is pushed then low for 16 bit.
+	*/
 	void PUSH_register(Register8bit const &reg);
-
-	// Push values of register pair onto stack. High is pushed first, then low
 	void PUSH_register(Register16bit const &reg);
-
 	void POP_register(Register8bit &reg);
-	
 	void POP_register(Register16bit &reg);
 
-	// Rotate contents of register left through carry 
+	// Left and right rotations
 	void RL_carry(Register8bit &reg);
-
-	// Rotate contents of register right through carry
-	void RR_carry(Register8bit &reg);
-	
 	void RL_no_carry(Register8bit &reg);
-	
+	void RR_carry(Register8bit &reg);
 	void RR_no_carry(Register8bit &reg);
 
 	// Set zero flag if register is zero, set half carry, subtract

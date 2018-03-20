@@ -4,7 +4,6 @@
 
 bool Processor::execute(u8 instr, bool cb)
 {
-	assert(instr < 0x100);
 	opfunc *op;
 	if (cb) 
 		op = &cb_opcodes[0];
@@ -15,15 +14,6 @@ bool Processor::execute(u8 instr, bool cb)
 	(this->*op[instr])();
 	return true;
 }
-
-/*bool Processor::cb_execute(u8 instr)
-{
-	assert(instr < 0x100);
-	if (cb_opcodes[instr] == nullptr)
-		return false;
-	(this->*cb_opcodes[instr])();
-	return true;
-	}*/
 
 u8 Processor::fetch_byte()
 {
@@ -50,8 +40,7 @@ bool Processor::check_half_carry(int a, int b)
 	return (((a & 0xf) + (b & 0xf)) & 0x10) == 0x10;
 }
 
-void Processor::INC_register(Register8bit &reg)
-{
+void Processor::INC_register(Register8bit &reg) {
 	
 	reg.increment();
 }
@@ -141,21 +130,16 @@ void Processor::flag_reset(Register8bit const &reg)
 	half_carry_flag.reset();	
 }
 
-
-
 void Processor::opcode0x05() {}
 
-// TODO - flags need to be set
-void Processor::opcode0x3c() {
-	A.increment();
-}
-void Processor::opcode0x04() { B.increment(); }
-void Processor::opcode0x0c() { C.increment(); }
-void Processor::opcode0x14() { D.increment(); }
-void Processor::opcode0x1c() { E.increment(); }
-void Processor::opcode0x24() { H.increment(); }
-void Processor::opcode0x2c() { L.increment(); }
-void Processor::opcode0x34() { memory[HL.value()]++; }
+void Processor::opcode0x3c() { INC_register(A); }
+void Processor::opcode0x04() { INC_register(B); }
+void Processor::opcode0x0c() { INC_register(C); }
+void Processor::opcode0x14() { INC_register(D); }
+void Processor::opcode0x1c() { INC_register(E); }
+void Processor::opcode0x24() { INC_register(H); }
+void Processor::opcode0x2c() { INC_register(L); }
+//void Processor::opcode0x34() { INC_address(HL); }
 
 void Processor::opcode0x06() { LD_immediate(B); }
 void Processor::opcode0x0e() { LD_immediate(C); }
