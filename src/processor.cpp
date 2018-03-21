@@ -2,6 +2,7 @@
 #include "debug.h"
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <cstring>
 #include <cassert>
 

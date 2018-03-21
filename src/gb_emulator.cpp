@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
+#include <string>
 #include "debug.h"
 #include "definitions.h"
 #include "register16bit.h"

@@ -66,8 +66,11 @@ private:
 	void stack_push(u8 data);
 	u8 stack_pop();
 
-	// Check if there is a carry from bit 3 to bit 4 when adding x + y
-	bool check_half_carry(int a, int b);
+	// Check if there is a carry from bit 3 to bit 4 for a + b
+	bool half_carry_add(int a, int b);
+
+	// Check for carry from bit 4 to 3 for a - b 
+	bool half_carry_sub(int a, int b);
 
 	// Set zero flag if register is zero, reset half carry, subtract
 	void flag_reset(Register8bit const &reg);
@@ -77,17 +80,21 @@ private:
 	*/
 	void INC_register(Register8bit &reg);
 	void INC_register(Register16bit &reg) {}
-	void INC_address(Register16bit &reg);
+	void INC_address(Register16bit const &reg); // only used with HL
 	void DEC_register(Register8bit &reg);
 	void DEC_register(Register16bit &reg);
+	void DEC_address(Register16bit const &reg);
+
+	void ADD_immediate(Register16bit reg);
 
 	/* Load instuctions. Immediate gets next 1 or 2 bytes from memory. Address
 	   loads data from address in src to dest. Register copies between registers
 	*/
 	void LD_immediate(Register8bit &reg);
 	void LD_immediate(Register16bit &reg);
-	void LD_address(Register8bit &dest, Register16bit const &src);
-	void LD_register(Register8bit &dest, Register8bit const &src);
+	void LD_register(Register8bit &dest, Register8bit const &src);	
+	void LD_address(Register8bit const &dest, Register16bit const &src);
+	void LD_address(Register16bit const &dest, Register8bit const &src);
 
 	/* Stack operations. The stack is at address 0xfffe backwards.
 	   High is pushed then low for 16 bit.
