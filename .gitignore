@@ -4,3 +4,5 @@ obj/
 *~
 *.o
 gb_emulator
+*.pdf
+*.bin
