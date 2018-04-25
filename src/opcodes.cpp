@@ -2,6 +2,8 @@
 #include <cassert>
 #include <iostream>
 
+#pragma region
+
 bool Processor::execute(u8 instr, bool cb)
 {
 	opfunc *op;
@@ -49,8 +51,14 @@ bool Processor::full_carry_add(u16 a, u16 b)
 	return (((a & 0xff) + (b & 0xff)) & 0x100) == 0x100;
 }
 
+#pragma endregion
 
+bool Processor::full_carry_sub(u16 a, u16 b)
+{
+	
+}
 
+#pragma region
 void Processor::LD_immediate(Register8bit &reg)
 {
 	reg.set(fetch_byte());
@@ -109,7 +117,7 @@ void Processor::POP_register(Register16bit &reg)
 void Processor::INC_register(Register8bit &reg) 
 {
 	half_carry_flag = half_carry_add(reg.value(), 1);
-	subtract_flag.reset();
+	reset(subtract_flag);
 	reg.increment();
 	zero_flag = (reg.value() == 0);
 }
@@ -117,7 +125,7 @@ void Processor::INC_register(Register8bit &reg)
 void Processor::INC_address(Register16bit const &reg)
 {	
 	half_carry_flag = half_carry_add(memory[reg.value()], 1);
-	subtract_flag.reset();
+	reset(subtract_flag);
 	memory[reg.value()]++;
 	zero_flag = (memory[reg.value()] == 0);
 }
@@ -125,7 +133,7 @@ void Processor::INC_address(Register16bit const &reg)
 void Processor::DEC_register(Register8bit &reg)
 {
 	half_carry_flag = half_carry_sub(reg.value(), 1);
-	subtract_flag.set();
+	set(subtract_flag);
 	reg.decrement();
 	zero_flag = (reg.value() == 0);
 }
@@ -133,83 +141,134 @@ void Processor::DEC_register(Register8bit &reg)
 void Processor::DEC_address(Register16bit const &reg)
 {
 	half_carry_flag = half_carry_sub(memory[reg.value()], 1);
-	subtract_flag.set();
+	set(subtract_flag);
 	memory[reg.value()]--;
 	zero_flag = (memory[reg.value()] == 0);
 }
 
-void Processor::ADD_register(Register8bit &dest, Register8bit const &src)
+void Processor::set_add_flags(u16 a, u16 b)
 {
-	half_carry_flag = half_carry_add(dest.value(), src.value());
-	carry_flag = full_carry_add(dest.value(), src.value());
-	subtract_flag.reset();
-	dest.set(dest.value() + src.value());
-	zero_flag = (dest.value() == 0);
+	carry_flag = full_carry_add(a, b);	
+	half_carry_flag = half_carry_add(a, b);
+	zero_flag = (a + b) == 0;
+	reset(subtract_flag);
 }
 
-void Processor::ADD_register(Register16bit &dest, Register16bit const &src)
+void Processor::set_sub_flags(u16 a, u16 b)
 {
-	half_carry_flag = half_carry_add(dest.value(), src.value());
-	carry_flag = full_carry_add(dest.value(), src.value());
-	subtract_flag.reset();
-	dest.set(dest.value() + src.value());
-	zero_flag = (dest.value() == 0);
+	carry_flag = full_carry_sub(a, b);
+	half_carry_flag = half_carry_sub(a, b);
+	zero_flag = (a - b) == 0;
+	set(subtract_flag);
 }
 
-void SUB_register(Register8bit &dest, Register8bit const &src)
-{
+#pragma endregion
 
+void Processor::ADD_register(Register8bit &dest, Register8bit const &src, bool carry)
+{
+	int add = src.value();
+	if (carry) {
+		add += carry_flag;
+	}
+	set_add_flags(dest.value(), add);
+	dest.set(dest.value() + add);
 }
 
-void SUB_register(Register16bit &dest, Register16bit const &src)
+void Processor::ADD_register(Register16bit &dest, Register16bit const &src, bool carry)
 {
-
+	int add = src.value();
+	if (carry) {
+		add += carry_flag;
+	}
+	set_add_flags(dest.value(), add);
+	dest.set(dest.value() + add);
 }
 
-void ADC_register(Register8bit &dest, Register8bit const &src)
+void Processor::ADD_immediate(Register8bit &reg, bool carry)
 {
-
+	int add = fetch_byte();
+	if (carry) {
+		add += carry_flag;
+	}
+	set_add_flags(reg.value(), add);
+	reg.set(reg.value() + add);
 }
 
-void SBC_register(Register8bit &dest, Register8bit const &src)
+void Processor::ADD_immediate(Register16bit &reg, bool carry)
 {
-
+	int add = fetch_byte();
+	if (carry) {
+		add += carry_flag;
+	}
+	set_add_flags(reg.value(), add);
+	reg.set(reg.value() + add);
 }
 
-void ADD_immediate(Register8bit &reg)
+void Processor::ADD_address(Register8bit &dest, Register16bit const &src, bool carry)
 {
-
+	int add = memory[src.value()];
+	if (carry) {
+		add += carry_flag;
+	}
+	set_add_flags(dest.value(), add);
+	dest.set(dest.value() + add);
 }
 
-void ADD_immediate(Register16bit &reg)
+void Processor::SUB_register(Register8bit &dest, Register8bit const &src, bool carry)
 {
-
+	int sub = src.value();
+	if (carry) {
+		sub += carry_flag;
+	}
+	set_add_flags(dest.value(), sub);
+	dest.set(dest.value() + sub);
 }
 
-void SUB_immediate(Register8bit &reg)
+void Processor::SUB_register(Register16bit &dest, Register16bit const &src, bool carry)
 {
-
+	int sub = src.value();
+	if (carry) {
+		sub += carry_flag;
+	}
+	set_add_flags(dest.value(), sub);
+	dest.set(dest.value() + sub);
 }
 
-void SUB_immediate(Register16bit &reg)
+void Processor::SUB_immediate(Register8bit &reg, bool carry)
 {
-
+	int sub = fetch_byte();
+	if (carry) {
+		sub += carry_flag;
+	}
+	set_add_flags(reg.value(), sub);
+	reg.set(reg.value() + sub);
 }
 
-void ADD_address(Register8bit &dest, Register16bit const &src)
+void Processor::SUB_immediate(Register16bit &reg, bool carry)
 {
-
+	int sub = fetch_byte();
+	if (carry) {
+		sub += carry_flag;
+	}
+	set_add_flags(reg.value(), sub);
+	reg.set(reg.value() + sub);
 }
 
-void SUB_address(Register8bit &dest, Register16bit const &src)
+void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool carry)
 {
-
+	int sub = memory[src.value()];
+	if (carry) {
+		sub += carry_flag;
+	}
+	set_add_flags(dest.value(), sub);
+	dest.set(dest.value() + sub);
 }
 
+#pragma region
 void Processor::RL_carry(Register8bit &reg)
 {
 	int temp = reg.value() >> 7; // bit 7
-	reg.set((reg.value() << 1) | carry_flag.is_set());
+	reg.set((reg.value() << 1) | carry_flag);
 	carry_flag = temp;
 	flag_reset(reg);
 }
@@ -217,7 +276,7 @@ void Processor::RL_carry(Register8bit &reg)
 void Processor::RR_carry(Register8bit &reg)
 {
 	int temp = reg.value() & 1; // bit 0
-	reg.set((reg.value() >> 1) | (carry_flag.is_set() << 7));
+	reg.set((reg.value() >> 1) | (carry_flag << 7));
 	carry_flag = temp;
 	flag_reset(reg);
 }
@@ -241,10 +300,11 @@ void Processor::RR_no_carry(Register8bit &reg)
 void Processor::flag_reset(Register8bit const &reg)
 {
 	if (reg.value() == 0)
-		zero_flag.set();
-	subtract_flag.reset();
-	half_carry_flag.reset();	
+		set(zero_flag);
+	reset(subtract_flag);
+	reset(half_carry_flag);
 }
+#pragma endregion
 
 void Processor::opcode0x3c() { INC_register(A); }
 void Processor::opcode0x04() { INC_register(B); }
@@ -258,6 +318,8 @@ void Processor::opcode0x34() { INC_address(HL); }
 /* 
  *	8-bit Loads
  */
+
+#pragma region
 void Processor::opcode0x3e() { LD_immediate(A); }
 void Processor::opcode0x06() { LD_immediate(B); }
 void Processor::opcode0x0e() { LD_immediate(C); }
@@ -341,6 +403,7 @@ void Processor::opcode0x1a() { LD_address(A, DE); }
 void Processor::opcode0x7e() { LD_address(A, HL); }
 void Processor::opcode0xfa() 
 { 
+	// LD A, (nn)
 	u8 l = fetch_byte(); 
 	u8 h = fetch_byte();
 	A.set(memory[h << 8 | l]);
@@ -350,6 +413,7 @@ void Processor::opcode0x12() { LD_address(DE, A); }
 void Processor::opcode0x77() { LD_address(HL, A); }
 void Processor::opcode0xea() 
 { 
+	// LD (nn), A
 	u8 l = fetch_byte(); 
 	u8 h = fetch_byte();
 	memory[h << 8 | l] = A.value();
@@ -365,29 +429,34 @@ void Processor::opcode0x22() { LD_address(HL, A); HL.increment(); }
 
 void Processor::opcode0xe0() { memory[0xff00 + fetch_byte()] = A.value(); }
 void Processor::opcode0xf0() { A.set(memory[0xff00 + fetch_byte()]); }
+#pragma endregion
 
 /*
  *	16-bit loads
  */
+
+#pragma region
 void Processor::opcode0x01() { LD_immediate(BC); }
 void Processor::opcode0x11() { LD_immediate(DE); }
 void Processor::opcode0x21() { LD_immediate(HL); }
 void Processor::opcode0x31() { LD_immediate(SP); }
 
-void Processor::opcode0xf9() { LD_register(SP, HL); }
-
 void Processor::opcode0xf8()
 {
+	// LD HL, SP + n
 	u8 n = fetch_byte();
 	HL.set(SP.value() + n);
-	zero_flag.reset();
-	subtract_flag.reset();
+	reset(zero_flag);
+	reset(subtract_flag);
 	half_carry_flag = half_carry_add(SP.value(), n);
 	carry_flag = full_carry_add(SP.value(), n);
 } 
 
+void Processor::opcode0xf9() { LD_register(SP, HL); }
+
 void Processor::opcode0x08()
 {
+	// LD (nn), SP
 	u8 l = fetch_byte();
 	u8 h = fetch_byte();
 	u16 addr = h << 8 | l;
@@ -404,17 +473,36 @@ void Processor::opcode0xf1() { POP_register(AF); }
 void Processor::opcode0xc1() { POP_register(BC); }
 void Processor::opcode0xd1() { POP_register(DE); }
 void Processor::opcode0xe1() { POP_register(HL); }
+#pragma endregion
 
 /*
  *	8-bit ALU
  */
 
+void Processor::opcode0x87() { ADD_register(A, A); }
+void Processor::opcode0x80() { ADD_register(A, B); }
+void Processor::opcode0x81() { ADD_register(A, C); }
+void Processor::opcode0x82() { ADD_register(A, D); }
+void Processor::opcode0x83() { ADD_register(A, E); }
+void Processor::opcode0x84() { ADD_register(A, H); }
+void Processor::opcode0x85() { ADD_register(A, L); }
+void Processor::opcode0x86() { ADD_address(A, HL); }
+void Processor::opcode0xc6() { ADD_immediate(A); }
 
+void Processor::opcode0x8f() { ADD_register(A, A, true); }
+void Processor::opcode0x88() { ADD_register(A, B, true); }
+void Processor::opcode0x89() { ADD_register(A, C, true); }
+void Processor::opcode0x8a() { ADD_register(A, D, true); }
+void Processor::opcode0x8b() { ADD_register(A, E, true); }
+void Processor::opcode0x8c() { ADD_register(A, H, true); }
+void Processor::opcode0x8d() { ADD_register(A, L, true); }
+void Processor::opcode0x8e() { ADD_address(A, HL, true); }
+void Processor::opcode0xce() { ADD_immediate(A, true); }
 
 void Processor::opcode0x20()
 {
 	i8 jump = fetch_byte();
-	if (!zero_flag.is_set()) {
+	if (!zero_flag) {
 		PC.add(jump);
 	}
 }
@@ -427,17 +515,11 @@ void Processor::opcode0x1f() { RR_carry(A); }
 void Processor::opcode0xaf()
 {
 	A.set(0); // XOR with self
-	zero_flag.set();
-	subtract_flag.reset();
-	half_carry_flag.reset();
-	carry_flag.reset();
+	set(zero_flag);
+	reset(subtract_flag);
+	reset(half_carry_flag);
+	reset(carry_flag);
 }
-
-
-
-
-
-
 
 void Processor::opcode0xcd()
 {
@@ -445,18 +527,16 @@ void Processor::opcode0xcd()
 	LD_immediate(PC);
 }
 
-
-
 void Processor::cb_opcode0x11() { RL_carry(C); }
 
 void Processor::cb_opcode0x7c()
 {
 	if ((H.value() >> 7 & 1) == 0) {
-		zero_flag.set();
+		set(zero_flag);
 	}
 	else {
-		zero_flag.reset();
+		reset(zero_flag);
 	}
-	subtract_flag.reset();
-	half_carry_flag.reset();
+	reset(subtract_flag);
+	set(half_carry_flag);
 }

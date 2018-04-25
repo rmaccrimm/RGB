@@ -1,6 +1,6 @@
 EXC = gb_emulator
 CC = g++
-CPPFLAGS = -Iinc
+CPPFLAGS = -Iinclude
 CFLAGS = -std=c++11 -Wall -g
 
 SRC_DIR = src/
