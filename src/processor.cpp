@@ -6,6 +6,21 @@
 #include <cstring>
 #include <cassert>
 
+
+bool Processor::execute(u8 instr, bool cb)
+{
+	opfunc *op;
+	if (cb) 
+		op = &cb_opcodes[0];
+	else 
+		op = &opcodes[0];
+	if (op[instr] == nullptr)
+		return false;
+	(this->*op[instr])();
+	return true;
+}
+
+
 void Processor::run()
 {
 	u16 break_point = 0x100;
@@ -33,10 +48,12 @@ void Processor::run()
 	}
 }
 
+
 void Processor::map_to_memory(u8 program[], u16 size, u16 offset)
 {
 	std::memcpy(&memory[offset], program, size);
 }
+
 
 void Processor::print_register_values()
 {
@@ -53,6 +70,7 @@ void Processor::print_register_values()
 			  << "PC:\t"  << std::setw(4) << std::setfill('0')
 			  << std::hex << (int)PC.value() << "\n";
 }
+
 
 Processor::Processor():
 	A(), F(), B(), C(), D(), E(), H(), L(),
