@@ -1,9 +1,11 @@
-include_directories(include)
-set(SRCS 
-    src/debug.cpp
-    src/opcodes.cpp
-    src/processor.cpp
-    src/register8bit.cpp
-    src/register16bit.cpp
-    src/functions.cpp)
-add_executable(gb_emulator ${SRCS})
+include_directories(${PROJECT_SOURCE_DIR}/include)
+add_library(emu_srcs
+    debug.cpp
+    opcodes.cpp
+    processor.cpp
+    register8bit.cpp
+    register16bit.cpp
+    functions.cpp
+    )
+add_executable(gb_emulator main.cpp)
+target_link_libraries(gb_emulator emu_srcs)

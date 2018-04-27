@@ -1,18 +1,10 @@
 cmake_minimum_required(VERSION 3.9)
 project(GB_Emulator)
-include_directories(include)
+add_subdirectory(src)
+add_subdirectory(test)
+enable_testing()
+add_test(GB_Tests gb_tests)
 
-set(SRCS 
-    src/gb_emulator.cpp
-    src/debug.cpp
-    src/opcodes.cpp
-    src/processor.cpp
-    src/register8bit.cpp
-    src/register16bit.cpp
-    src/functions.cpp
-)
-
-add_executable(gb_emulator ${SRCS})
 
 
 
