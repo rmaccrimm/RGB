@@ -8,7 +8,10 @@ gb_emulator
 *.pdf
 blargg/
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 test
 >>>>>>> e9d7759... Add catch2 for unittests, switch to CMake
+=======
+>>>>>>> 6edddd6ce443c4b4414ec0bb7459d56b44ab272c
 .vscode/
