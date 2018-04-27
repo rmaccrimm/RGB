@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 #include "functions.h"
-#include "definitions.h"
 
 TEST_CASE("Half carries for addition", "[half_carry_add]")
 {

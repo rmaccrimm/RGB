@@ -545,7 +545,7 @@ void Processor::opcode0xf6() { OR_immediate(A); }
 
 void Processor::opcode0xaf() { XOR_register(A, A); }
 void Processor::opcode0xa8() { XOR_register(A, B); }
-void Processor::opcode0xa0() { XOR_register(A, C); }
+void Processor::opcode0xa9() { XOR_register(A, C); }
 void Processor::opcode0xaa() { XOR_register(A, D); }
 void Processor::opcode0xab() { XOR_register(A, E); }
 void Processor::opcode0xac() { XOR_register(A, H); }
@@ -555,7 +555,7 @@ void Processor::opcode0xee() { XOR_immediate(A); }
 
 void Processor::opcode0xbf() { CP_register(A, A); }
 void Processor::opcode0xb8() { CP_register(A, B); }
-void Processor::opcode0xb0() { CP_register(A, C); }
+void Processor::opcode0xb9() { CP_register(A, C); }
 void Processor::opcode0xba() { CP_register(A, D); }
 void Processor::opcode0xbb() { CP_register(A, E); }
 void Processor::opcode0xbc() { CP_register(A, H); }
@@ -596,17 +596,6 @@ void Processor::opcode0x07() { RL_no_carry(A); }
 void Processor::opcode0x0f() { RR_no_carry(A); }
 void Processor::opcode0x17() { RL_carry(A); }
 void Processor::opcode0x1f() { RR_carry(A); }
-
-void Processor::opcode0xaf()
-{
-	A.set(0); // XOR with self
-	set(flags.zero);
-	reset(flags.subtract);
-	reset(flags.half_carry);
-	reset(flags.full_carry);
-}
-
-
 
 void Processor::opcode0xcd()
 {

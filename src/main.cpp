@@ -10,25 +10,6 @@
 #include "processor.h"
 using namespace std;
 
-vector<u8> read_rom(size_t &file_size, string path)
-{
-	ifstream ifs(path, ios_base::in | ios_base::binary);
-	ifs.seekg(0, ios_base::end);
-	file_size = ifs.tellg();
-	ifs.seekg(0, ios_base::beg);
-
-	if (!ifs.good())
-		cout << "Error reading file: " + path << endl;
-	
-	char *buff = new char[file_size];
-	ifs.read(buff, file_size);
-	vector<u8> data(buff, buff + file_size);
-
-	ifs.close();
-	delete buff;
-	return data;
-}
-
 int main()
 {
 	Processor gb_cpu;
