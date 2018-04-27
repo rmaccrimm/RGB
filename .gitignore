@@ -7,5 +7,4 @@ build/
 gb_emulator
 *.pdf
 blargg/
-test
 .vscode/
