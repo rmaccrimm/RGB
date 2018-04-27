@@ -1,8 +1,11 @@
 old/
 bin/
 obj/
+build/
 *~
 *.o
 gb_emulator
 *.pdf
-test/
+blargg/
+test
+.vscode/
