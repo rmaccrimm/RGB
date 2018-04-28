@@ -7,19 +7,18 @@
 #include "register16bit.h"
 #include "functions.h"
 
+struct Flags 
+{
+	bool zero;        // Z
+	bool subtract;    // N
+	bool carry;		  // H
+	bool half_carry;  // C
+};	
 
 class Processor
 {
 	// opfunc type defined as shorthand for void member functions 
 	typedef void (Processor::*opfunc)(void);
-
-	struct Flags 
-	{
-		bool zero;        // Z
-		bool subtract;    // N
-		bool half_carry;  // H
-		bool full_carry;  // C
-	};	
 	
 public:
 	Processor();
@@ -49,7 +48,7 @@ public:
 	void POP_register(Register8bit &reg);
 	void POP_register(Register16bit &reg);
 
-	// Arithmetic operations.
+	// Arithmetic operations, use carry argument for ADC/SBC 
 	void ADD_register(Register8bit &dest, Register8bit const &src, bool carry = false);
 	void ADD_immediate(Register8bit &reg, bool carry = false);
 	void ADD_address(Register8bit &dest, Register16bit const &src, bool carry = false);
@@ -119,6 +118,8 @@ private:
 	void set_add_flags(u16 a, u16 b);
 	void set_sub_flags(u16 a, u16 b);
 	void flag_reset(Register8bit const &reg);
+	void set_and_flags(u8 val);
+	void set_or_flags(u8 val);
 	
 	void stack_push(u8 data);
 	u8 stack_pop();

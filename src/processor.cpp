@@ -20,7 +20,6 @@ bool Processor::execute(u8 instr, bool cb)
 	return true;
 }
 
-
 void Processor::run()
 {
 	u16 break_point = 0x100;
@@ -48,12 +47,10 @@ void Processor::run()
 	}
 }
 
-
 void Processor::map_to_memory(u8 program[], u16 size, u16 offset)
 {
 	std::memcpy(&memory[offset], program, size);
 }
-
 
 void Processor::print_register_values()
 {

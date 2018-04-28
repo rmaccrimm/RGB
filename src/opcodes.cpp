@@ -27,7 +27,7 @@ u8 Processor::stack_pop()
 
 void Processor::set_add_flags(u16 a, u16 b)
 {
-	flags.full_carry = full_carry_add(a, b);	
+	flags.carry = full_carry_add(a, b);	
 	flags.half_carry = half_carry_add(a, b);
 	flags.zero = (a + b) == 0;
 	reset(flags.subtract);
@@ -35,7 +35,7 @@ void Processor::set_add_flags(u16 a, u16 b)
 
 void Processor::set_sub_flags(u16 a, u16 b)
 {
-	flags.full_carry = full_carry_sub(a, b);
+	flags.carry = full_carry_sub(a, b);
 	flags.half_carry = half_carry_sub(a, b);
 	flags.zero = (a - b) == 0;
 	set(flags.subtract);
@@ -47,6 +47,26 @@ void Processor::flag_reset(Register8bit const &reg)
 		set(flags.zero);
 	reset(flags.subtract);
 	reset(flags.half_carry);
+}
+
+void Processor::set_and_flags(u8 val)
+{
+	if (val == 0) {
+		set(flags.zero);
+	}
+	reset(flags.subtract);
+	set(flags.half_carry);
+	reset(flags.carry);
+}
+
+void Processor::set_or_flags(u8 val)
+{
+	if (val == 0) {
+		set(flags.zero);
+	}
+	reset(flags.subtract);
+	reset(flags.half_carry);
+	reset(flags.carry);
 }
 
 #pragma endregion
@@ -154,7 +174,7 @@ void Processor::ADD_register(Register8bit &dest, Register8bit const &src, bool c
 {
 	int add = src.value();
 	if (carry) {
-		add += flags.full_carry;
+		add += flags.carry;
 	}
 	set_add_flags(dest.value(), add);
 	dest.set(dest.value() + add);
@@ -164,7 +184,7 @@ void Processor::ADD_immediate(Register8bit &reg, bool carry)
 {
 	int add = fetch_byte();
 	if (carry) {
-		add += flags.full_carry;
+		add += flags.carry;
 	}
 	set_add_flags(reg.value(), add);
 	reg.set(reg.value() + add);
@@ -174,7 +194,7 @@ void Processor::ADD_address(Register8bit &dest, Register16bit const &src, bool c
 {
 	int add = memory[src.value()];
 	if (carry) {
-		add += flags.full_carry;
+		add += flags.carry;
 	}
 	set_add_flags(dest.value(), add);
 	dest.set(dest.value() + add);
@@ -184,7 +204,7 @@ void Processor::SUB_register(Register8bit &dest, Register8bit const &src, bool c
 {
 	int sub = src.value();
 	if (carry) {
-		sub += flags.full_carry;
+		sub += flags.carry;
 	}
 	set_add_flags(dest.value(), sub);
 	dest.set(dest.value() + sub);
@@ -194,7 +214,7 @@ void Processor::SUB_immediate(Register8bit &reg, bool carry)
 {
 	int sub = fetch_byte();
 	if (carry) {
-		sub += flags.full_carry;
+		sub += flags.carry;
 	}
 	set_add_flags(reg.value(), sub);
 	reg.set(reg.value() + sub);
@@ -204,7 +224,7 @@ void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool c
 {
 	int sub = memory[src.value()];
 	if (carry) {
-		sub += flags.full_carry;
+		sub += flags.carry;
 	}
 	set_add_flags(dest.value(), sub);
 	dest.set(dest.value() + sub);
@@ -220,16 +240,16 @@ void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool c
 void Processor::RL_carry(Register8bit &reg)
 {
 	int temp = reg.value() >> 7; // bit 7
-	reg.set((reg.value() << 1) | flags.full_carry);
-	flags.full_carry = temp;
+	reg.set((reg.value() << 1) | flags.carry);
+	flags.carry = temp;
 	flag_reset(reg);
 }
 
 void Processor::RR_carry(Register8bit &reg)
 {
 	int temp = reg.value() & 1; // bit 0
-	reg.set((reg.value() >> 1) | (flags.full_carry << 7));
-	flags.full_carry = temp;
+	reg.set((reg.value() >> 1) | (flags.carry << 7));
+	flags.carry = temp;
 	flag_reset(reg);
 }
 
@@ -237,7 +257,7 @@ void Processor::RL_no_carry(Register8bit &reg)
 {
 	int temp = reg.value() >> 7; // bit 7
 	reg.set((reg.value() << 1) | temp);
-	flags.full_carry = temp;
+	flags.carry = temp;
 	flag_reset(reg);
 }
 
@@ -245,7 +265,7 @@ void Processor::RR_no_carry(Register8bit &reg)
 {
 	int temp = reg.value() & 1; // bit 0
 	reg.set((reg.value() >> 1) | (temp << 7));
-	flags.full_carry = temp;
+	flags.carry = temp;
 	flag_reset(reg);
 }
 
@@ -258,65 +278,81 @@ void Processor::RR_no_carry(Register8bit &reg)
 
 void Processor::AND_register(Register8bit &dest, Register8bit &src)
 {
-
+	dest.set(dest.value() & src.value());
+	set_and_flags(dest.value());
 }
 
 void Processor::AND_immediate(Register8bit &reg)
 {
-
+	u8 val = fetch_byte();
+	reg.set(reg.value() & val);
+	set_and_flags(val);
 }
 
 void Processor::AND_address(Register8bit &dest, Register16bit &src)
 {
-
+	u8 val = memory[src.value()];
+	dest.set(dest.value() & val);
+	set_and_flags(val);
 }
 
 void Processor::OR_register(Register8bit &dest, Register8bit &src)
 {
-
+	dest.set(dest.value() | src.value());
+	set_or_flags(dest.value());
 }
 
 void Processor::OR_immediate(Register8bit &reg)
 {
-
+	u8 val = fetch_byte();
+	reg.set(reg.value() | val);
+	set_or_flags(val);
 }
 
 void Processor::OR_address(Register8bit &dest, Register16bit &src)
 {
-
+	u8 val = memory[src.value()];
+	dest.set(dest.value() | val);
+	set_or_flags(val);
 }
 
 void Processor::XOR_register(Register8bit &dest, Register8bit &src)
 {
-
+	dest.set(dest.value() ^ src.value());
+	set_or_flags(dest.value());
 }
 
 void Processor::XOR_immediate(Register8bit &reg)
 {
-
+	u8 val = fetch_byte();
+	reg.set(reg.value() ^ val);
+	set_or_flags(val);
 }
 
 void Processor::XOR_address(Register8bit &dest, Register16bit &src)
 {
-	
+	u8 val = memory[src.value()];
+	dest.set(dest.value() ^ val);
+	set_or_flags(val);
 }
 
 void Processor::CP_register(Register8bit &dest, Register8bit &src)
 {
-
+	set_sub_flags(dest.value(), src.value());
 }
 
 void Processor::CP_immediate(Register8bit &reg)
 {
-
+	set_sub_flags(reg.value(), fetch_byte());
 }
 
 void Processor::CP_address(Register8bit &dest, Register16bit &src)
 {
-
+	set_sub_flags(dest.value(), memory[src.value()]);
 }
 
 #pragma endregion
+
 
 /*  8-bit load opcodes
  */
@@ -452,7 +488,7 @@ void Processor::opcode0xf8()
 	reset(flags.zero);
 	reset(flags.subtract);
 	flags.half_carry = half_carry_add(SP.value(), n);
-	flags.full_carry = full_carry_add(SP.value(), n);
+	flags.carry = full_carry_add(SP.value(), n);
 } 
 
 void Processor::opcode0xf9() { LD_register(SP, HL); }
