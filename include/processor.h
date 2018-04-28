@@ -50,7 +50,9 @@ public:
 
 	// Arithmetic operations, use carry argument for ADC/SBC 
 	void ADD_register(Register8bit &dest, Register8bit const &src, bool carry = false);
+	void ADD_register(Register16bit &dest, Register16bit const &src);
 	void ADD_immediate(Register8bit &reg, bool carry = false);
+	void ADD_immediate(Register16bit &reg);
 	void ADD_address(Register8bit &dest, Register16bit const &src, bool carry = false);
 
 	void SUB_register(Register8bit &dest, Register8bit const &src, bool carry = false);
@@ -58,7 +60,7 @@ public:
 	void SUB_address(Register8bit &dest, Register16bit const &src, bool carry = false);
 
 	void INC_register(Register8bit &reg);
-	void INC_register(Register16bit &reg) {}
+	void INC_register(Register16bit &reg);
 	void INC_address(Register16bit const &reg); 
 	void DEC_register(Register8bit &reg);
 	void DEC_register(Register16bit &reg);

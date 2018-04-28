@@ -2,8 +2,7 @@
 #include <cassert>
 #include <iostream>
 
-/* Private functions
-*/
+//Private functions
 #pragma region
 
 u8 Processor::fetch_byte()
@@ -72,8 +71,7 @@ void Processor::set_or_flags(u8 val)
 #pragma endregion
 
 
-/* Load operations
-*/
+// Load operations
 #pragma region
 
 void Processor::LD_immediate(Register8bit &reg)
@@ -134,8 +132,7 @@ void Processor::POP_register(Register16bit &reg)
 #pragma endregion
 
 
-/* Add/Subtract operations
-*/
+// Add/Subtract operations
 #pragma region
 
 void Processor::INC_register(Register8bit &reg) 
@@ -144,6 +141,11 @@ void Processor::INC_register(Register8bit &reg)
 	reset(flags.subtract);
 	reg.increment();
 	flags.zero = (reg.value() == 0);
+}
+
+void Processor::INC_register(Register16bit &reg)
+{
+	reg.increment();
 }
 
 void Processor::INC_address(Register16bit const &reg)
@@ -160,6 +162,11 @@ void Processor::DEC_register(Register8bit &reg)
 	set(flags.subtract);
 	reg.decrement();
 	flags.zero = (reg.value() == 0);
+}
+
+void Processor::DEC_register(Register16bit &reg)
+{
+	reg.decrement();
 }
 
 void Processor::DEC_address(Register16bit const &reg)
@@ -180,6 +187,17 @@ void Processor::ADD_register(Register8bit &dest, Register8bit const &src, bool c
 	dest.set(dest.value() + add);
 }
 
+void Processor::ADD_register(Register16bit &dest, Register16bit const &src)
+{
+	u16 a = dest.value();
+	u16 b = src.value();
+	// carry from bit 11
+	flags.half_carry = (((a & 0xfff) + (b & 0xfff)) & 0x1000) == 0x1000;
+	// carry from bit 15
+	flags.half_carry = (((a & 0xffff) + (b & 0xffff)) & 0x10000) == 0x10000;
+	dest.set(dest.value() + src.value());
+}
+
 void Processor::ADD_immediate(Register8bit &reg, bool carry)
 {
 	int add = fetch_byte();
@@ -188,6 +206,16 @@ void Processor::ADD_immediate(Register8bit &reg, bool carry)
 	}
 	set_add_flags(reg.value(), add);
 	reg.set(reg.value() + add);
+}
+
+void Processor::ADD_immediate(Register16bit &reg)
+{
+	i8 val = fetch_byte();
+	flags.carry = full_carry_add(reg.value_low(), val);
+	flags.half_carry = half_carry_add(reg.value_low(), val);
+	reset(flags.zero);
+	reset(flags.subtract);
+	reg.set(reg.value() + val);
 }
 
 void Processor::ADD_address(Register8bit &dest, Register16bit const &src, bool carry)
@@ -233,8 +261,7 @@ void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool c
 #pragma endregion
 
 
-/* Rotates
-*/
+// Rotates
 #pragma region
 
 void Processor::RL_carry(Register8bit &reg)
@@ -272,8 +299,7 @@ void Processor::RR_no_carry(Register8bit &reg)
 #pragma endregion
 
 
-/* Logic functions
-*/
+// Logic functions
 #pragma region
 
 void Processor::AND_register(Register8bit &dest, Register8bit &src)
@@ -354,9 +380,7 @@ void Processor::CP_address(Register8bit &dest, Register16bit &src)
 #pragma endregion
 
 
-/*  8-bit load opcodes
- */
-
+//  8-bit load opcodes
 #pragma region
 void Processor::opcode0x3e() { LD_immediate(A); }
 void Processor::opcode0x06() { LD_immediate(B); }
@@ -470,8 +494,7 @@ void Processor::opcode0xf0() { A.set(memory[0xff00 + fetch_byte()]); }
 #pragma endregion
 
 
-/*
- *	16-bit load opcodes
+/*	16-bit load opcodes
  */
 #pragma region
 
@@ -516,8 +539,7 @@ void Processor::opcode0xe1() { POP_register(HL); }
 #pragma endregion
 
 
-/*
- *	8-bit ALU opcodes
+/*	8-bit ALU opcodes
  */
 #pragma region
 
@@ -620,29 +642,53 @@ void Processor::opcode0x35() { DEC_address(HL); }
 #pragma endregion
 
 
-void Processor::opcode0x20()
-{
-	i8 jump = fetch_byte();
-	if (!flags.zero) {
-		PC.add(jump);
-	}
-}
+/*	16-bit arithmetic opcodes
+*/
+#pragma region
+
+void Processor::opcode0x09() { ADD_register(HL, BC); }
+void Processor::opcode0x19() { ADD_register(HL, DE); }
+void Processor::opcode0x29() { ADD_register(HL, HL); }
+void Processor::opcode0x39() { ADD_register(HL, SP); }
+void Processor::opcode0xe8() { ADD_immediate(SP); }
+
+void Processor::opcode0x03() { INC_register(BC); }
+void Processor::opcode0x13() { INC_register(DE); }
+void Processor::opcode0x23() { INC_register(HL); }
+void Processor::opcode0x33() { INC_register(SP); }
+
+void Processor::opcode0x0b() { DEC_register(BC); }
+void Processor::opcode0x1b() { DEC_register(DE); }
+void Processor::opcode0x2b() { DEC_register(HL); }
+void Processor::opcode0x3b() { DEC_register(SP); }
+
+#pragma endregion
+
+
+/*	Misc opcodes
+*/
+#pragma region
+
+
+
+#pragma endregion
+
+
+/*	Rotate/Shift opcodes
+*/
+#pragma region
 
 void Processor::opcode0x07() { RL_no_carry(A); }
 void Processor::opcode0x0f() { RR_no_carry(A); }
 void Processor::opcode0x17() { RL_carry(A); }
 void Processor::opcode0x1f() { RR_carry(A); }
 
-void Processor::opcode0xcd()
-{
-	PUSH_register(PC);
-	LD_immediate(PC);
-}
+#pragma endregion
 
-/* CB opcodes
+
+/*	Bit opcodes
 */
-
-void Processor::cb_opcode0x11() { RL_carry(C); }
+#pragma region
 
 void Processor::cb_opcode0x7c()
 {
@@ -655,3 +701,36 @@ void Processor::cb_opcode0x7c()
 	reset(flags.subtract);
 	set(flags.half_carry);
 }
+
+#pragma endregion
+
+
+/* Jump opcodes
+*/
+#pragma region
+
+void Processor::opcode0x20()
+{
+	i8 jump = fetch_byte();
+	if (!flags.zero) {
+		PC.add(jump);
+	}
+}
+
+#pragma endregion
+
+/* Call/Return opcodes
+*/
+#pragma region
+
+void Processor::opcode0xcd()
+{
+	PUSH_register(PC);
+	LD_immediate(PC);
+}
+
+#pragma endregion
+
+
+
+
