@@ -24,7 +24,7 @@ bool half_carry_add(u16 a, u16 b)
 // Check for carry from bit 4 to 3 in a - b 
 bool half_carry_sub(u16 a, u16 b)
 {
-	return ((a - (b & 0xff)) & 0x10) == 0;
+	return ((a & 0xf) - (b & 0xf)) < 0;
 }
 
 bool full_carry_add(u16 a, u16 b)
@@ -34,7 +34,7 @@ bool full_carry_add(u16 a, u16 b)
 
 bool full_carry_sub(u16 a, u16 b)
 {
-	return false;
+	return ((a & 0xff) - (b & 0xff)) < 0;
 }
 
 vector<u8> read_rom(size_t &file_size, string path)
