@@ -7,19 +7,19 @@
 #include "register16bit.h"
 #include "functions.h"
 
-struct Flags 
-{
-    bool zero;        // Z
-    bool subtract;    // N
-    bool carry;		  // H
-    bool half_carry;  // C
-};	
-
 class Processor
 {
     // opfunc type defined as shorthand for void member functions 
     typedef void (Processor::*opfunc)(void);
     
+    struct Flags 
+    {
+        bool zero;       // Z
+        bool subtract;   // N
+        bool carry;      // H
+        bool half_carry; // C
+    };	
+
 public:
     Processor();
 
@@ -31,62 +31,6 @@ public:
 
     // Place size bytes of data in program into memory starting at offset 
     void map_to_memory(u8 program[], u16 size, u16 offset);
-
-    // Load operations.
-    void LD_immediate(Register8bit &reg);
-    void LD_immediate(Register16bit &reg);
-    void LD_register(Register8bit &dest, Register8bit const &src);
-    void LD_register(Register16bit &dest, Register16bit const &src);
-    void LD_address(Register8bit &dest, Register16bit const &src);
-    void LD_address(Register16bit const &dest, Register8bit const &src);
-
-    /* Stack operations. The stack is at address 0xfffe backwards. High is pushed 
-       then low for 16 bit.
-    */
-    void PUSH_register(Register8bit const &reg);
-    void PUSH_register(Register16bit const &reg);
-    void POP_register(Register8bit &reg);
-    void POP_register(Register16bit &reg);
-
-    // Arithmetic operations, use carry argument for ADC/SBC 
-    void ADD_register(Register8bit &dest, Register8bit const &src, bool carry = false);
-    void ADD_register(Register16bit &dest, Register16bit const &src);
-    void ADD_immediate(Register8bit &reg, bool carry = false);
-    void ADD_immediate(Register16bit &reg);
-    void ADD_address(Register8bit &dest, Register16bit const &src, bool carry = false);
-
-    void SUB_register(Register8bit &dest, Register8bit const &src, bool carry = false);
-    void SUB_immediate(Register8bit &reg, bool carry = false);
-    void SUB_address(Register8bit &dest, Register16bit const &src, bool carry = false);
-
-    void INC_register(Register8bit &reg);
-    void INC_register(Register16bit &reg);
-    void INC_address(Register16bit const &reg); 
-    void DEC_register(Register8bit &reg);
-    void DEC_register(Register16bit &reg);
-    void DEC_address(Register16bit const &reg);
-
-    void RL_carry(Register8bit &reg);
-    void RL_no_carry(Register8bit &reg);
-    void RR_carry(Register8bit &reg);
-    void RR_no_carry(Register8bit &reg);
-
-    // Logic operations
-    void AND_register(Register8bit &dest, Register8bit &src);
-    void AND_immediate(Register8bit &reg);
-    void AND_address(Register8bit &dest, Register16bit &src);
-
-    void OR_register(Register8bit &dest, Register8bit &src);
-    void OR_immediate(Register8bit &reg);
-    void OR_address(Register8bit &dest, Register16bit &src);
-
-    void XOR_register(Register8bit &dest, Register8bit &src);
-    void XOR_immediate(Register8bit &reg);
-    void XOR_address(Register8bit &dest, Register16bit &src);
-
-    void CP_register(Register8bit &dest, Register8bit &src);
-    void CP_immediate(Register8bit &reg);
-    void CP_address(Register8bit &dest, Register16bit &src);
 
 private:
     Register8bit A;
@@ -110,7 +54,6 @@ private:
     opfunc cb_opcodes[0x100];
     u8 memory[0x10000]; // 16 kB memory
 
-    // Returns byte from memory that PC currently points to	and increment PC
     u8 fetch_byte();
 
     // Return false if  unimplemented
@@ -125,6 +68,68 @@ private:
     
     void stack_push(u8 data);
     u8 stack_pop();
+
+    void LD_immediate(Register8bit &reg);
+    void LD_immediate(Register16bit &reg);
+    void LD_register(Register8bit &dest, Register8bit const &src);
+    void LD_register(Register16bit &dest, Register16bit const &src);
+    void LD_address(Register8bit &dest, Register16bit const &src);
+    void LD_address(Register16bit const &dest, Register8bit const &src);
+
+    // The stack is at address 0xfffe backwards. High is pushed then low for 16 bit.
+    void PUSH_register(Register8bit const &reg);
+    void PUSH_register(Register16bit const &reg);
+    void POP_register(Register8bit &reg);
+    void POP_register(Register16bit &reg);
+
+    // Carry argument used for ADC/SBC 
+    void ADD_register(Register8bit &dest, Register8bit const &src, bool carry = false);
+    void ADD_register(Register16bit &dest, Register16bit const &src);
+    void ADD_immediate(Register8bit &reg, bool carry = false);
+    void ADD_immediate(Register16bit &reg);
+    void ADD_address(Register8bit &dest, Register16bit const &src, bool carry = false);
+
+    void SUB_register(Register8bit &dest, Register8bit const &src, bool carry = false);
+    void SUB_immediate(Register8bit &reg, bool carry = false);
+    void SUB_address(Register8bit &dest, Register16bit const &src, bool carry = false);
+
+    void INC_register(Register8bit &reg);
+    void INC_register(Register16bit &reg);
+    void INC_address(Register16bit const &reg); 
+
+    void DEC_register(Register8bit &reg);
+    void DEC_register(Register16bit &reg);
+    void DEC_address(Register16bit const &reg);
+
+    void AND_register(Register8bit &dest, Register8bit &src);
+    void AND_immediate(Register8bit &reg);
+    void AND_address(Register8bit &dest, Register16bit &src);
+
+    void OR_register(Register8bit &dest, Register8bit &src);
+    void OR_immediate(Register8bit &reg);
+    void OR_address(Register8bit &dest, Register16bit &src);
+
+    void XOR_register(Register8bit &dest, Register8bit &src);
+    void XOR_immediate(Register8bit &reg);
+    void XOR_address(Register8bit &dest, Register16bit &src);
+
+    void CP_register(Register8bit &dest, Register8bit &src);
+    void CP_immediate(Register8bit &reg);
+    void CP_address(Register8bit &dest, Register16bit &src);
+
+    void RL_carry(Register8bit &reg);
+    void RR_carry(Register8bit &reg);
+    void RL_no_carry(Register8bit &reg);
+    void RR_no_carry(Register8bit &reg);
+
+    void SR_arithmetic(Register8bit &reg);
+    void SL_arithmetic(Register8bit &reg);
+    void SR_logical(Register8bit &reg);
+    void SL_logical(Register8bit &reg);
+
+    void BIT(Register8bit &reg, u8 bit);
+    void SET(Register8bit &reg, u8 bit);
+    void RES(Register8bit &reg, u8 bit);
 
     void opcode0x00();	void opcode0x01();	void opcode0x02();	void opcode0x03();
     void opcode0x04(); 	void opcode0x05();	void opcode0x06(); 	void opcode0x07(); 
