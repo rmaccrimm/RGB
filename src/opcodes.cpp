@@ -683,6 +683,8 @@ void Processor::opcode0x0f() { RR_no_carry(A); }
 void Processor::opcode0x17() { RL_carry(A); }
 void Processor::opcode0x1f() { RR_carry(A); }
 
+void Processor::cb_opcode0x11() { RL_carry(C); }
+
 #pragma endregion
 
 
