@@ -20,30 +20,24 @@ bool Processor::execute(u8 instr, bool cb)
     return true;
 }
 
-void Processor::run()
+void Processor::step()
 {
-    u16 break_point = 0x100;
-    if (DEBUG_MODE) {
-        //break_point = DEBUG::get_break_point();
+    u8 instr = fetch_byte();
+    std::string prefix = "";
+    bool cb = (instr == 0xcb);
+    if (cb) {
+        prefix = "cb ";
+        instr = fetch_byte();
     }
-    while (PC.value() < break_point) {
-        u8 instr = fetch_byte();
-        std::string prefix = "";
-        bool cb = (instr == 0xcb);
-        if (cb) {
-            prefix = "cb ";
-            instr = fetch_byte();
-        }
-        //std::cout << prefix << std::hex << (int)instr << std::endl;
-        
-        if (!execute(instr, cb)) {
-            std::cout << "Unimplemented instruction: " << prefix
-                      << std::setw(2) << std::setfill('0') << std::hex
-                      << (int)instr << std::endl;
-            return;
-        }
-        //print_register_values();
-        //std::cin.get();
+    if (!execute(instr, cb)) {
+        std::cout << "Unimplemented instruction: " << prefix
+                << std::setw(2) << std::setfill('0') << std::hex
+                << (int)instr << std::endl;
+        return;
+    }
+    if (DEBUG_MODE) {
+        std::cout << prefix << std::hex << (int)instr << std::endl;
+        print_register_values();
     }
 }
 
@@ -67,7 +61,6 @@ void Processor::print_register_values()
               << "PC:\t"  << std::setw(4) << std::setfill('0')
               << std::hex << (int)PC.value() << "\n";
 }
-
 
 Processor::Processor():
     A(), F(), B(), C(), D(), E(), H(), L(),

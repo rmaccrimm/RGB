@@ -22,14 +22,9 @@ class Processor
 
 public:
     Processor();
-
-    // Begins program execution from memory location 0 
-    void run();
-
-    // For debugging 
+    
+    void step();
     void print_register_values();
-
-    // Place size bytes of data in program into memory starting at offset 
     void map_to_memory(u8 program[], u16 size, u16 offset);
 
 private:
