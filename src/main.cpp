@@ -18,7 +18,12 @@
 
 int main(int argc, char *argv[])
 {  
+    Processor gb_cpu;
     GameWindow game_window;
+
+    size_t rom_size;
+    std::vector<u8> rom_data = read_rom(rom_size, "DMG_ROM.bin");
+    gb_cpu.map_to_memory(rom_data.data(), rom_size, 0);
 		
     while (!game_window.closed()) {
 		float pixels[48];
@@ -29,24 +34,5 @@ int main(int argc, char *argv[])
 		Sleep(100);
     }
     
-    /*Processor gb_cpu;
-    size_t rom_size;
-    std::vector<u8> rom_data = read_rom(rom_size, "DMG_ROM.bin");
-
-    gb_cpu.map_to_memory(rom_data.data(), rom_size, 0);
-    gb_cpu.run();
-    
-    for (unsigned int i = 0; i < rom_data.size(); i++) {
-        if (i != 0 && (i % 16 == 0))
-            std::cout << std::endl;
-        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)rom_data[i] << ' ';
-    }
-    std::cout << std::endl;
-    
-    gb_cpu.print_register_values();*/
-    
-    //SDL_DestroyWindow(window);
-    
-
     return 0;
 }
