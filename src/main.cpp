@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <string>
 #include <random>
 #include <Windows.h>
 #include <GL/glew.h>
@@ -12,7 +11,7 @@
 #include "register16bit.h"
 #include "register8bit.h"
 #include "processor.h"
-#include "video.h"
+#include "window.h"
 
 #undef main
 
@@ -26,13 +25,14 @@ int main(int argc, char *argv[])
     gb_cpu.map_to_memory(rom_data.data(), rom_size, 0);
 		
     while (!game_window.closed()) {
-		float pixels[48];
-		for (int i = 0; i < 48; i++) {
-			pixels[i] = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        int npixels = RES_WIDTH * RES_HEIGHT;
+		std::vector<float> pixels;
+		for (int i = 0; i < npixels * 3; i++) {
+			pixels.push_back(static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
 		}
-        game_window.draw_frame(pixels);
+        game_window.draw_frame(pixels.data());
 		Sleep(100);
     }
-    
+
     return 0;
 }

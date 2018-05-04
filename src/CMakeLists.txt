@@ -12,5 +12,5 @@ find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 
-add_executable(main main.cpp video.cpp)
+add_executable(main main.cpp window.cpp)
 target_link_libraries(main processor SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY})

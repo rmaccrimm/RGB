@@ -1,5 +1,32 @@
-#include "video.h"
+#include "window.h"
 #include <iostream>
+
+const float SCREEN_QUAD[] = {  
+//  position       texture coords      
+    -1,  1,  0,    0, 1,
+    -1, -1,  0,    0, 0,
+     1, -1,  0,    1, 0,
+    -1,  1,  0,    0, 1,
+     1, -1,  0,    1, 0,
+     1,  1,  0,    1, 1
+};
+
+const char *VERT_SRC = 
+    "#version 330 core\n"
+    "layout (location = 0) in vec3 inPos;\n"
+    "layout (location = 1) in vec2 inTexCoords;\n"
+    "out vec2 texCoords;\n"
+    "void main() {\n"
+        "gl_Position = vec4(inPos, 1.0);\n"
+        "texCoords = inTexCoords; }";
+
+const char *FRAG_SRC = 
+    "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "in vec2 texCoords;\n"
+    "uniform sampler2D screen_texture;\n"
+    "void main() {\n"
+        "FragColor = texture(screen_texture, texCoords); }";
 
 GameWindow::GameWindow()
 {
@@ -78,8 +105,7 @@ void GameWindow::compile_shader()
     int success;
     char err_log[512];
 
-    const char *v_src = VERT_SRC.c_str();
-    glShaderSource(vertex, 1, &v_src, nullptr);
+    glShaderSource(vertex, 1, &VERT_SRC, nullptr);
     glCompileShader(vertex);
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -87,8 +113,7 @@ void GameWindow::compile_shader()
         std::cout << "Vertex shader compilation failed: " << err_log << std::endl;
     }
 
-    const char *f_src = FRAG_SRC.c_str();
-    glShaderSource(fragment, 1, &f_src, nullptr);
+    glShaderSource(fragment, 1, &FRAG_SRC, nullptr);
     glCompileShader(fragment);
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if (!success) {
