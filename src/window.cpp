@@ -85,17 +85,17 @@ void GameWindow::init_window()
 void GameWindow::init_glcontext()
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
-	if (gl_context == nullptr) {
-		std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
-	}
-	glewExperimental = GL_TRUE;
-	GLenum glew_err = glewInit();
-	if (glew_err != GLEW_OK) {
-		std::cout << "Error initializing GLEW: " << glewGetErrorString(glew_err) << std::endl;
-	}
+    if (gl_context == nullptr) {
+        std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
+    }
+    glewExperimental = GL_TRUE;
+    GLenum glew_err = glewInit();
+    if (glew_err != GLEW_OK) {
+        std::cout << "Error initializing GLEW: " << glewGetErrorString(glew_err) << std::endl;
+    }
 }
 
 void GameWindow::compile_shader()
@@ -138,11 +138,11 @@ void GameWindow::init_screen_texture()
     GLuint screen_tex;
     glGenTextures(1, &screen_tex);
     glBindTexture(GL_TEXTURE_2D, screen_tex);
-	// No texture smoothing
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // No texture smoothing
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // Set active texture unit
     glActiveTexture(GL_TEXTURE0);
     
@@ -151,7 +151,7 @@ void GameWindow::init_screen_texture()
     glGenVertexArrays(1, &screen_vao);
     glGenBuffers(1, &screen_vbo);
     glBindVertexArray(screen_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, screen_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, screen_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(SCREEN_QUAD), SCREEN_QUAD, GL_STATIC_DRAW);
     // vertex positions
     glEnableVertexAttribArray(0);    
