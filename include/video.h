@@ -4,9 +4,39 @@
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <string>
+#include "definitions.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+const int RES_WIDTH = 4;
+const int RES_HEIGHT = 4;
+
+struct Pixel 
+{
+    float r;
+    float g;
+    float b;
+};
+
+class GameWindow 
+{
+public:
+    GameWindow();
+    ~GameWindow();
+    bool closed();
+    void draw_frame(float framebuffer[]);
+
+//private:
+    SDL_Window *sdl_window;
+    SDL_GLContext *gl_context;
+    SDL_Event event;
+    unsigned int shader_id;
+
+    void compile_shader();
+    void init_window();
+    void init_glcontext();
+    void init_screen_texture();
+};
 
 const float SCREEN_QUAD[] = {  
 //  position       texture coords      
@@ -34,9 +64,5 @@ const std::string FRAG_SRC =
     "uniform sampler2D screen_texture;\n"
     "void main() {\n"
         "FragColor = texture(screen_texture, texCoords); }";
-
-SDL_Window* init_window();
-void compile_shader(GLuint &shader_id);
-void init_screen_texture();
 
 #endif
