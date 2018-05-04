@@ -9,7 +9,7 @@
 
 bool Processor::execute(u8 instr, bool cb)
 {
-    opfunc *op;
+    OpFunc *op;
     if (cb) 
         op = &cb_opcodes[0];
     else 

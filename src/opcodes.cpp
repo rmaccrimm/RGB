@@ -267,7 +267,7 @@ void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool c
 void Processor::RL_carry(Register8bit &reg)
 {
     int temp = reg.value() >> 7; // bit 7
-    reg.set((reg.value() << 1) | flags.carry);
+    reg.set((reg.value() << 1) | (u8)flags.carry);
     flags.carry = temp;
     flag_reset(reg);
 }

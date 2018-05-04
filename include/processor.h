@@ -10,10 +10,9 @@
 class Processor
 {
     // opfunc type defined as shorthand for void member functions 
-    typedef void (Processor::*opfunc)(void);
+    typedef void (Processor::*OpFunc)(void);
     
-    struct Flags 
-    {
+    struct Flags {
         bool zero;       // Z
         bool subtract;   // N
         bool carry;      // H
@@ -45,8 +44,8 @@ private:
     Register16bit PC;
 
     Flags flags;
-    opfunc opcodes[0x100];	
-    opfunc cb_opcodes[0x100];
+    OpFunc opcodes[0x100];	
+    OpFunc cb_opcodes[0x100];
     u8 memory[0x10000]; // 16 kB memory
 
     u8 fetch_byte();
