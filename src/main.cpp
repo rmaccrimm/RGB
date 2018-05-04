@@ -1,7 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <random>
-#include <Windows.h>
+#include <chrono>
+#include <thread>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL.h>
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
 			pixels.push_back(static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
 		}
         game_window.draw_frame(pixels.data());
-		Sleep(100);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     return 0;
