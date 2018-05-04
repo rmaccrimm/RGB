@@ -5,10 +5,9 @@
 #include <GL/glew.h>
 #include "definitions.h"
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 576;
-const int RES_WIDTH = 160;
-const int RES_HEIGHT = 144;
+const int SCREEN_W = 160;
+const int SCREEN_H = 144;
+const int SCALE = 4;
 
 class GameWindow 
 {

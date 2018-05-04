@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     gb_cpu.map_to_memory(rom_data.data(), rom_size, 0);
 		
     while (!game_window.closed()) {
-        int npixels = RES_WIDTH * RES_HEIGHT;
+        int npixels = SCREEN_W * SCREEN_H;
 		std::vector<float> pixels;
 		for (int i = 0; i < npixels * 3; i++) {
 			pixels.push_back(static_cast<float>(rand()) / static_cast<float>(RAND_MAX));

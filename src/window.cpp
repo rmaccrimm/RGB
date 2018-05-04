@@ -57,7 +57,7 @@ void GameWindow::draw_frame(float framebuffer[])
 {
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, RES_WIDTH, RES_HEIGHT, 0, GL_RGB, GL_FLOAT, framebuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_W, SCREEN_H, 0, GL_RGB, GL_FLOAT, framebuffer);
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
 }
@@ -72,8 +72,8 @@ void GameWindow::init_window()
             "Gameboy Emulator", 
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, 
-            SCREEN_WIDTH,
-            SCREEN_HEIGHT, 
+            SCREEN_W * SCALE,
+            SCREEN_H * SCALE, 
             SDL_WINDOW_OPENGL
         );
         if (sdl_window == nullptr) {
