@@ -2,7 +2,6 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
-#include <string>
 using namespace std;
 
 void set(bool &b) 
@@ -37,7 +36,7 @@ bool full_carry_sub(u16 a, u16 b)
     return ((a & 0xff) - (b & 0xff)) < 0;
 }
 
-vector<u8> read_rom(size_t &file_size, string path)
+vector<u8> read_rom(size_t &file_size, const char *path)
 {
     ifstream ifs(path, ios_base::in | ios_base::binary);
     ifs.seekg(0, ios_base::end);
@@ -45,7 +44,7 @@ vector<u8> read_rom(size_t &file_size, string path)
     ifs.seekg(0, ios_base::beg);
 
     if (!ifs.good())
-        cout << "Error reading file: " + path << endl;
+        cout << "Error reading file: " << path << endl;
     
     char *buff = new char[file_size];
     ifs.read(buff, file_size);
