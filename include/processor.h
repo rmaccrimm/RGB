@@ -6,6 +6,7 @@
 #include "register8bit.h"
 #include "register16bit.h"
 #include "functions.h"
+#include "memory.h"
 
 class Processor
 {
@@ -20,13 +21,14 @@ class Processor
     };	
 
 public:
-    Processor();
+    Processor(u8 *mem = nullptr);
     
-    void step();
+    bool step();
+    void set_memory(u8 *mem);
     void print_register_values();
     void map_to_memory(u8 program[], u16 size, u16 offset);
 
-private:
+//private:
     Register8bit A;
     Register8bit F;
     Register8bit B;
@@ -43,10 +45,12 @@ private:
     Register16bit SP;
     Register16bit PC;
 
+    //Memory *memory;
+
     Flags flags;
     OpFunc opcodes[0x100];	
     OpFunc cb_opcodes[0x100];
-    u8 memory[0x10000]; // 16 kB memory
+    u8 *memory; // 16 kB memory
 
     u8 fetch_byte();
 

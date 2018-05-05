@@ -1,7 +1,7 @@
 #include "definitions.h"
 #include <vector>
 
-std::vector<u8> read_rom(size_t &file_size, const char *path);
+void load_rom(u8 memory[], const char *path);
 
 void set(bool &b);
 

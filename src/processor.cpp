@@ -20,7 +20,7 @@ bool Processor::execute(u8 instr, bool cb)
     return true;
 }
 
-void Processor::step()
+bool Processor::step()
 {
     u8 instr = fetch_byte();
     std::string prefix = "";
@@ -33,18 +33,16 @@ void Processor::step()
         std::cout << "Unimplemented instruction: " << prefix
                 << std::setw(2) << std::setfill('0') << std::hex
                 << (int)instr << std::endl;
-        return;
+        return false;
     }
     if (DEBUG_MODE) {
         std::cout << prefix << std::hex << (int)instr << std::endl;
         print_register_values();
     }
+    return true;
 }
 
-void Processor::map_to_memory(u8 program[], u16 size, u16 offset)
-{
-    std::memcpy(&memory[offset], program, size);
-}
+void Processor::set_memory(u8 *mem) { memory = mem; }
 
 void Processor::print_register_values()
 {
@@ -62,9 +60,9 @@ void Processor::print_register_values()
               << std::hex << (int)PC.value() << "\n";
 }
 
-Processor::Processor():
+Processor::Processor(u8 *mem):
     A(), F(), B(), C(), D(), E(), H(), L(),
-    AF(&A, &F), BC(&B, &C),	DE(&D, &F), HL(&H, &L)
+    AF(&A, &F), BC(&B, &C),	DE(&D, &F), HL(&H, &L), memory(mem)
 {
     for (unsigned int i = 0; i < 0x100; i++) {
         opcodes[i] = nullptr;

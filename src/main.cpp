@@ -3,9 +3,9 @@
 #include <random>
 #include <chrono>
 #include <thread>
-#include <GL/glew.h>
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL.h>
+
+#include <iostream>
+#include <iomanip>
 
 #include "debug.h"
 #include "definitions.h"
@@ -19,14 +19,25 @@
 int main(int argc, char *argv[])
 {  
     Processor gb_cpu;
-    GameWindow window;
+    GameWindow window(6);
 
-    size_t rom_size;
-    std::vector<u8> rom_data = read_rom(rom_size, "DMG_ROM.bin");
-    gb_cpu.map_to_memory(rom_data.data(), rom_size, 0);
+    u8 gb_mem[0x10000] = { 0 };
+    load_rom(gb_mem, "DMG_ROM.bin");
+
+    gb_cpu.set_memory(gb_mem);
+
+    for (int i = 0; i < 0x100; i++) {
+        if (i != 0 && (i % 16 == 0)) {
+            std::cout << std::endl;
+        }
+        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem[i] << ' ';
+    }
+    std::cout << std::endl;
+    while (gb_cpu.step()) {}
+    gb_cpu.print_register_values();
         
     while (!window.closed()) {
-        int npixels = SCREEN_W * SCREEN_H;
+        int npixels = constants::screen_w * constants::screen_h;
         std::vector<float> pixels;
         for (int i = 0; i < npixels * 3; i++) {
             pixels.push_back(static_cast<float>(rand()) / static_cast<float>(RAND_MAX));

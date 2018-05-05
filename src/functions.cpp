@@ -4,6 +4,23 @@
 #include <iostream>
 using namespace std;
 
+void load_rom(u8 memory[], const char *path)
+{
+    size_t file_size;
+    ifstream ifs(path, ios_base::in | ios_base::binary);
+    ifs.seekg(0, ios_base::end);
+    file_size = ifs.tellg();
+    ifs.seekg(0, ios_base::beg);
+    if (!ifs.good()) {
+        cout << "Error reading file: " << path << endl;
+    }
+    char *buff = new char[file_size];
+    ifs.read(buff, file_size);
+    ifs.close();
+    std::memcpy(memory, buff, file_size);
+    delete buff;
+}
+
 void set(bool &b) 
 { 
     b = true; 
@@ -36,21 +53,4 @@ bool full_carry_sub(u16 a, u16 b)
     return ((a & 0xff) - (b & 0xff)) < 0;
 }
 
-vector<u8> read_rom(size_t &file_size, const char *path)
-{
-    ifstream ifs(path, ios_base::in | ios_base::binary);
-    ifs.seekg(0, ios_base::end);
-    file_size = ifs.tellg();
-    ifs.seekg(0, ios_base::beg);
 
-    if (!ifs.good())
-        cout << "Error reading file: " << path << endl;
-    
-    char *buff = new char[file_size];
-    ifs.read(buff, file_size);
-    vector<u8> data(buff, buff + file_size);
-
-    ifs.close();
-    delete buff;
-    return data;
-}

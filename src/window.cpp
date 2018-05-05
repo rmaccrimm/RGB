@@ -28,7 +28,7 @@ const char *FRAG_SRC =
     "void main() {\n"
         "FragColor = texture(screen_texture, texCoords); }";
 
-GameWindow::GameWindow()
+GameWindow::GameWindow(int scale): window_scale(scale)
 {
     init_window();
     init_glcontext();
@@ -57,7 +57,17 @@ void GameWindow::draw_frame(float framebuffer[])
 {
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_W, SCREEN_H, 0, GL_RGB, GL_FLOAT, framebuffer);
+    glTexImage2D(
+        GL_TEXTURE_2D, 
+        0, 
+        GL_RGB, 
+        constants::screen_w,
+        constants::screen_h, 
+        0, 
+        GL_RGB, 
+        GL_FLOAT, 
+        framebuffer
+    );
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
 }
@@ -72,8 +82,8 @@ void GameWindow::init_window()
             "Gameboy Emulator", 
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, 
-            SCREEN_W * SCALE,
-            SCREEN_H * SCALE, 
+            constants::screen_w * window_scale,
+            constants::screen_h * window_scale, 
             SDL_WINDOW_OPENGL
         );
         if (sdl_window == nullptr) {
