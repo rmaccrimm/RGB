@@ -9,32 +9,43 @@ public:
     GPU(u8 *mem = nullptr);
     ~GPU();
     void set_memory(u8 *mem);
-    float* construct_framebuffer();
+    float* build_framebuffer();
+
+    static const u16 LCDC = 0xff40;
+    static const u16 SCROLLX = 0xff43; 
+    static const u16 SCROLLY = 0xff42;
+    static const u16 WX = 0xff4b;
+    static const u16 WY = 0xff4a;
+
+    static const u16 TILE_MAP_0 = 0x9800;
+    static const u16 TILE_MAP_1 = 0x9c00;
+    static const u16 TILE_DATA_0 = 0x9000; // signed tile index
+    static const u16 TILE_DATA_1 = 0x8000; // unsigned tile index
 
 private:
     float* framebuffer;
     u8 *memory;
 
+    void read_tile(float *pixels, u16 tile_addr);
     void render_background();
     void render_window();
     void render_sprites();
 
-    const u16 lcd_control = 0xff40;
-    const u16 scroll_x = 0xff40; 
-    const u16 scroll_y = 0xff41;
-    const u16 win_x = 0xff4b;
-    const u16 win_y = 0xff4a;
+    const u8 LCD_ENABLE = 1 << 7;
+    const u8 WIN_TILE_MAP_SELECT = 1 << 6;
+    const u8 WIN_ENABLE = 1 << 5;
+    const u8 TILE_DATA_SELECT = 1 << 4;
+    const u8 BG_TILE_MAP_SELECT = 1 << 3;
+    const u8 SPRITE_SIZE_SELECT = 1 << 2;
+    const u8 SPRITE_ENABLE = 1 << 1;
+    const u8 BG_ENABLE = 1;    
 
-    const u8 lcd_enable = 1 << 7;
-    const u8 win_tile_map_select = 1 << 6;
-    const u8 win_enable = 1 << 5;
-    const u8 tile_data_select = 1 << 4;
-    const u8 bg_tile_map_select = 1 << 3;
-    const u8 sprite_size_select = 1 << 2;
-    const u8 sprite_enable = 1 << 1;
-    const u8 bg_win_enable = 1;
-
-    const float color[4] = { 0x00 / 255, 0x66 / 255, 0xb2 / 255, 0xff / 255 };
+    const float COLORS[4] = { 
+        (float)0x00 / 255,
+        (float)0x66 / 255, 
+        (float)0xb2 / 255, 
+        (float)0xff / 255 
+    };
 };
 
 #endif

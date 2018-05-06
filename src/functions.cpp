@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include "gpu.h"
 using namespace std;
 
 void load_rom(u8 memory[], const char *path)
@@ -53,4 +54,28 @@ bool full_carry_sub(u16 a, u16 b)
     return ((a & 0xff) - (b & 0xff)) < 0;
 }
 
+void setup_stripe_pattern(u8 *memory)
+{
+    u8 lcdc = 0;
+    // enable lcd
+    lcdc |= 1 << 7;
+    // tile data 1, unsigned
+    lcdc |= 1 << 4;
+    // enable bg
+    lcdc |= 1;
+    
+    memory[GPU::LCDC] = lcdc;
+    memory[GPU::SCROLLX] = 0;
+    memory[GPU::SCROLLY] = 0;
+
+    u8 colors[] = {0xff, 0xaa, 0x55, 0};
+    for (u8 i = 0; i < 64; i++) {
+        memory[GPU::TILE_DATA_1 + i] = colors[i/16];
+    } 
+    for (u8 i = 0; i < 32; i++) {
+        for (u8 j = 0; j < 32; j++) {
+            memory[GPU::TILE_MAP_0 + (32 * i) + j] = i % 4;
+        }
+    }
+}
 

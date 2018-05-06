@@ -12,6 +12,7 @@
 #include "register16bit.h"
 #include "register8bit.h"
 #include "processor.h"
+#include "gpu.h"
 #include "window.h"
 
 #undef main
@@ -19,12 +20,14 @@
 int main(int argc, char *argv[])
 {  
     Processor gb_cpu;
-    GameWindow window(6);
+    GPU gb_gpu;
+    GameWindow window(5);
 
-    u8 gb_mem[0x10000] = { 0 };
+    u8 gb_mem[0x10000] = {0};
     load_rom(gb_mem, "DMG_ROM.bin");
-
     gb_cpu.set_memory(gb_mem);
+    gb_gpu.set_memory(gb_mem);
+
 
     for (int i = 0; i < 0x100; i++) {
         if (i != 0 && (i % 16 == 0)) {
@@ -33,16 +36,17 @@ int main(int argc, char *argv[])
         std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem[i] << ' ';
     }
     std::cout << std::endl;
-    while (gb_cpu.step()) {}
+    //while (gb_cpu.step()) {}
     gb_cpu.print_register_values();
-        
+    u8 *lptr = &gb_mem[GPU::LCDC];
+    
+    setup_stripe_pattern(gb_mem);
+
+    for (int i = 0; i < 64; i++) {
+        std::cout << std::hex << (int)gb_mem[GPU::TILE_DATA_1 + i] << ' ';
+    }
     while (!window.closed()) {
-        int npixels = constants::screen_w * constants::screen_h;
-        std::vector<float> pixels;
-        for (int i = 0; i < npixels * 3; i++) {
-            pixels.push_back(static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-        }
-        window.draw_frame(pixels.data());
+        window.draw_frame(gb_gpu.build_framebuffer());
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
