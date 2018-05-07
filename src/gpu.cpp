@@ -77,7 +77,7 @@ void GPU::render_background()
                 u8 tile_index = (32 * ((scroll_y + i) % 32)) + ((scroll_x + j) % 32);
                 u16 map_index = (32 * i) + j;
                 if (signed_map) {
-                    i16 tile_num = memory[tile_map + map_index];
+                    i8 tile_num = (i8)memory[tile_map + map_index];
                     tile_addr = tile_data + (16 * tile_num);
                 }
                 else {

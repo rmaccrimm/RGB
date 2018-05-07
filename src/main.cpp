@@ -44,8 +44,10 @@ int main(int argc, char *argv[])
     DEBUG::setup_dot_pattern(gb_mem);
     DEBUG::print_tile_map(gb_mem, 0);
 
-    for (int i = 0; i < 64; i++) {
-        std::cout << std::hex << (int)gb_mem[GPU::TILE_DATA_1 + i] << ' ';
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 16; i++) {
+            std::cout << std::hex << (int)gb_mem[GPU::TILE_DATA_0 + i - 16*j] << ' ';
+        }
     }
     while (!window.closed()) {
         window.draw_frame(gb_gpu.build_framebuffer());
