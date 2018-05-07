@@ -2,14 +2,14 @@
 #define DEBUG_MODE 0
 #endif
 
+#include "definitions.h"
+
+
 namespace DEBUG
 {
-    const char quit = 'q';
-    const char continue_end = 'c';
-    const char continue_until = 'u';
-    const char show_register = 'r';
-    const char show_memory = 'm';
-    
-    unsigned short get_break_point();
+    u16 get_break_point();
     char debug_menu();
+    void setup_stripe_pattern(u8 *memory);
+    void setup_dot_pattern(u8 *memory);
+    void print_tile_map(u8 *memory, bool map);
 }

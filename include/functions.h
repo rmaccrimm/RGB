@@ -19,4 +19,3 @@ bool full_carry_add(u16 a, u16 b);
 // Check for borrow from bit 8 to 7 in a - b 
 bool full_carry_sub(u16 a, u16 b);
 
-void setup_stripe_pattern(u8 *memory);
