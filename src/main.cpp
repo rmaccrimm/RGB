@@ -39,8 +39,10 @@ int main(int argc, char *argv[])
     //while (gb_cpu.step()) {}
     gb_cpu.print_register_values();
     u8 *lptr = &gb_mem[GPU::LCDC];
-    
-    setup_stripe_pattern(gb_mem);
+
+    //DEBUG::setup_stripe_pattern(gb_mem);
+    DEBUG::setup_dot_pattern(gb_mem);
+    DEBUG::print_tile_map(gb_mem, 0);
 
     for (int i = 0; i < 64; i++) {
         std::cout << std::hex << (int)gb_mem[GPU::TILE_DATA_1 + i] << ' ';

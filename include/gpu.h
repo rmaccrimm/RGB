@@ -41,11 +41,15 @@ private:
     const u8 BG_ENABLE = 1;    
 
     const float COLORS[4] = { 
-        (float)0x00 / 255,
-        (float)0x66 / 255, 
-        (float)0xb2 / 255, 
-        (float)0xff / 255 
+        (float)0x00 / 255.0f, // 00 black
+        (float)0x66 / 255.0f, // 01 light gray
+        (float)0xb2 / 255.0f, // 10 dark gray
+        (float)0xff / 255.0f  // 11 white
     };
+
+    // opengl expects framebuffer drawn from bottom up
+    const bool INVERT_MAP = true;
+    const bool INVERT_TILES = true;
 };
 
 #endif

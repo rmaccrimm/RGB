@@ -19,7 +19,8 @@ float* GPU::build_framebuffer()
     return framebuffer;
 }
 
-void GPU::read_tile(float *frame, u16 tile_addr)
+// dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
+void GPU::read_tile(float *dest, u16 tile_addr)
 {
     // tiles are stored in 16 bytes
     for (u8 i = 0; i < 16; i++) {
@@ -27,9 +28,16 @@ void GPU::read_tile(float *frame, u16 tile_addr)
         for (u8 j = 0; j < 4; j++) {
             // 3 is a mask for first two bits
             int color = (byte >> (2 * j)) & 3;
-            int pixel_ind = (constants::screen_w * (i/2)) + (j + ((i % 2) * 4));
+            // tiles are not contiguous in final framebuffer since they span multiple lines
+            int pixel_ind;
+            if (INVERT_TILES) {
+                pixel_ind = (constants::screen_w * (7 - i/2)) + (j + ((i % 2) * 4));
+            }
+            else {
+                pixel_ind = (constants::screen_w * (i/2)) + (j + ((i % 2) * 4));
+            }
             for (u8 k = 0; k < 3; k++) {
-                frame[3 * (pixel_ind) + k] = COLORS[color];
+                dest[3 * (pixel_ind) + k] = COLORS[color];
             }
         }
     }
@@ -66,7 +74,7 @@ void GPU::render_background()
         for (u8 i = 0; i < bg_h; i++) {
             for (u8 j = 0; j < bg_w; j++) {
                 u16 tile_addr;
-                //u8 tile_index = (32 * ((scroll_y + i) % 32)) + ((scroll_x + j) % 32);
+                u8 tile_index = (32 * ((scroll_y + i) % 32)) + ((scroll_x + j) % 32);
                 u16 map_index = (32 * i) + j;
                 if (signed_map) {
                     i16 tile_num = memory[tile_map + map_index];
@@ -76,7 +84,15 @@ void GPU::render_background()
                     u16 tile_num = memory[tile_map + map_index];
                     tile_addr = tile_data + (16 * tile_num);
                 }
-                int pixel_index = (constants::screen_w * (8 * i) + (8 * j));
+                // index of lower left pixel for tile
+                int pixel_index;
+                if (INVERT_MAP) {
+                    pixel_index = constants::screen_w * (8 * (bg_h - 1 - i)) + (8 * j);
+                }
+                else {
+                    pixel_index = constants::screen_w * (8 * i) + (8 * j);
+                }
+                // the framebuffer stores rgb values for each pixel
                 int framebuf_index = 3 * pixel_index;
                 read_tile(framebuffer + framebuf_index, tile_addr);
             }
