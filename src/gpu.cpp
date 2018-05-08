@@ -1,5 +1,6 @@
 #include "gpu.h"
 #include <iostream>
+#include <cassert>
 
 GPU::GPU(u8 *mem): memory(mem) 
 {
@@ -20,22 +21,26 @@ float* GPU::build_framebuffer()
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
-void GPU::read_tile(float *dest, u16 tile_addr)
+void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high)
 {
-    // tiles are stored in 16 bytes
-    for (u8 i = 0; i < 16; i++) {
-        u8 byte = memory[tile_addr + i];
-        for (u8 j = 0; j < 4; j++) {
+    assert(x_low >= 0 && x_high < constants::tile_size);
+    assert(y_low >= 0 && y_high < constants::tile_size);
+
+    for (int i = x_low; i <= x_high; i++) {
+        for (int j = y_low; j <= y_high; j++) {
+            // 4 pixels per byte
+            u8 byte = memory[tile_addr + (2 * j) + (i / 4)];
             // 3 is a mask for first two bits
-            int color = (byte >> (2 * j)) & 3;
+            int color = (byte >> (2 * (i % 4)) & 3);
             // tiles are not contiguous in final framebuffer since they span multiple lines
             int pixel_ind;
             if (INVERT_TILES) {
-                pixel_ind = (constants::screen_w * (7 - i/2)) + (j + ((i % 2) * 4));
+                pixel_ind = constants::screen_w * (7 - j) + i;
             }
             else {
-                pixel_ind = (constants::screen_w * (i/2)) + (j + ((i % 2) * 4));
+                pixel_ind = constants::screen_w * j + i;
             }
+            // same rgb values for gray scale
             for (u8 k = 0; k < 3; k++) {
                 dest[3 * (pixel_ind) + k] = COLORS[color];
             }
@@ -94,7 +99,7 @@ void GPU::render_background()
                 }
                 // the framebuffer stores rgb values for each pixel
                 int framebuf_index = 3 * pixel_index;
-                read_tile(framebuffer + framebuf_index, tile_addr);
+                read_tile(framebuffer + framebuf_index, tile_addr, 0, 0, 7, 7);
             }
         }
     }

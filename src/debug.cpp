@@ -85,6 +85,13 @@ void DEBUG::setup_dot_pattern(u8 *memory)
     }
 }
 
+void DEBUG::setup_gradient_tile(u8 *memory)
+{
+    u8 tile[] = {0xaf, 0x05, 0xaf, 0x05, 0xaf, 0x05, 0xaf, 0x05,
+                 0xff, 0xff, 0xaa, 0xaa, 0x55, 0x55, 0x00, 0x00};
+    memcpy(&memory[GPU::TILE_DATA_0], tile, 16);
+}
+
 void DEBUG::print_tile_map(u8 *memory, bool map)
 {
     u16 tile_map;

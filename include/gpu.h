@@ -26,7 +26,7 @@ private:
     float* framebuffer;
     u8 *memory;
 
-    void read_tile(float *pixels, u16 tile_addr);
+    void read_tile(float *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
     void render_background();
     void render_window();
     void render_sprites();

@@ -9,6 +9,7 @@ typedef int32_t i32;
 namespace constants {
     extern const size_t screen_w;
     extern const size_t screen_h;
-    extern const size_t mem_size;
+    extern const size_t tile_size;
+    extern const size_t mem_size;    
 }
 
