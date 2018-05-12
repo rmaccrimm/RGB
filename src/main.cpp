@@ -22,8 +22,9 @@ int main(int argc, char *argv[])
 {  
     Processor gb_cpu;
     GPU gb_gpu;
-    std::cout << std::stoi(argv[1]) << std::endl;
-    GameWindow window(std::stoi(argv[1]));
+    //std::cout << std::stoi(argv[1]) << std::endl;
+    //GameWindow window(std::stoi(argv[1]));
+    GameWindow window(5);
 
     u8 gb_mem[0x10000] = {0};
     load_rom(gb_mem, "DMG_ROM.bin");
@@ -40,21 +41,24 @@ int main(int argc, char *argv[])
     std::cout << std::endl;
     //while (gb_cpu.step()) {}
     gb_cpu.print_register_values();
-    u8 *lptr = &gb_mem[GPU::LCDC];
 
-    //DEBUG::setup_stripe_pattern(gb_mem);
     DEBUG::setup_dot_pattern(gb_mem);
     DEBUG::setup_gradient_tile(gb_mem);
-    DEBUG::print_tile_map(gb_mem, 0);
+
+    //DEBUG::print_tile_map(gb_mem, 0);
 
     for (int j = 0; j < 4; j++) {
         for (int i = 0; i < 16; i++) {
             std::cout << std::hex << (int)gb_mem[GPU::TILE_DATA_0 + i - 16*j] << ' ';
         }
     }
+
+    
     while (!window.closed()) {
+
         window.draw_frame(gb_gpu.build_framebuffer());
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        gb_mem[GPU::SCROLLX] += 1;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
     return 0;

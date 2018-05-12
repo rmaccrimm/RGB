@@ -66,7 +66,7 @@ void GameWindow::draw_frame(float framebuffer[])
         0, 
         GL_RGB, 
         GL_FLOAT, 
-        framebuffer
+        &framebuffer[0]
     );
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
