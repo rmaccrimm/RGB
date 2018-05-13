@@ -1,5 +1,6 @@
 #include "gpu.h"
 #include <iostream>
+#include <iomanip>
 #include <cassert>
 
 GPU::GPU(u8 *mem): memory(mem) 
@@ -77,41 +78,68 @@ void GPU::render_background()
         int scroll_x = memory[SCROLLX];
         int scroll_y = memory[SCROLLY];
 
+        std::cout << "Y scroll: " << scroll_y << std::endl;
+
         int bg_h = constants::screen_h / 8;
         int bg_w = constants::screen_w / 8; 
 
-        int y_start_tile = scroll_y / 8;
-        int y_end_tile = (scroll_y + constants::screen_h) / 8;
-        int x_start_tile = scroll_x / 8;
-        int x_end_tile = (scroll_y + constants::screen_w) / 8;
+        
 
-        int pi = 0;
-        for (int i = y_start_tile; i < y_end_tile; i++) {
-            int pj = 0;
+        {
+            int y_start_tile = (scroll_y / 8);
+            int y_end_tile = ((scroll_y + constants::screen_h - 1) / 8);
+            int x_start_tile = scroll_x / 8;
+            int x_end_tile = (scroll_x + constants::screen_w - 1) / 8;
+            int tile_i, tile_j;
+            int screen_i, screen_j;
+
+            for (tile_i = y_start_tile, screen_i = 0; tile_i <= y_end_tile; tile_i++) {
+                for (tile_j = x_start_tile, screen_j = 0; tile_j <= x_end_tile; tile_j++) {
+                    // locate the tiles in memory
+                    int map_index = 32 * (tile_i % 32) + (tile_j % 32);
+                    assert(map_index < 32 * 32);
+
+                    // read the tile map and determine address of tile
+                    u16 tile_addr;
+                    if (signed_map) {
+                        i8 tile_num = (i8)memory[tile_map + map_index];
+                        assert(tile_num < 128); 
+                        assert(tile_num >= -128);
+                        tile_addr = tile_data + (16 * tile_num);
+                    }
+                    else {
+                        u8 tile_num = memory[tile_map + map_index];
+                        assert(tile_num >= 0); 
+                        assert(tile_num < 256);
+                        tile_addr = tile_data + (16 * tile_num);
+                    }
+
+                    // determine where on screen the tile will be drawn
+                    std::cout << std::setw(4) << std::left << std::dec << map_index << ' ';
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        
+    }
+}
+        /*for (int map_i = y_start_tile; i < y_end_tile; i++) {
             for (int j = x_start_tile; j < x_end_tile; j++) {
-                int map_index = 32 * (i % 32) + (j % 32);
-                assert(map_index < 32 * 32);
-                u16 tile_addr;
-                if (signed_map) {
-                    i8 tile_num = (i8)memory[tile_map + map_index];
-                    assert(tile_num < 128 && tile_num >= -128);
-                    tile_addr = tile_data + (16 * tile_num);
-                }
-                else {
-                    u8 tile_num = memory[tile_map + map_index];
-                    assert(tile_num >= 0 && tile_num < 256);
-                    tile_addr = tile_data + (16 * tile_num);
-                }
+                
+                
+
                 // index of lower left pixel for tile
                 int pixel_index;
                 if (INVERT_MAP) {
-                    pixel_index = constants::screen_w * (8 * (bg_h - 1 - pi) + scroll_y) + (8 * pj);
+                    pixel_index = constants::screen_w * (8 * (bg_h - 1 - (pi % 32)) + (scroll_y % 8)) + (8 * pj);
                 }
                 else {
                     pixel_index = constants::screen_w * (8 * pi) + (8 * pj);
                 }
                 // the framebuffer stores rgb values for each pixel
-                assert(pixel_index >= 0 && pixel_index < constants::screen_h * constants::screen_w);
+                assert(pixel_index >= 0); 
+                assert(pixel_index < constants::screen_h * constants::screen_w);
                 int framebuf_index = 3 * pixel_index;
 
                 int xl = 0;
@@ -122,7 +150,8 @@ void GPU::render_background()
                     yh = 7 - (scroll_y % 8);
                 }
                 if (i == y_end_tile - 1 && i > 0) {
-                    yl = (scroll_y + constants::screen_h) % 8;
+                    //yl = (scroll_y + constants::screen_h) % 8;
+                    yl = (scroll_y) % 8;
                 }
                 if (j == x_start_tile) {
                     xl = scroll_x % 8;
@@ -137,5 +166,4 @@ void GPU::render_background()
         }
     }
     else {
-    }
-}
+    }*/

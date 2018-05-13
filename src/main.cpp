@@ -32,34 +32,35 @@ int main(int argc, char *argv[])
     gb_gpu.set_memory(gb_mem);
 
 
-    for (int i = 0; i < 0x100; i++) {
+    /*for (int i = 0; i < 0x100; i++) {
         if (i != 0 && (i % 16 == 0)) {
             std::cout << std::endl;
         }
         std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem[i] << ' ';
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
     //while (gb_cpu.step()) {}
-    gb_cpu.print_register_values();
+    //gb_cpu.print_register_values();
 
     DEBUG::setup_dot_pattern(gb_mem);
     DEBUG::setup_gradient_tile(gb_mem);
 
     //DEBUG::print_tile_map(gb_mem, 0);
 
-    for (int j = 0; j < 4; j++) {
+    /*for (int j = 0; j < 4; j++) {
         for (int i = 0; i < 16; i++) {
             std::cout << std::hex << (int)gb_mem[GPU::TILE_DATA_0 + i - 16*j] << ' ';
         }
-    }
-
-    
-    while (!window.closed()) {
-
-        window.draw_frame(gb_gpu.build_framebuffer());
-        gb_mem[GPU::SCROLLX] += 1;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
+    }*/
+    std::cout << std::endl;
+    gb_mem[GPU::SCROLLY] = std::stoi(argv[1]);
+    gb_gpu.build_framebuffer();
+    /*while (!window.closed()) {
+        
+        //window.draw_frame(gb_gpu.build_framebuffer());
+        gb_mem[GPU::SCROLLY] += 1;
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    }*/
 
     return 0;
 }
