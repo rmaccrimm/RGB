@@ -49,11 +49,9 @@ int main(int argc, char *argv[])
     float* framebuff;
     while (!window.closed()) {
         framebuff = gb_gpu.build_framebuffer();
-        window.update_frame(framebuff);
+        window.draw_frame(framebuff);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         gb_mem[GPU::SCROLLY] += 1;
-        //gb_mem[GPU::SCROLLX] += 1;
-        window.draw();
     }
 
     return 0;
