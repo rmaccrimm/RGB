@@ -13,7 +13,8 @@ public:
     GameWindow(int scale = 4);
     ~GameWindow();
     bool closed();
-    void draw_frame(float framebuffer[]);
+    void update_frame(float framebuffer[]);
+    void draw();
 
 private:
     SDL_Window *sdl_window;

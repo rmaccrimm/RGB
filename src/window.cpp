@@ -53,7 +53,7 @@ bool GameWindow::closed()
     }
 }
 
-void GameWindow::draw_frame(float framebuffer[])
+void GameWindow::update_frame(float framebuffer[])
 {
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -69,8 +69,11 @@ void GameWindow::draw_frame(float framebuffer[])
         &framebuffer[0]
     );
     glDrawArrays(GL_TRIANGLES, 0, 6); 
-    SDL_GL_SwapWindow(sdl_window);
+    glFlush();
+    //SDL_GL_SwapWindow(sdl_window);
 }
+
+void GameWindow::draw() { SDL_GL_SwapWindow(sdl_window); }
 
 void GameWindow::init_window() 
 {

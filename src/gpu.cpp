@@ -43,7 +43,7 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
             // 3 is a mask for first two bits
             int color = (byte >> (2 * (i % 4)) & 3);
             assert(color >= 0 && color <= 3);
-
+            // shift pixels to bottom left corner
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
             for (int k = 0; k < 3; k++) {
@@ -82,75 +82,72 @@ void GPU::render_background()
         int bg_h = constants::screen_h / 8;
         int bg_w = constants::screen_w / 8; 
 
-        
+        // determine which tiles visible on screen
+        int y_start_tile = (scroll_y / 8);
+        int y_end_tile = ((scroll_y + constants::screen_h - 1) / 8);
+        int x_start_tile = scroll_x / 8;
+        int x_end_tile = (scroll_x + constants::screen_w - 1) / 8;
 
-        {
-            // determine which tiles visible on screen
-            int y_start_tile = (scroll_y / 8);
-            int y_end_tile = ((scroll_y + constants::screen_h - 1) / 8);
-            int x_start_tile = scroll_x / 8;
-            int x_end_tile = (scroll_x + constants::screen_w - 1) / 8;
+        int tile_i, tile_j;
+        int screen_i, screen_j;
 
-            int tile_i, tile_j;
-            int screen_i, screen_j;
+        for (tile_i = y_start_tile, screen_i = 0; tile_i <= y_end_tile; tile_i++) {
+            for (tile_j = x_start_tile, screen_j = 0; tile_j <= x_end_tile; tile_j++) {
+                // locate the tiles in memory
+                int map_index = 32 * (tile_i % 32) + (tile_j % 32);
+                assert(map_index < 32 * 32);
 
-            for (tile_i = y_start_tile, screen_i = 0; tile_i <= y_end_tile; tile_i++) {
-                for (tile_j = x_start_tile, screen_j = 0; tile_j <= x_end_tile; tile_j++) {
-                    // locate the tiles in memory
-                    int map_index = 32 * (tile_i % bg_h) + (tile_j % bg_w);
-                    assert(map_index < 32 * 32);
-
-                    // read the tile map and determine address of tile
-                    u16 tile_addr;
-                    if (signed_map) {
-                        i8 tile_num = (i8)memory[tile_map + map_index];
-                        assert(tile_num < 128); 
-                        assert(tile_num >= -128);
-                        tile_addr = tile_data + (16 * tile_num);
-                    }
-                    else {
-                        u8 tile_num = memory[tile_map + map_index];
-                        assert(tile_num >= 0); 
-                        assert(tile_num < 256);
-                        tile_addr = tile_data + (16 * tile_num);
-                    }
-
-                    // Determine where one screen bottom left corner of tile is drawn, this only
-                    int pixel_y = std::max(
-                        (int)constants::screen_h - 8 * (screen_i + 1) + (scroll_y % 8), 0);
-                    int pixel_x = std::max(8 * screen_j - (scroll_x % 8), 0);
-                    int pixel_index = constants::screen_w * pixel_y + pixel_x;
-
-                    int framebuf_index = 3 * pixel_index;
-
-                    int xl = 0;
-                    int yl = 0;
-                    int xh = 7;
-                    int yh = 7;
-
-                    // first row, upper edge decreases: 7, 6, 5, ...
-                    if (tile_i == y_start_tile) {
-                        yh = 7 - (scroll_y % 8);
-                    }
-                    // last row, lower edge: 0, 7, 6, 5, ...
-                    if (tile_i == y_end_tile) {
-                        yl = (8 - scroll_y) % 8;
-                    }
-                    // first col, lower edge increases: 0, 1, 2, ...
-                    if (tile_j == x_start_tile) {
-                        xl = scroll_x % 8;
-                    }
-                    // last col upper edge: 7, 0, 1, 2, ...
-                    if (tile_j == x_end_tile) {
-                        xh = (7 + scroll_x) % 8;
-                    }
-
-                    read_tile(&framebuffer[framebuf_index], tile_addr, xl, yl, xh, yh);
-                    
-                    screen_j++;
+                // read the tile map and determine address of tile
+                u16 tile_addr;
+                if (signed_map) {
+                    i8 tile_num = (i8)memory[tile_map + map_index];
+                    assert(tile_num < 128); 
+                    assert(tile_num >= -128);
+                    tile_addr = tile_data + (16 * tile_num);
                 }
-                screen_i++;
+                else {
+                    u8 tile_num = memory[tile_map + map_index];
+                    assert(tile_num >= 0); 
+                    assert(tile_num < 256);
+                    tile_addr = tile_data + (16 * tile_num);
+                }
+
+                // Determine where one screen bottom left corner of tile is drawn, this only
+                int pixel_y = std::max(
+                    (int)constants::screen_h - 8 * (screen_i + 1) + (scroll_y % 8), 0);
+                int pixel_x = std::max(8 * screen_j - (scroll_x % 8), 0);
+                int pixel_index = constants::screen_w * pixel_y + pixel_x;
+
+                int framebuf_index = 3 * pixel_index;
+
+                int xl = 0;
+                int yl = 0;
+                int xh = 7;
+                int yh = 7;
+
+                // first row, upper edge decreases: 7, 6, 5, ...
+                if (tile_i == y_start_tile) {
+                    yh = 7 - (scroll_y % 8);
+                }
+                // last row, lower edge: 0, 7, 6, 5, ...
+                if (tile_i == y_end_tile) {
+                    // handle negatives: a % b -> (a % b + b) % b
+                    yl = ((8 - scroll_y) % 8 + 8) % 8;
+                }
+                // first col, lower edge increases: 0, 1, 2, ...
+                if (tile_j == x_start_tile) {
+                    xl = scroll_x % 8;
+                }
+                // last col upper edge: 7, 0, 1, 2, ...
+                if (tile_j == x_end_tile) {
+                    xh = (7 + scroll_x) % 8;
+                }
+
+                read_tile(&framebuffer[framebuf_index], tile_addr, xl, yl, xh, yh);
+                
+                screen_j++;
             }
-        }
+            screen_i++;
+        }        
     }
 }

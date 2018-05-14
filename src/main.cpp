@@ -22,8 +22,6 @@ int main(int argc, char *argv[])
 {  
     Processor gb_cpu;
     GPU gb_gpu;
-    //std::cout << std::stoi(argv[1]) << std::endl;
-    //GameWindow window(std::stoi(argv[1]));
     GameWindow window(5);
 
     u8 gb_mem[0x10000] = {0};
@@ -48,14 +46,14 @@ int main(int argc, char *argv[])
 
     DEBUG::print_tile_map(gb_mem, 0);
 
-    /*gb_mem[GPU::SCROLLY] = std::stoi(argv[1]);
-    gb_mem[GPU::SCROLLX] = std::stoi(argv[2]);*/
-    
+    float* framebuff;
     while (!window.closed()) {
-        window.draw_frame(gb_gpu.build_framebuffer());
-        //gb_mem[GPU::SCROLLY] += 1;
-        gb_mem[GPU::SCROLLX] += 1;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        framebuff = gb_gpu.build_framebuffer();
+        window.update_frame(framebuff);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        gb_mem[GPU::SCROLLY] += 1;
+        //gb_mem[GPU::SCROLLX] += 1;
+        window.draw();
     }
 
     return 0;
