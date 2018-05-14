@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <algorithm>
 
 GPU::GPU(u8 *mem): memory(mem) 
 {
@@ -33,7 +34,7 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
             // 4 pixels per byte
             int byte_ind;
             if (INVERT_TILES) {
-                byte_ind = (2 * (7 - j) + (i/4));
+                byte_ind = 2 * (7 - j) + (i/4);
             }
             else {
                 byte_ind = (2 * j) + (i / 4);
@@ -42,8 +43,8 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
             // 3 is a mask for first two bits
             int color = (byte >> (2 * (i % 4)) & 3);
             assert(color >= 0 && color <= 3);
-            // tiles are not contiguous in final framebuffer since they span multiple lines
-            int pixel_ind = constants::screen_w * j + i;
+
+            int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
             for (int k = 0; k < 3; k++) {
                 dest[3 * pixel_ind + k] = COLORS[color];
@@ -78,25 +79,25 @@ void GPU::render_background()
         int scroll_x = memory[SCROLLX];
         int scroll_y = memory[SCROLLY];
 
-        std::cout << "Y scroll: " << scroll_y << std::endl;
-
         int bg_h = constants::screen_h / 8;
         int bg_w = constants::screen_w / 8; 
 
         
 
         {
+            // determine which tiles visible on screen
             int y_start_tile = (scroll_y / 8);
             int y_end_tile = ((scroll_y + constants::screen_h - 1) / 8);
             int x_start_tile = scroll_x / 8;
             int x_end_tile = (scroll_x + constants::screen_w - 1) / 8;
+
             int tile_i, tile_j;
             int screen_i, screen_j;
 
             for (tile_i = y_start_tile, screen_i = 0; tile_i <= y_end_tile; tile_i++) {
                 for (tile_j = x_start_tile, screen_j = 0; tile_j <= x_end_tile; tile_j++) {
                     // locate the tiles in memory
-                    int map_index = 32 * (tile_i % 32) + (tile_j % 32);
+                    int map_index = 32 * (tile_i % bg_h) + (tile_j % bg_w);
                     assert(map_index < 32 * 32);
 
                     // read the tile map and determine address of tile
@@ -114,56 +115,42 @@ void GPU::render_background()
                         tile_addr = tile_data + (16 * tile_num);
                     }
 
-                    // determine where on screen the tile will be drawn
-                    std::cout << std::setw(4) << std::left << std::dec << map_index << ' ';
+                    // Determine where one screen bottom left corner of tile is drawn, this only
+                    int pixel_y = std::max(
+                        (int)constants::screen_h - 8 * (screen_i + 1) + (scroll_y % 8), 0);
+                    int pixel_x = std::max(8 * screen_j - (scroll_x % 8), 0);
+                    int pixel_index = constants::screen_w * pixel_y + pixel_x;
+
+                    int framebuf_index = 3 * pixel_index;
+
+                    int xl = 0;
+                    int yl = 0;
+                    int xh = 7;
+                    int yh = 7;
+
+                    // first row, upper edge decreases: 7, 6, 5, ...
+                    if (tile_i == y_start_tile) {
+                        yh = 7 - (scroll_y % 8);
+                    }
+                    // last row, lower edge: 0, 7, 6, 5, ...
+                    if (tile_i == y_end_tile) {
+                        yl = (8 - scroll_y) % 8;
+                    }
+                    // first col, lower edge increases: 0, 1, 2, ...
+                    if (tile_j == x_start_tile) {
+                        xl = scroll_x % 8;
+                    }
+                    // last col upper edge: 7, 0, 1, 2, ...
+                    if (tile_j == x_end_tile) {
+                        xh = (7 + scroll_x) % 8;
+                    }
+
+                    read_tile(&framebuffer[framebuf_index], tile_addr, xl, yl, xh, yh);
+                    
+                    screen_j++;
                 }
-                std::cout << std::endl;
+                screen_i++;
             }
-            std::cout << std::endl;
         }
-        
     }
 }
-        /*for (int map_i = y_start_tile; i < y_end_tile; i++) {
-            for (int j = x_start_tile; j < x_end_tile; j++) {
-                
-                
-
-                // index of lower left pixel for tile
-                int pixel_index;
-                if (INVERT_MAP) {
-                    pixel_index = constants::screen_w * (8 * (bg_h - 1 - (pi % 32)) + (scroll_y % 8)) + (8 * pj);
-                }
-                else {
-                    pixel_index = constants::screen_w * (8 * pi) + (8 * pj);
-                }
-                // the framebuffer stores rgb values for each pixel
-                assert(pixel_index >= 0); 
-                assert(pixel_index < constants::screen_h * constants::screen_w);
-                int framebuf_index = 3 * pixel_index;
-
-                int xl = 0;
-                int yl = 0;
-                int xh = 7;
-                int yh = 7;
-                if (i == y_start_tile) {
-                    yh = 7 - (scroll_y % 8);
-                }
-                if (i == y_end_tile - 1 && i > 0) {
-                    //yl = (scroll_y + constants::screen_h) % 8;
-                    yl = (scroll_y) % 8;
-                }
-                if (j == x_start_tile) {
-                    xl = scroll_x % 8;
-                }
-                if (j == x_end_tile - 1 && j > 0) {
-                    xh = 7 - (scroll_x + constants::screen_w) % 8;
-                }
-                read_tile(&framebuffer[framebuf_index], tile_addr, xl, yl, xh, yh);
-                pj++;
-            }
-            pi++;
-        }
-    }
-    else {
-    }*/
