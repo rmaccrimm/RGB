@@ -379,6 +379,12 @@ void Processor::CP_address(Register8bit &dest, Register16bit &src)
 
 #pragma endregion
 
+void Processor::RET()
+{
+    PC.set_low(stack_pop());
+    PC.set_high(stack_pop());
+}
+
 
 //  8-bit load opcodes
 #pragma region
@@ -730,6 +736,12 @@ void Processor::opcode0xcd()
     PUSH_register(PC);
     LD_immediate(PC);
 }
+
+void Processor::opcode0xc9() { RET(); }
+void Processor::opcode0xc0() { if (!flags.zero) RET(); }
+void Processor::opcode0xc8() { if (flags.zero) RET(); }
+void Processor::opcode0xd0() { if (!flags.carry) RET(); }
+void Processor::opcode0xd8() { if (flags.carry) RET(); }
 
 #pragma endregion
 

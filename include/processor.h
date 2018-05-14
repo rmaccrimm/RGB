@@ -128,6 +128,8 @@ public:
     void BIT(Register8bit &reg, u8 bit);
     void SET(Register8bit &reg, u8 bit);
     void RES(Register8bit &reg, u8 bit);
+    
+    void RET();
 
     void opcode0x00();	void opcode0x01();	void opcode0x02();	void opcode0x03();
     void opcode0x04(); 	void opcode0x05();	void opcode0x06(); 	void opcode0x07(); 
