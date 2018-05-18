@@ -6,7 +6,6 @@
 #include <cstring>
 #include <cassert>
 
-
 bool Processor::execute(u8 instr, bool cb)
 {
     OpFunc *op;
@@ -20,7 +19,7 @@ bool Processor::execute(u8 instr, bool cb)
     return true;
 }
 
-bool Processor::step()
+bool Processor::step(int break_point)
 {
     u8 instr = fetch_byte();
     std::string prefix = "";
@@ -36,8 +35,10 @@ bool Processor::step()
         return false;
     }
     if (DEBUG_MODE) {
-        std::cout << prefix << std::hex << (int)instr << std::endl;
-        print_register_values();
+        std::cout << std::hex << (int)instr << std::endl;
+        if (PC.value() == break_point) {
+            return false;
+        }
     }
     return true;
 }
@@ -62,13 +63,13 @@ void Processor::print_register_values()
 
 Processor::Processor(u8 *mem):
     A(), F(), B(), C(), D(), E(), H(), L(),
-    AF(&A, &F), BC(&B, &C),	DE(&D, &F), HL(&H, &L), memory(mem)
+    AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L), memory(mem)
 {
     for (unsigned int i = 0; i < 0x100; i++) {
         opcodes[i] = nullptr;
         cb_opcodes[i] = nullptr;
     }
-    //opcodes[0x00] = &Processor::opcode0x00;
+    opcodes[0x00] = &Processor::opcode0x00;
     opcodes[0x01] = &Processor::opcode0x01;
     opcodes[0x02] = &Processor::opcode0x02;
     opcodes[0x03] = &Processor::opcode0x03;
@@ -280,7 +281,7 @@ Processor::Processor(u8 *mem):
     opcodes[0xd1] = &Processor::opcode0xd1;
     //opcodes[0xd2] = &Processor::opcode0xd2;
     //opcodes[0xd4] = &Processor::opcode0xd4;
-    //opcodes[0xd5] = &Processor::opcode0xd5;
+    opcodes[0xd5] = &Processor::opcode0xd5;
     //opcodes[0xd6] = &Processor::opcode0xd6;
     //opcodes[0xd7] = &Processor::opcode0xd7;
     opcodes[0xd8] = &Processor::opcode0xd8;

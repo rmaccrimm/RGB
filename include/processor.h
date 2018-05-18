@@ -23,10 +23,12 @@ class Processor
 public:
     Processor(u8 *mem = nullptr);
     
-    bool step();
+    bool step(int break_point = 0);
     void set_memory(u8 *mem);
     void print_register_values();
-    void map_to_memory(u8 program[], u16 size, u16 offset);
+
+    static const u16 IF = 0xff0f; // interrupt flag
+    static const u16 IE = 0xffff; // interrupt enable
 
 //private:
     Register8bit A;
@@ -128,10 +130,10 @@ public:
     void BIT(Register8bit &reg, u8 bit);
     void SET(Register8bit &reg, u8 bit);
     void RES(Register8bit &reg, u8 bit);
-    
+
     void RET();
 
-    void opcode0x00();	void opcode0x01();	void opcode0x02();	void opcode0x03();
+    void opcode0x00(){} void opcode0x01();	void opcode0x02();	void opcode0x03();
     void opcode0x04(); 	void opcode0x05();	void opcode0x06(); 	void opcode0x07(); 
     void opcode0x08(); 	void opcode0x09();	void opcode0x0a();	void opcode0x0b();
     void opcode0x0c(); 	void opcode0x0d();	void opcode0x0e(); 	void opcode0x0f();
