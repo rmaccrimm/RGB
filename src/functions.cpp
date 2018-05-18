@@ -22,6 +22,11 @@ void load_rom(u8 memory[], const char *path)
     delete buff;
 }
 
+void load_rom(u8 memory[], u8 data[], size_t size)
+{
+    std::memcpy(memory, data, size);
+}
+
 void set(bool &b) 
 { 
     b = true; 

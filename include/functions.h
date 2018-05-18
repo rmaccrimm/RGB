@@ -3,6 +3,8 @@
 
 void load_rom(u8 memory[], const char *path);
 
+void load_rom(u8 memory[], u8 data[], size_t size);
+
 void set(bool &b);
 
 void reset(bool &b);

@@ -385,7 +385,6 @@ void Processor::RET()
     PC.set_high(stack_pop());
 }
 
-
 //  8-bit load opcodes
 #pragma region
 void Processor::opcode0x3e() { LD_immediate(A); }
