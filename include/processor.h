@@ -14,10 +14,10 @@ class Processor
     typedef void (Processor::*OpFunc)(void);
     
     struct Flags {
-        bool zero;       // Z
-        bool subtract;   // N
-        bool carry;      // H
-        bool half_carry; // C
+        int zero;       // Z
+        int subtract;   // N
+        int half_carry; // C
+        int carry;      // H
     };	
 
 public:
@@ -27,10 +27,11 @@ public:
     void set_memory(u8 *mem);
     void print_register_values();
 
-    static const u16 IF = 0xff0f; // interrupt flag
+    static const u16 IF = 0xff0f; // interrupt flags
     static const u16 IE = 0xffff; // interrupt enable
+    static const u8 VBLANK = 1;
 
-//private:
+private:
     Register8bit A;
     Register8bit F;
     Register8bit B;
@@ -47,17 +48,21 @@ public:
     Register16bit SP;
     Register16bit PC;
 
-    //Memory *memory;
-
-    Flags flags;
+    const Flags flags = {7, 6, 5, 4};
     OpFunc opcodes[0x100];	
     OpFunc cb_opcodes[0x100];
-    u8 *memory; // 16 kB memory
+    u8 *memory; 
 
     u8 fetch_byte();
 
     // Return false if  unimplemented
     bool execute(u8 instr, bool cb);
+
+    // For setting the correct bits of the flag register F
+    void set(int b);
+    void reset(int b);
+    // Set if true, else reset
+    void set_cond(int b, bool cond);
 
     void flag_set(Register8bit const &reg);
     void set_add_flags(u16 a, u16 b);

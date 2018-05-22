@@ -26,17 +26,17 @@ u8 Processor::stack_pop()
 
 void Processor::set_add_flags(u16 a, u16 b)
 {
-    flags.carry = full_carry_add(a, b);	
-    flags.half_carry = half_carry_add(a, b);
-    flags.zero = (a + b) == 0;
+    set_cond(flags.carry, full_carry_add(a, b));
+    set_cond(flags.half_carry, half_carry_add(a, b));
+    set_cond(flags.zero, (a + b) == 0);
     reset(flags.subtract);
 }
 
 void Processor::set_sub_flags(u16 a, u16 b)
 {
-    flags.carry = full_carry_sub(a, b);
-    flags.half_carry = half_carry_sub(a, b);
-    flags.zero = (a - b) == 0;
+    set_cond(flags.carry, full_carry_sub(a, b));
+    set_cond(flags.half_carry, half_carry_sub(a, b));
+    set_cond(flags.zero, (a - b) == 0);
     set(flags.subtract);
 }
 
@@ -137,10 +137,10 @@ void Processor::POP_register(Register16bit &reg)
 
 void Processor::INC_register(Register8bit &reg) 
 {
-    flags.half_carry = half_carry_add(reg.value(), 1);
+    set_cond(flags.half_carry, half_carry_add(reg.value(), 1));
     reset(flags.subtract);
     reg.increment();
-    flags.zero = (reg.value() == 0);
+    set_cond(flags.zero, (reg.value() == 0));
 }
 
 void Processor::INC_register(Register16bit &reg)
@@ -150,18 +150,18 @@ void Processor::INC_register(Register16bit &reg)
 
 void Processor::INC_address(Register16bit const &reg)
 {	
-    flags.half_carry = half_carry_add(memory[reg.value()], 1);
+    set_cond(flags.half_carry, half_carry_add(memory[reg.value()], 1));
     reset(flags.subtract);
     memory[reg.value()]++;
-    flags.zero = (memory[reg.value()] == 0);
+    set_cond(flags.zero, (memory[reg.value()] == 0));
 }
 
 void Processor::DEC_register(Register8bit &reg)
 {
-    flags.half_carry = half_carry_sub(reg.value(), 1);
+    set_cond(flags.half_carry, half_carry_sub(reg.value(), 1));
     set(flags.subtract);
     reg.decrement();
-    flags.zero = (reg.value() == 0);
+    set_cond(flags.zero, (reg.value() == 0));
 }
 
 void Processor::DEC_register(Register16bit &reg)
@@ -171,10 +171,10 @@ void Processor::DEC_register(Register16bit &reg)
 
 void Processor::DEC_address(Register16bit const &reg)
 {
-    flags.half_carry = half_carry_sub(memory[reg.value()], 1);
+    set_cond(flags.half_carry, half_carry_sub(memory[reg.value()], 1));
     set(flags.subtract);
     memory[reg.value()]--;
-    flags.zero = (memory[reg.value()] == 0);
+    set_cond(flags.zero, (memory[reg.value()] == 0));
 }
 
 void Processor::ADD_register(Register8bit &dest, Register8bit const &src, bool carry)
@@ -192,9 +192,9 @@ void Processor::ADD_register(Register16bit &dest, Register16bit const &src)
     u16 a = dest.value();
     u16 b = src.value();
     // carry from bit 11
-    flags.half_carry = (((a & 0xfff) + (b & 0xfff)) & 0x1000) == 0x1000;
+    set_cond(flags.half_carry, (((a & 0xfff) + (b & 0xfff)) & 0x1000) == 0x1000);
     // carry from bit 15
-    flags.half_carry = (((a & 0xffff) + (b & 0xffff)) & 0x10000) == 0x10000;
+    set_cond(flags.half_carry, (((a & 0xffff) + (b & 0xffff)) & 0x10000) == 0x10000);
     dest.set(dest.value() + src.value());
 }
 
@@ -211,8 +211,8 @@ void Processor::ADD_immediate(Register8bit &reg, bool carry)
 void Processor::ADD_immediate(Register16bit &reg)
 {
     i8 val = fetch_byte();
-    flags.carry = full_carry_add(reg.value_low(), val);
-    flags.half_carry = half_carry_add(reg.value_low(), val);
+    set_cond(flags.carry, full_carry_add(reg.value_low(), val));
+    set_cond(flags.half_carry, half_carry_add(reg.value_low(), val));
     reset(flags.zero);
     reset(flags.subtract);
     reg.set(reg.value() + val);
@@ -268,7 +268,7 @@ void Processor::RL_carry(Register8bit &reg)
 {
     int temp = reg.value() >> 7; // bit 7
     reg.set((reg.value() << 1) | (u8)flags.carry);
-    flags.carry = temp;
+    set_cond(flags.carry, temp);
     flag_reset(reg);
 }
 
@@ -276,7 +276,7 @@ void Processor::RR_carry(Register8bit &reg)
 {
     int temp = reg.value() & 1; // bit 0
     reg.set((reg.value() >> 1) | (flags.carry << 7));
-    flags.carry = temp;
+    set_cond(flags.carry, temp);
     flag_reset(reg);
 }
 
@@ -284,7 +284,7 @@ void Processor::RL_no_carry(Register8bit &reg)
 {
     int temp = reg.value() >> 7; // bit 7
     reg.set((reg.value() << 1) | temp);
-    flags.carry = temp;
+    set_cond(flags.carry, temp);
     flag_reset(reg);
 }
 
@@ -292,7 +292,7 @@ void Processor::RR_no_carry(Register8bit &reg)
 {
     int temp = reg.value() & 1; // bit 0
     reg.set((reg.value() >> 1) | (temp << 7));
-    flags.carry = temp;
+    set_cond(flags.carry, temp);
     flag_reset(reg);
 }
 
@@ -515,8 +515,8 @@ void Processor::opcode0xf8()
     HL.set(SP.value() + n);
     reset(flags.zero);
     reset(flags.subtract);
-    flags.half_carry = half_carry_add(SP.value(), n);
-    flags.carry = full_carry_add(SP.value(), n);
+    set_cond(flags.half_carry, half_carry_add(SP.value(), n));
+    set_cond(flags.carry, full_carry_add(SP.value(), n));
 } 
 
 void Processor::opcode0xf9() { LD_register(SP, HL); }

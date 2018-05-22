@@ -61,9 +61,21 @@ void Processor::print_register_values()
               << std::hex << (int)PC.value() << "\n";
 }
 
+void Processor::set(int b) { F.set(F.value() | (1 << b)); }
+
+void Processor::reset(int b) { F.set(F.value() & (~(1 << b))); }
+
+void Processor::set_cond(int b, bool cond) 
+{ 
+    if (cond)
+        set(b);
+    else 
+        reset(b);
+} 
+
 Processor::Processor(u8 *mem):
-    A(), F(), B(), C(), D(), E(), H(), L(),
-    AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L), memory(mem)
+    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L), 
+    memory(mem)
 {
     for (unsigned int i = 0; i < 0x100; i++) {
         opcodes[i] = nullptr;
