@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 {  
     Processor gb_cpu;
     GPU gb_gpu;
-    //GameWindow window(5);
+    
 
     u8 gb_mem[0x10000] = {0};
     gb_cpu.set_memory(gb_mem);
@@ -31,8 +31,9 @@ int main(int argc, char *argv[])
 
     //load_rom(gb_mem, "DMG_ROM.bin");
     //load_rom(gb_mem, "cpu_instrs.gb");
+    load_rom(gb_mem, "Tetris.gb");
 
-    load_rom(gb_mem, TEST::ld_immediate_8bit.data(), TEST::ld_immediate_8bit.size());
+    /*load_rom(gb_mem, TEST::ld_immediate_8bit.data(), TEST::ld_immediate_8bit.size());
     while (gb_cpu.step(0)) {}
     gb_cpu.print_register_values();
 
@@ -59,13 +60,19 @@ int main(int argc, char *argv[])
 
     load_rom(gb_mem, TEST::stack.data(), TEST::stack.size());
     while (gb_cpu.step(0)) {}
-    gb_cpu.print_register_values();
+    gb_cpu.print_register_values();*/
 
-    /*for (int i = 0; i < 0x100; i++) {
+    
+    for (int i = 0; i < 0x100; i++) {
         if (i != 0 && (i % 16 == 0)) {
             std::cout << std::endl;
         }
         std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem[i] << ' ';
+    }
+    /*std::cout << std::endl;
+    while (gb_cpu.step(0x64)) {
+        std::string s;
+        std::getline(std::cin, s);
     }
     std::cout << std::endl;*/
 
@@ -74,9 +81,11 @@ int main(int argc, char *argv[])
     /*DEBUG::setup_dot_pattern(gb_mem);
     DEBUG::setup_gradient_tile(gb_mem);*/
 
-    /*while(!window.closed()) {
+    GameWindow window(5);
+
+    while(!window.closed()) {
         window.draw_frame(gb_gpu.build_framebuffer());
-    }*/
+    }
     
     return 0;
 }

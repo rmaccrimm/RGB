@@ -11,6 +11,15 @@ u8 Processor::fetch_byte()
     PC.increment();
     return data;
 }
+
+u16 Processor::fetch_word()
+{
+    u8 low = fetch_byte();
+    u8 high = fetch_byte();
+    u16 word = (high << 8) | low;
+    return word;
+}
+
 void Processor::stack_push(u8 data)
 {
     SP.decrement();
@@ -525,6 +534,37 @@ void Processor::RET()
     PC.set_high(stack_pop());
 }
 
+void Processor::JP_cond(bool cond)
+{
+    u16 n = fetch_word();
+    if (cond) {
+        PC.set(n);
+    }
+}
+
+void Processor::JR_cond(bool cond)
+{
+    i8 n = (i8)fetch_byte();
+    if (cond) {
+        PC.add(n);
+    }
+}
+
+void Processor::CALL_cond(bool cond)
+{
+    u16 n = fetch_word();
+    if (cond) {
+        PUSH_register(PC);
+        PC.set(n);
+    }
+}
+
+void Processor::RST(u8 addr)
+{
+    PUSH_register(PC); // possibly - 1?
+    PC.set(addr);
+}
+
 //  8-bit load opcodes
 #pragma region
 void Processor::opcode0x3e() { LD_immediate(A); }
@@ -635,7 +675,7 @@ void Processor::opcode0x2a() { LD_address(A, HL); HL.increment(); }
 void Processor::opcode0x22() { LD_address(HL, A); HL.increment(); }
 
 void Processor::opcode0xe0() { memory[0xff00 + fetch_byte()] = A.value(); }
-void Processor::opcode0xf0() { A.set(memory[0xff00 + fetch_byte()]); }
+void Processor::opcode0xf0() { A.set(memory[0xff00 + (u16)fetch_byte()]); }
 #pragma endregion
 
 
@@ -716,6 +756,7 @@ void Processor::opcode0x93() { SUB_register(A, E); }
 void Processor::opcode0x94() { SUB_register(A, H); }
 void Processor::opcode0x95() { SUB_register(A, L); }
 void Processor::opcode0x96() { SUB_address(A, HL); }
+void Processor::opcode0xd6() { SUB_immediate(A); }
 
 void Processor::opcode0x9f() { SUB_register(A, A, true); }
 void Processor::opcode0x98() { SUB_register(A, B, true); }
@@ -725,6 +766,7 @@ void Processor::opcode0x9b() { SUB_register(A, E, true); }
 void Processor::opcode0x9c() { SUB_register(A, H, true); }
 void Processor::opcode0x9d() { SUB_register(A, L, true); }
 void Processor::opcode0x9e() { SUB_address(A, HL, true); }
+void Processor::opcode0xde() { SUB_immediate(A, true); }
 
 void Processor::opcode0xa7() { AND_register(A, A); }
 void Processor::opcode0xa0() { AND_register(A, B); }
@@ -819,19 +861,19 @@ void Processor::opcode0x27()
 {
     if (is_set(flags.subtract)) {
         if (is_set(flags.carry) || A.value() > 0x99) {
-            A.set(A.value() + 0x60);
+            A.add(0x60);
             set(flags.carry);
         }
         if (is_set(flags.half_carry) || (A.value() & 0x0f) > 0x09) {
-            A.set(A.value() + 0x6);
+            A.add(0x6);
         }
     } 
     else {
         if (is_set(flags.carry)) {
-            A.set(A.value() - 0x60);
+            A.add(-0x60);
         }
         if (is_set(flags.half_carry)) {
-            A.set(A.value() - 0x6);
+            A.add(-0x6);
         }
     }
     set_cond(flags.zero, A.value() == 0);
@@ -877,13 +919,13 @@ void Processor::opcode0x10()
 // DI
 void Processor::opcode0xf3()
 {
-
+    IME_flag = false;
 }
 
 // EI
 void Processor::opcode0xfb()
 {
-
+    IME_flag = true;
 }
 
 #pragma endregion
@@ -1199,13 +1241,21 @@ void Processor::cb_opcode0xff() { SET(A, 7); }
 */
 #pragma region
 
-void Processor::opcode0x20()
-{
-    i8 jump = fetch_byte();
-    if (!flags.zero) {
-        PC.add(jump);
-    }
-}
+// JP nn
+void Processor::opcode0xc3() { PC.set(fetch_word()); }
+
+void Processor::opcode0xc2() { JP_cond(!is_set(flags.zero)); }
+void Processor::opcode0xca() { JP_cond(is_set(flags.zero)); }
+void Processor::opcode0xd2() { JP_cond(!is_set(flags.carry)); }
+void Processor::opcode0xda() { JP_cond(is_set(flags.carry)); }
+
+void Processor::opcode0xe9() { PC.set(memory[HL.value()]); }
+
+void Processor::opcode0x18() { JR_cond(true); }
+void Processor::opcode0x20() { JR_cond(!is_set(flags.zero)); }
+void Processor::opcode0x28() { JR_cond(is_set(flags.zero)); }
+void Processor::opcode0x30() { JR_cond(!is_set(flags.carry)); }
+void Processor::opcode0x38() { JR_cond(is_set(flags.carry)); }
 
 #pragma endregion
 
@@ -1213,17 +1263,40 @@ void Processor::opcode0x20()
 */
 #pragma region
 
+// CALL
 void Processor::opcode0xcd()
 {
+    u16 n = fetch_word();
     PUSH_register(PC);
-    LD_immediate(PC);
+    PC.set(n);
 }
 
+void Processor::opcode0xc4() { CALL_cond(!is_set(flags.zero)); }
+void Processor::opcode0xcc() { CALL_cond(is_set(flags.zero)); }
+void Processor::opcode0xd4() { CALL_cond(!is_set(flags.carry)); }
+void Processor::opcode0xdc() { CALL_cond(is_set(flags.carry)); }
+
 void Processor::opcode0xc9() { RET(); }
-void Processor::opcode0xc0() { if (!flags.zero) RET(); }
-void Processor::opcode0xc8() { if (flags.zero) RET(); }
-void Processor::opcode0xd0() { if (!flags.carry) RET(); }
-void Processor::opcode0xd8() { if (flags.carry) RET(); }
+void Processor::opcode0xc0() { if (!is_set(flags.zero)) RET(); }
+void Processor::opcode0xc8() { if (is_set(flags.zero)) RET(); }
+void Processor::opcode0xd0() { if (!is_set(flags.carry)) RET(); }
+void Processor::opcode0xd8() { if (is_set(flags.carry)) RET(); }
+
+void Processor::opcode0xd9()
+{
+    RET();
+    //EI
+    opcode0xfb();
+}
+
+void Processor::opcode0xc7() { RST(0x00); }
+void Processor::opcode0xcf() { RST(0x08); }
+void Processor::opcode0xd7() { RST(0x10); }
+void Processor::opcode0xdf() { RST(0x18); }
+void Processor::opcode0xe7() { RST(0x20); }
+void Processor::opcode0xef() { RST(0x28); }
+void Processor::opcode0xf7() { RST(0x30); }
+void Processor::opcode0xff() { RST(0x38); }
 
 #pragma endregion
 

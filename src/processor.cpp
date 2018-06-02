@@ -35,11 +35,13 @@ bool Processor::step(int break_point)
         return false;
     }
     if (DEBUG_MODE) {
-        std::cout << std::hex << (int)instr << std::endl;
-        if (PC.value() == break_point) {
-            return false;
-        }
+        std::cout << std::hex << prefix << (int)instr << std::endl;
+        //print_register_values();
     }
+    if (PC.value() == break_point) {
+        return false;
+    }
+    //process_interrupts();
     return true;
 }
 
@@ -102,7 +104,7 @@ Processor::Processor(u8 *mem):
     opcodes[0x0d] = &Processor::opcode0x0d;
     opcodes[0x0e] = &Processor::opcode0x0e;
     opcodes[0x0f] = &Processor::opcode0x0f;
-    //opcodes[0x10] = &Processor::opcode0x10;
+    opcodes[0x10] = &Processor::opcode0x10;
     opcodes[0x11] = &Processor::opcode0x11;
     opcodes[0x12] = &Processor::opcode0x12;
     opcodes[0x13] = &Processor::opcode0x13;
@@ -110,7 +112,7 @@ Processor::Processor(u8 *mem):
     opcodes[0x15] = &Processor::opcode0x15;
     opcodes[0x16] = &Processor::opcode0x16;
     opcodes[0x17] = &Processor::opcode0x17;
-    //opcodes[0x18] = &Processor::opcode0x18;
+    opcodes[0x18] = &Processor::opcode0x18;
     opcodes[0x19] = &Processor::opcode0x19;
     opcodes[0x1a] = &Processor::opcode0x1a;
     opcodes[0x1b] = &Processor::opcode0x1b;
@@ -126,30 +128,30 @@ Processor::Processor(u8 *mem):
     opcodes[0x25] = &Processor::opcode0x25;
     opcodes[0x26] = &Processor::opcode0x26;
     opcodes[0x27] = &Processor::opcode0x27;
-    //opcodes[0x28] = &Processor::opcode0x28;
+    opcodes[0x28] = &Processor::opcode0x28;
     opcodes[0x29] = &Processor::opcode0x29;
     opcodes[0x2a] = &Processor::opcode0x2a;
     opcodes[0x2b] = &Processor::opcode0x2b;
     opcodes[0x2c] = &Processor::opcode0x2c;
     opcodes[0x2d] = &Processor::opcode0x2d;
     opcodes[0x2e] = &Processor::opcode0x2e;
-    //opcodes[0x2f] = &Processor::opcode0x2f;
-    //opcodes[0x30] = &Processor::opcode0x30;
+    opcodes[0x2f] = &Processor::opcode0x2f;
+    opcodes[0x30] = &Processor::opcode0x30;
     opcodes[0x31] = &Processor::opcode0x31;
     opcodes[0x32] = &Processor::opcode0x32;
     opcodes[0x33] = &Processor::opcode0x33;
     opcodes[0x34] = &Processor::opcode0x34;
     opcodes[0x35] = &Processor::opcode0x35;
     opcodes[0x36] = &Processor::opcode0x36;
-    //opcodes[0x37] = &Processor::opcode0x37;
-    //opcodes[0x38] = &Processor::opcode0x38;
+    opcodes[0x37] = &Processor::opcode0x37;
+    opcodes[0x38] = &Processor::opcode0x38;
     opcodes[0x39] = &Processor::opcode0x39;
     opcodes[0x3a] = &Processor::opcode0x3a;
     opcodes[0x3b] = &Processor::opcode0x3b;
     opcodes[0x3c] = &Processor::opcode0x3c;
     opcodes[0x3d] = &Processor::opcode0x3d;
     opcodes[0x3e] = &Processor::opcode0x3e;
-    //opcodes[0x3f] = &Processor::opcode0x3f;
+    opcodes[0x3f] = &Processor::opcode0x3f;
     opcodes[0x40] = &Processor::opcode0x40;
     opcodes[0x41] = &Processor::opcode0x41;
     opcodes[0x42] = &Processor::opcode0x42;
@@ -204,7 +206,7 @@ Processor::Processor(u8 *mem):
     opcodes[0x73] = &Processor::opcode0x73;
     opcodes[0x74] = &Processor::opcode0x74;
     opcodes[0x75] = &Processor::opcode0x75;
-    //opcodes[0x76] = &Processor::opcode0x76;
+    opcodes[0x76] = &Processor::opcode0x76;
     opcodes[0x77] = &Processor::opcode0x77;
     opcodes[0x78] = &Processor::opcode0x78;
     opcodes[0x79] = &Processor::opcode0x79;
@@ -280,55 +282,55 @@ Processor::Processor(u8 *mem):
     opcodes[0xbf] = &Processor::opcode0xbf;
     opcodes[0xc0] = &Processor::opcode0xc0;
     opcodes[0xc1] = &Processor::opcode0xc1;
-    //opcodes[0xc2] = &Processor::opcode0xc2;
-    //opcodes[0xc3] = &Processor::opcode0xc3;
-    //opcodes[0xc4] = &Processor::opcode0xc4;
+    opcodes[0xc2] = &Processor::opcode0xc2;
+    opcodes[0xc3] = &Processor::opcode0xc3;
+    opcodes[0xc4] = &Processor::opcode0xc4;
     opcodes[0xc5] = &Processor::opcode0xc5;
     opcodes[0xc6] = &Processor::opcode0xc6;
-    //opcodes[0xc7] = &Processor::opcode0xc7;
+    opcodes[0xc7] = &Processor::opcode0xc7;
     opcodes[0xc8] = &Processor::opcode0xc8;
     opcodes[0xc9] = &Processor::opcode0xc9;
-    //opcodes[0xca] = &Processor::opcode0xca;
-    //opcodes[0xcb] = &Processor::opcode0xcb;
-    //opcodes[0xcc] = &Processor::opcode0xcc;
+    opcodes[0xca] = &Processor::opcode0xca;
+    opcodes[0xcb] = &Processor::opcode0xcb;
+    opcodes[0xcc] = &Processor::opcode0xcc;
     opcodes[0xcd] = &Processor::opcode0xcd;
     opcodes[0xce] = &Processor::opcode0xce;
-    //opcodes[0xcf] = &Processor::opcode0xcf;
+    opcodes[0xcf] = &Processor::opcode0xcf;
     opcodes[0xd0] = &Processor::opcode0xd0;
     opcodes[0xd1] = &Processor::opcode0xd1;
-    //opcodes[0xd2] = &Processor::opcode0xd2;
-    //opcodes[0xd4] = &Processor::opcode0xd4;
+    opcodes[0xd2] = &Processor::opcode0xd2;
+    opcodes[0xd4] = &Processor::opcode0xd4;
     opcodes[0xd5] = &Processor::opcode0xd5;
-    //opcodes[0xd6] = &Processor::opcode0xd6;
-    //opcodes[0xd7] = &Processor::opcode0xd7;
+    opcodes[0xd6] = &Processor::opcode0xd6;
+    opcodes[0xd7] = &Processor::opcode0xd7;
     opcodes[0xd8] = &Processor::opcode0xd8;
-    //opcodes[0xd9] = &Processor::opcode0xd9;
-    //opcodes[0xda] = &Processor::opcode0xda;
-    //opcodes[0xdc] = &Processor::opcode0xdc;
-    //opcodes[0xde] = &Processor::opcode0xde;
-    //opcodes[0xdf] = &Processor::opcode0xdf;
+    opcodes[0xd9] = &Processor::opcode0xd9;
+    opcodes[0xda] = &Processor::opcode0xda;
+    opcodes[0xdc] = &Processor::opcode0xdc;
+    opcodes[0xde] = &Processor::opcode0xde;
+    opcodes[0xdf] = &Processor::opcode0xdf;
     opcodes[0xe0] = &Processor::opcode0xe0;
     opcodes[0xe1] = &Processor::opcode0xe1;
     opcodes[0xe2] = &Processor::opcode0xe2;
     opcodes[0xe5] = &Processor::opcode0xe5;
     opcodes[0xe6] = &Processor::opcode0xe6;
-    //opcodes[0xe7] = &Processor::opcode0xe7;
+    opcodes[0xe7] = &Processor::opcode0xe7;
     opcodes[0xe8] = &Processor::opcode0xe8;
-    //opcodes[0xe9] = &Processor::opcode0xe9;
+    opcodes[0xe9] = &Processor::opcode0xe9;
     opcodes[0xea] = &Processor::opcode0xea;
     opcodes[0xee] = &Processor::opcode0xee;
-    //opcodes[0xef] = &Processor::opcode0xef;
+    opcodes[0xef] = &Processor::opcode0xef;
     opcodes[0xf0] = &Processor::opcode0xf0;
     opcodes[0xf1] = &Processor::opcode0xf1;
     opcodes[0xf2] = &Processor::opcode0xf2;
-    //opcodes[0xf3] = &Processor::opcode0xf3;
+    opcodes[0xf3] = &Processor::opcode0xf3;
     opcodes[0xf5] = &Processor::opcode0xf5;
     opcodes[0xf6] = &Processor::opcode0xf6;
-    //opcodes[0xf7] = &Processor::opcode0xf7;
+    opcodes[0xf7] = &Processor::opcode0xf7;
     opcodes[0xf8] = &Processor::opcode0xf8;
     opcodes[0xf9] = &Processor::opcode0xf9;
     opcodes[0xfa] = &Processor::opcode0xfa;
-    //opcodes[0xfb] = &Processor::opcode0xfb;
+    opcodes[0xfb] = &Processor::opcode0xfb;
     opcodes[0xfe] = &Processor::opcode0xfe;
 
     cb_opcodes[0x00] = &Processor::cb_opcode0x00;

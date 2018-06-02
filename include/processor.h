@@ -27,9 +27,9 @@ public:
     void set_memory(u8 *mem);
     void print_register_values();
 
-    static const u16 IF = 0xff0f; // interrupt flags
+    /*static const u16 IF = 0xff0f; // interrupt flags
     static const u16 IE = 0xffff; // interrupt enable
-    static const u8 VBLANK = 1;
+    static const u8 VBLANK = 1;*/
 
 private:
     Register8bit A;
@@ -53,10 +53,16 @@ private:
     OpFunc cb_opcodes[0x100];
     u8 *memory; 
 
+    bool IME_flag;                 // interrupt master enable
+    static const u16 IF = 0xff0f;  // interrupt request flags
+    static const u16 IE = 0xffff;  // interrupt enable flags
+
     u8 fetch_byte();
+    u16 fetch_word();
 
     // Return false if  unimplemented
     bool execute(u8 instr, bool cb);
+    void process_interrupts();
 
     // For setting the correct bits of the flag register F
     void set(int b);
@@ -72,7 +78,7 @@ private:
 
     void flag_reset(Register8bit const &reg);
     void flag_reset(Register16bit const &reg);
-    
+
     void set_and_flags(u8 val);
     void set_or_flags(u8 val);
     
@@ -157,7 +163,15 @@ private:
     void RES(Register8bit &reg, u8 bit);
     void RES(Register16bit const &reg, u8 bit);
 
+    void JP_cond(bool cond);
+    void JR_cond(bool cond);
+
+    void CALL_cond(bool cond);
+    
     void RET();
+    void RST(u8 addr);
+    void EI();
+    void DI();
 
     void opcode0x00(){} void opcode0x01();	void opcode0x02();	void opcode0x03();
     void opcode0x04(); 	void opcode0x05();	void opcode0x06(); 	void opcode0x07(); 
@@ -209,7 +223,7 @@ private:
     void opcode0xbc();	void opcode0xbd();	void opcode0xbe();	void opcode0xbf();
     void opcode0xc0();	void opcode0xc1(); 	void opcode0xc2();	void opcode0xc3();
     void opcode0xc4();	void opcode0xc5(); 	void opcode0xc6();	void opcode0xc7();
-    void opcode0xc8();	void opcode0xc9();	void opcode0xca();	void opcode0xcb();
+    void opcode0xc8();	void opcode0xc9();	void opcode0xca();	void opcode0xcb(){};
     void opcode0xcc();	void opcode0xcd(); 	void opcode0xce();	void opcode0xcf();
     void opcode0xd0();	void opcode0xd1(); 	void opcode0xd2();	void opcode0xd3(){}
     void opcode0xd4();	void opcode0xd5(); 	void opcode0xd6();	void opcode0xd7();	
