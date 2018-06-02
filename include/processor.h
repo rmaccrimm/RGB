@@ -66,9 +66,13 @@ private:
     bool is_set(int b);
 
     void flag_set(Register8bit const &reg);
+
     void set_add_flags(u16 a, u16 b);
     void set_sub_flags(u16 a, u16 b);
+
     void flag_reset(Register8bit const &reg);
+    void flag_reset(Register16bit const &reg);
+    
     void set_and_flags(u8 val);
     void set_or_flags(u8 val);
     
@@ -123,22 +127,35 @@ private:
     void CP_immediate(Register8bit &reg);
     void CP_address(Register8bit &dest, Register16bit &src);
 
-    void SWAP_register(Register8bit &reg);
-    void SWAP_address(Register16bit const &reg);
+    void SWAP(Register8bit &reg);
+    void SWAP(Register16bit const &reg);
 
-    void RL_carry(Register8bit &reg);
-    void RR_carry(Register8bit &reg);
-    void RL_no_carry(Register8bit &reg);
-    void RR_no_carry(Register8bit &reg);
+    void RL(Register8bit &reg);
+    void RR(Register8bit &reg);
+    void RLC(Register8bit &reg);
+    void RRC(Register8bit &reg);
 
-    void SR_arithmetic(Register8bit &reg);
-    void SL_arithmetic(Register8bit &reg);
-    void SR_logical(Register8bit &reg);
-    void SL_logical(Register8bit &reg);
+    void RL(Register16bit const &reg);
+    void RR(Register16bit const &reg);
+    void RLC(Register16bit const &reg);
+    void RRC(Register16bit const &reg);
 
+    void SLA(Register8bit &reg);
+    void SRA(Register8bit &reg);
+    void SRL(Register8bit &reg);
+
+    void SLA(Register16bit const &reg);
+    void SRA(Register16bit const &reg);
+    void SRL(Register16bit const &reg);
+    
     void BIT(Register8bit &reg, u8 bit);
+    void BIT(Register16bit const &reg, u8 bit);
+
     void SET(Register8bit &reg, u8 bit);
+    void SET(Register16bit const &reg, u8 bit);
+
     void RES(Register8bit &reg, u8 bit);
+    void RES(Register16bit const &reg, u8 bit);
 
     void RET();
 
