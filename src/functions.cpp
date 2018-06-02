@@ -48,3 +48,8 @@ bool full_carry_sub(u16 a, u16 b)
 {
     return ((a & 0xff) - (b & 0xff)) < 0;
 }
+
+u8 swap(u8 x) 
+{
+    return 0xff & (x >> 4 | x << 4);
+}
