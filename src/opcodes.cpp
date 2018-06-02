@@ -705,6 +705,30 @@ void Processor::cb_opcode0x34() { SWAP_register(H); }
 void Processor::cb_opcode0x35() { SWAP_register(L); }
 void Processor::cb_opcode0x36() { SWAP_address(HL); }
 
+// DAA
+void Processor::opcode0x27()
+{
+    if (is_set(flags.subtract)) {
+        if (is_set(flags.carry) || A.value() > 0x99) {
+            A.set(A.value() + 0x60);
+            set(flags.carry);
+        }
+        if (is_set(flags.half_carry) || (A.value() & 0x0f) > 0x09) {
+            A.set(A.value() + 0x6);
+        }
+    } 
+    else {
+        if (is_set(flags.carry)) {
+            A.set(A.value() - 0x60);
+        }
+        if (is_set(flags.half_carry)) {
+            A.set(A.value() - 0x6);
+        }
+    }
+    set_cond(flags.zero, A.value() == 0);
+    reset(flags.half_carry);
+}
+
 #pragma endregion
 
 

@@ -63,6 +63,7 @@ private:
     void reset(int b);
     // Set if true, else reset
     void set_cond(int b, bool cond);
+    bool is_set(int b);
 
     void flag_set(Register8bit const &reg);
     void set_add_flags(u16 a, u16 b);

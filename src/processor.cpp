@@ -73,6 +73,11 @@ void Processor::set_cond(int b, bool cond)
         reset(b);
 } 
 
+bool Processor::is_set(int b)
+{
+    return (F.value()) >> b & 1;
+}
+
 Processor::Processor(u8 *mem):
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L), 
     memory(mem)
@@ -120,7 +125,7 @@ Processor::Processor(u8 *mem):
     opcodes[0x24] = &Processor::opcode0x24;
     opcodes[0x25] = &Processor::opcode0x25;
     opcodes[0x26] = &Processor::opcode0x26;
-    //opcodes[0x27] = &Processor::opcode0x27;
+    opcodes[0x27] = &Processor::opcode0x27;
     //opcodes[0x28] = &Processor::opcode0x28;
     opcodes[0x29] = &Processor::opcode0x29;
     opcodes[0x2a] = &Processor::opcode0x2a;
