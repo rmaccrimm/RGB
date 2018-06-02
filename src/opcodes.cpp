@@ -379,6 +379,28 @@ void Processor::CP_address(Register8bit &dest, Register16bit &src)
 
 #pragma endregion
 
+void Processor::SWAP_register(Register8bit &reg)
+{
+    reg.set(swap(reg.value()));
+    if (reg.value() == 0) {
+        set(flags.zero);
+    }
+    reset(flags.subtract);
+    reset(flags.half_carry);
+    reset(flags.carry);
+}
+
+void Processor::SWAP_address(Register16bit const &reg)
+{
+    memory[reg.value()] = swap(memory[reg.value()]);
+    if (memory[reg.value()] == 0) {
+        set(flags.zero);
+    }
+    reset(flags.subtract);
+    reset(flags.half_carry);
+    reset(flags.carry);
+}
+
 void Processor::RET()
 {
     PC.set_low(stack_pop());
@@ -674,7 +696,14 @@ void Processor::opcode0x3b() { DEC_register(SP); }
 */
 #pragma region
 
-
+void Processor::cb_opcode0x37() { SWAP_register(A); }
+void Processor::cb_opcode0x30() { SWAP_register(B); }
+void Processor::cb_opcode0x31() { SWAP_register(C); }
+void Processor::cb_opcode0x32() { SWAP_register(D); }
+void Processor::cb_opcode0x33() { SWAP_register(E); }
+void Processor::cb_opcode0x34() { SWAP_register(H); }
+void Processor::cb_opcode0x35() { SWAP_register(L); }
+void Processor::cb_opcode0x36() { SWAP_address(HL); }
 
 #pragma endregion
 

@@ -10,7 +10,7 @@ void load_rom(u8 memory[], const char *path)
     size_t file_size;
     ifstream ifs(path, ios_base::in | ios_base::binary);
     ifs.seekg(0, ios_base::end);
-    file_size = ifs.tellg();
+    file_size = (size_t)ifs.tellg();
     ifs.seekg(0, ios_base::beg);
     if (!ifs.good()) {
         cout << "Error reading file: " << path << endl;
@@ -27,13 +27,11 @@ void load_rom(u8 memory[], u8 data[], size_t size)
     std::memcpy(memory, data, size);
 }
 
-// Check for carry from bit 3 to bit 4 in a + b
 bool half_carry_add(u16 a, u16 b) 
 {
     return (((a & 0xf) + (b & 0xf)) & 0x10) == 0x10;
 }
 
-// Check for carry from bit 4 to 3 in a - b 
 bool half_carry_sub(u16 a, u16 b)
 {
     return ((a & 0xf) - (b & 0xf)) < 0;

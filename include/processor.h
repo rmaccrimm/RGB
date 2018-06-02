@@ -122,6 +122,9 @@ private:
     void CP_immediate(Register8bit &reg);
     void CP_address(Register8bit &dest, Register16bit &src);
 
+    void SWAP_register(Register8bit &reg);
+    void SWAP_address(Register16bit const &reg);
+
     void RL_carry(Register8bit &reg);
     void RR_carry(Register8bit &reg);
     void RL_no_carry(Register8bit &reg);
@@ -203,9 +206,70 @@ private:
     void opcode0xf8();	void opcode0xf9();	void opcode0xfa();	void opcode0xfb();						
     void opcode0xfc(){}	void opcode0xfd(){}	void opcode0xfe();	void opcode0xff();	
     
-
-    void cb_opcode0x11(); 
-    void cb_opcode0x7c(); 
+    void cb_opcode0x00();   void cb_opcode0x01();   void cb_opcode0x02();   void cb_opcode0x03();
+    void cb_opcode0x04();   void cb_opcode0x05();   void cb_opcode0x06();   void cb_opcode0x07();
+    void cb_opcode0x08();   void cb_opcode0x09();   void cb_opcode0x0a();   void cb_opcode0x0b();
+    void cb_opcode0x0c();   void cb_opcode0x0d();   void cb_opcode0x0e();   void cb_opcode0x0f();
+    void cb_opcode0x10();   void cb_opcode0x11();   void cb_opcode0x12();   void cb_opcode0x13();
+    void cb_opcode0x14();   void cb_opcode0x15();   void cb_opcode0x16();   void cb_opcode0x17();
+    void cb_opcode0x18();   void cb_opcode0x19();   void cb_opcode0x1a();   void cb_opcode0x1b();
+    void cb_opcode0x1c();   void cb_opcode0x1d();   void cb_opcode0x1e();   void cb_opcode0x1f();
+    void cb_opcode0x20();   void cb_opcode0x21();   void cb_opcode0x22();   void cb_opcode0x23();
+    void cb_opcode0x24();   void cb_opcode0x25();   void cb_opcode0x26();   void cb_opcode0x27();
+    void cb_opcode0x28();   void cb_opcode0x29();   void cb_opcode0x2a();   void cb_opcode0x2b();
+    void cb_opcode0x2c();   void cb_opcode0x2d();   void cb_opcode0x2e();   void cb_opcode0x2f();
+    void cb_opcode0x30();   void cb_opcode0x31();   void cb_opcode0x32();   void cb_opcode0x33();
+    void cb_opcode0x34();   void cb_opcode0x35();   void cb_opcode0x36();   void cb_opcode0x37();
+    void cb_opcode0x38();   void cb_opcode0x39();   void cb_opcode0x3a();   void cb_opcode0x3b();
+    void cb_opcode0x3c();   void cb_opcode0x3d();   void cb_opcode0x3e();   void cb_opcode0x3f();
+    void cb_opcode0x40();   void cb_opcode0x41();   void cb_opcode0x42();   void cb_opcode0x43();
+    void cb_opcode0x44();   void cb_opcode0x45();   void cb_opcode0x46();   void cb_opcode0x47();
+    void cb_opcode0x48();   void cb_opcode0x49();   void cb_opcode0x4a();   void cb_opcode0x4b();
+    void cb_opcode0x4c();   void cb_opcode0x4d();   void cb_opcode0x4e();   void cb_opcode0x4f();
+    void cb_opcode0x50();   void cb_opcode0x51();   void cb_opcode0x52();   void cb_opcode0x53();
+    void cb_opcode0x54();   void cb_opcode0x55();   void cb_opcode0x56();   void cb_opcode0x57();
+    void cb_opcode0x58();   void cb_opcode0x59();   void cb_opcode0x5a();   void cb_opcode0x5b();
+    void cb_opcode0x5c();   void cb_opcode0x5d();   void cb_opcode0x5e();   void cb_opcode0x5f();
+    void cb_opcode0x60();   void cb_opcode0x61();   void cb_opcode0x62();   void cb_opcode0x63();
+    void cb_opcode0x64();   void cb_opcode0x65();   void cb_opcode0x66();   void cb_opcode0x67();
+    void cb_opcode0x68();   void cb_opcode0x69();   void cb_opcode0x6a();   void cb_opcode0x6b();
+    void cb_opcode0x6c();   void cb_opcode0x6d();   void cb_opcode0x6e();   void cb_opcode0x6f();
+    void cb_opcode0x70();   void cb_opcode0x71();   void cb_opcode0x72();   void cb_opcode0x73();
+    void cb_opcode0x74();   void cb_opcode0x75();   void cb_opcode0x76();   void cb_opcode0x77();
+    void cb_opcode0x78();   void cb_opcode0x79();   void cb_opcode0x7a();   void cb_opcode0x7b();
+    void cb_opcode0x7c();   void cb_opcode0x7d();   void cb_opcode0x7e();   void cb_opcode0x7f();
+    void cb_opcode0x80();   void cb_opcode0x81();   void cb_opcode0x82();   void cb_opcode0x83();
+    void cb_opcode0x84();   void cb_opcode0x85();   void cb_opcode0x86();   void cb_opcode0x87();
+    void cb_opcode0x88();   void cb_opcode0x89();   void cb_opcode0x8a();   void cb_opcode0x8b();
+    void cb_opcode0x8c();   void cb_opcode0x8d();   void cb_opcode0x8e();   void cb_opcode0x8f();
+    void cb_opcode0x90();   void cb_opcode0x91();   void cb_opcode0x92();   void cb_opcode0x93();
+    void cb_opcode0x94();   void cb_opcode0x95();   void cb_opcode0x96();   void cb_opcode0x97();
+    void cb_opcode0x98();   void cb_opcode0x99();   void cb_opcode0x9a();   void cb_opcode0x9b();
+    void cb_opcode0x9c();   void cb_opcode0x9d();   void cb_opcode0x9e();   void cb_opcode0x9f();
+    void cb_opcode0xa0();   void cb_opcode0xa1();   void cb_opcode0xa2();   void cb_opcode0xa3();
+    void cb_opcode0xa4();   void cb_opcode0xa5();   void cb_opcode0xa6();   void cb_opcode0xa7();
+    void cb_opcode0xa8();   void cb_opcode0xa9();   void cb_opcode0xaa();   void cb_opcode0xab();
+    void cb_opcode0xac();   void cb_opcode0xad();   void cb_opcode0xae();   void cb_opcode0xaf();
+    void cb_opcode0xb0();   void cb_opcode0xb1();   void cb_opcode0xb2();   void cb_opcode0xb3();
+    void cb_opcode0xb4();   void cb_opcode0xb5();   void cb_opcode0xb6();   void cb_opcode0xb7();
+    void cb_opcode0xb8();   void cb_opcode0xb9();   void cb_opcode0xba();   void cb_opcode0xbb();
+    void cb_opcode0xbc();   void cb_opcode0xbd();   void cb_opcode0xbe();   void cb_opcode0xbf();
+    void cb_opcode0xc0();   void cb_opcode0xc1();   void cb_opcode0xc2();   void cb_opcode0xc3();
+    void cb_opcode0xc4();   void cb_opcode0xc5();   void cb_opcode0xc6();   void cb_opcode0xc7();
+    void cb_opcode0xc8();   void cb_opcode0xc9();   void cb_opcode0xca();   void cb_opcode0xcb();
+    void cb_opcode0xcc();   void cb_opcode0xcd();   void cb_opcode0xce();   void cb_opcode0xcf();
+    void cb_opcode0xd0();   void cb_opcode0xd1();   void cb_opcode0xd2();   void cb_opcode0xd3();
+    void cb_opcode0xd4();   void cb_opcode0xd5();   void cb_opcode0xd6();   void cb_opcode0xd7();
+    void cb_opcode0xd8();   void cb_opcode0xd9();   void cb_opcode0xda();   void cb_opcode0xdb();
+    void cb_opcode0xdc();   void cb_opcode0xdd();   void cb_opcode0xde();   void cb_opcode0xdf();
+    void cb_opcode0xe0();   void cb_opcode0xe1();   void cb_opcode0xe2();   void cb_opcode0xe3();
+    void cb_opcode0xe4();   void cb_opcode0xe5();   void cb_opcode0xe6();   void cb_opcode0xe7();
+    void cb_opcode0xe8();   void cb_opcode0xe9();   void cb_opcode0xea();   void cb_opcode0xeb();
+    void cb_opcode0xec();   void cb_opcode0xed();   void cb_opcode0xee();   void cb_opcode0xef();
+    void cb_opcode0xf0();   void cb_opcode0xf1();   void cb_opcode0xf2();   void cb_opcode0xf3();
+    void cb_opcode0xf4();   void cb_opcode0xf5();   void cb_opcode0xf6();   void cb_opcode0xf7();
+    void cb_opcode0xf8();   void cb_opcode0xf9();   void cb_opcode0xfa();   void cb_opcode0xfb();
+    void cb_opcode0xfc();   void cb_opcode0xfd();   void cb_opcode0xfe();   void cb_opcode0xff();
 
 };
 
