@@ -7,31 +7,30 @@
 #include "register16bit.h"
 #include "functions.h"
 #include "memory.h"
+#include "operations.h"
 
 class Processor
 {
-    // opfunc type defined as shorthand for void member functions 
+public:
+    // Shorthand type for void member functions 
     typedef void (Processor::*OpFunc)(void);
     
-    struct Flags {
-        int zero;       // Z
-        int subtract;   // N
-        int half_carry; // C
-        int carry;      // H
-    };	
-
-public:
     Processor(u8 *mem = nullptr);
-    
+
     bool step(int break_point = 0);
+
+    bool execute(u8 instr, bool cb);
+
+    void process_interrupts();
+
     void set_memory(u8 *mem);
+
+    u8 fetch_byte();
+
+    u16 fetch_word();
+
     void print_register_values();
 
-    /*static const u16 IF = 0xff0f; // interrupt flags
-    static const u16 IE = 0xffff; // interrupt enable
-    static const u8 VBLANK = 1;*/
-
-private:
     Register8bit A;
     Register8bit F;
     Register8bit B;
@@ -48,21 +47,25 @@ private:
     Register16bit SP;
     Register16bit PC;
 
-    const Flags flags = {7, 6, 5, 4};
+    int clock_cycles;
+
+    u8 *memory; 
+
     OpFunc opcodes[0x100];	
     OpFunc cb_opcodes[0x100];
-    u8 *memory; 
+
+    static const u8 ZERO = 1 << 7;       // Z
+    static const u8 SUBTRACT = 1 << 6;   // N
+    static const u8 HALF_CARRY = 1 << 5; // C
+    static const u8 CARRY = 1 << 4;      // H
+
+    void set_flag(u8 mask, bool b);
+
+    
 
     bool IME_flag;                 // interrupt master enable
     static const u16 IF = 0xff0f;  // interrupt request flags
     static const u16 IE = 0xffff;  // interrupt enable flags
-
-    u8 fetch_byte();
-    u16 fetch_word();
-
-    // Return false if  unimplemented
-    bool execute(u8 instr, bool cb);
-    void process_interrupts();
 
     // For setting the correct bits of the flag register F
     void set(int b);
@@ -84,94 +87,6 @@ private:
     
     void stack_push(u8 data);
     u8 stack_pop();
-
-    void LD_immediate(Register8bit &reg);
-    void LD_immediate(Register16bit &reg);
-    void LD_register(Register8bit &dest, Register8bit const &src);
-    void LD_register(Register16bit &dest, Register16bit const &src);
-    void LD_address(Register8bit &dest, Register16bit const &src);
-    void LD_address(Register16bit const &dest, Register8bit const &src);
-
-    // The stack is at address 0xfffe backwards. High is pushed then low for 16 bit.
-    void PUSH_register(Register8bit const &reg);
-    void PUSH_register(Register16bit const &reg);
-    void POP_register(Register8bit &reg);
-    void POP_register(Register16bit &reg);
-
-    // Carry argument used for ADC/SBC 
-    void ADD_register(Register8bit &dest, Register8bit const &src, bool carry = false);
-    void ADD_register(Register16bit &dest, Register16bit const &src);
-    void ADD_immediate(Register8bit &reg, bool carry = false);
-    void ADD_immediate(Register16bit &reg);
-    void ADD_address(Register8bit &dest, Register16bit const &src, bool carry = false);
-
-    void SUB_register(Register8bit &dest, Register8bit const &src, bool carry = false);
-    void SUB_immediate(Register8bit &reg, bool carry = false);
-    void SUB_address(Register8bit &dest, Register16bit const &src, bool carry = false);
-
-    void INC_register(Register8bit &reg);
-    void INC_register(Register16bit &reg);
-    void INC_address(Register16bit const &reg); 
-
-    void DEC_register(Register8bit &reg);
-    void DEC_register(Register16bit &reg);
-    void DEC_address(Register16bit const &reg);
-
-    void AND_register(Register8bit &dest, Register8bit &src);
-    void AND_immediate(Register8bit &reg);
-    void AND_address(Register8bit &dest, Register16bit &src);
-
-    void OR_register(Register8bit &dest, Register8bit &src);
-    void OR_immediate(Register8bit &reg);
-    void OR_address(Register8bit &dest, Register16bit &src);
-
-    void XOR_register(Register8bit &dest, Register8bit &src);
-    void XOR_immediate(Register8bit &reg);
-    void XOR_address(Register8bit &dest, Register16bit &src);
-
-    void CP_register(Register8bit &dest, Register8bit &src);
-    void CP_immediate(Register8bit &reg);
-    void CP_address(Register8bit &dest, Register16bit &src);
-
-    void SWAP(Register8bit &reg);
-    void SWAP(Register16bit const &reg);
-
-    void RL(Register8bit &reg);
-    void RR(Register8bit &reg);
-    void RLC(Register8bit &reg);
-    void RRC(Register8bit &reg);
-
-    void RL(Register16bit const &reg);
-    void RR(Register16bit const &reg);
-    void RLC(Register16bit const &reg);
-    void RRC(Register16bit const &reg);
-
-    void SLA(Register8bit &reg);
-    void SRA(Register8bit &reg);
-    void SRL(Register8bit &reg);
-
-    void SLA(Register16bit const &reg);
-    void SRA(Register16bit const &reg);
-    void SRL(Register16bit const &reg);
-    
-    void BIT(Register8bit &reg, u8 bit);
-    void BIT(Register16bit const &reg, u8 bit);
-
-    void SET(Register8bit &reg, u8 bit);
-    void SET(Register16bit const &reg, u8 bit);
-
-    void RES(Register8bit &reg, u8 bit);
-    void RES(Register16bit const &reg, u8 bit);
-
-    void JP_cond(bool cond);
-    void JR_cond(bool cond);
-
-    void CALL_cond(bool cond);
-    
-    void RET();
-    void RST(u8 addr);
-    void EI();
-    void DI();
 
     void opcode0x00(){} void opcode0x01();	void opcode0x02();	void opcode0x03();
     void opcode0x04(); 	void opcode0x05();	void opcode0x06(); 	void opcode0x07(); 

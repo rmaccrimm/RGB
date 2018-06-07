@@ -16,5 +16,6 @@ add_executable(main
     gpu.cpp
     register8bit.cpp
     register16bit.cpp
+    operations.cpp
 )
 target_link_libraries(main funcs SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY})

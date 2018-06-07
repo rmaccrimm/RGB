@@ -1,5 +1,5 @@
 #ifndef DEBUG_MODE
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #endif
 
 #include "definitions.h"
@@ -13,5 +13,4 @@ namespace DEBUG
     void setup_dot_pattern(u8 *memory);
     void setup_gradient_tile(u8 *memory);
     void print_tile_map(u8 *memory, bool map);
-
 }
