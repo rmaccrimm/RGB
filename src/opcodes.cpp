@@ -5,20 +5,6 @@
 //Private functions
 #pragma region
 
-u8 Processor::fetch_byte()
-{
-    u8 data = memory[PC.value()];
-    PC.increment();
-    return data;
-}
-
-u16 Processor::fetch_word()
-{
-    u8 low = fetch_byte();
-    u8 high = fetch_byte();
-    u16 word = (high << 8) | low;
-    return word;
-}
 
 // void Processor::stack_push(u8 data)
 // {
@@ -727,8 +713,11 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // /*	8-bit ALU opcodes
 //  */
 // #pragma region
+// void Processor::opcode0xc6() { ADD_immediate(A); }
+// void Processor::opcode0xce() { ADD_immediate(A, true); }
+// void Processor::opcode0xd6() { SUB_immediate(A); }
+// void Processor::opcode0xde() { SUB_immediate(A, true); }
 
-// void Processor::opcode0x87() { ADD_register(A, A); }
 // void Processor::opcode0x80() { ADD_register(A, B); }
 // void Processor::opcode0x81() { ADD_register(A, C); }
 // void Processor::opcode0x82() { ADD_register(A, D); }
@@ -736,9 +725,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0x84() { ADD_register(A, H); }
 // void Processor::opcode0x85() { ADD_register(A, L); }
 // void Processor::opcode0x86() { ADD_address(A, HL); }
-// void Processor::opcode0xc6() { ADD_immediate(A); }
-
-// void Processor::opcode0x8f() { ADD_register(A, A, true); }
+// void Processor::opcode0x87() { ADD_register(A, A); }
 // void Processor::opcode0x88() { ADD_register(A, B, true); }
 // void Processor::opcode0x89() { ADD_register(A, C, true); }
 // void Processor::opcode0x8a() { ADD_register(A, D, true); }
@@ -746,9 +733,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0x8c() { ADD_register(A, H, true); }
 // void Processor::opcode0x8d() { ADD_register(A, L, true); }
 // void Processor::opcode0x8e() { ADD_address(A, HL, true); }
-// void Processor::opcode0xce() { ADD_immediate(A, true); }
-
-// void Processor::opcode0x97() { SUB_register(A, A); }
+// void Processor::opcode0x8f() { ADD_register(A, A, true); }
 // void Processor::opcode0x90() { SUB_register(A, B); }
 // void Processor::opcode0x91() { SUB_register(A, C); }
 // void Processor::opcode0x92() { SUB_register(A, D); }
@@ -756,9 +741,8 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0x94() { SUB_register(A, H); }
 // void Processor::opcode0x95() { SUB_register(A, L); }
 // void Processor::opcode0x96() { SUB_address(A, HL); }
-// void Processor::opcode0xd6() { SUB_immediate(A); }
+// void Processor::opcode0x97() { SUB_register(A, A); }
 
-// void Processor::opcode0x9f() { SUB_register(A, A, true); }
 // void Processor::opcode0x98() { SUB_register(A, B, true); }
 // void Processor::opcode0x99() { SUB_register(A, C, true); }
 // void Processor::opcode0x9a() { SUB_register(A, D, true); }
@@ -766,9 +750,12 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0x9c() { SUB_register(A, H, true); }
 // void Processor::opcode0x9d() { SUB_register(A, L, true); }
 // void Processor::opcode0x9e() { SUB_address(A, HL, true); }
-// void Processor::opcode0xde() { SUB_immediate(A, true); }
+// void Processor::opcode0x9f() { SUB_register(A, A, true); }
 
-// void Processor::opcode0xa7() { AND_register(A, A); }
+
+
+// void Processor::opcode0xe6() { AND_immediate(A); }
+
 // void Processor::opcode0xa0() { AND_register(A, B); }
 // void Processor::opcode0xa1() { AND_register(A, C); }
 // void Processor::opcode0xa2() { AND_register(A, D); }
@@ -776,19 +763,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0xa4() { AND_register(A, H); }
 // void Processor::opcode0xa5() { AND_register(A, L); }
 // void Processor::opcode0xa6() { AND_address(A, HL); }
-// void Processor::opcode0xe6() { AND_immediate(A); }
-
-// void Processor::opcode0xb7() { OR_register(A, A); }
-// void Processor::opcode0xb0() { OR_register(A, B); }
-// void Processor::opcode0xb1() { OR_register(A, C); }
-// void Processor::opcode0xb2() { OR_register(A, D); }
-// void Processor::opcode0xb3() { OR_register(A, E); }
-// void Processor::opcode0xb4() { OR_register(A, H); }
-// void Processor::opcode0xb5() { OR_register(A, L); }
-// void Processor::opcode0xb6() { OR_address(A, HL); }
-// void Processor::opcode0xf6() { OR_immediate(A); }
-
-// void Processor::opcode0xaf() { XOR_register(A, A); }
+// void Processor::opcode0xa7() { AND_register(A, A); }
 // void Processor::opcode0xa8() { XOR_register(A, B); }
 // void Processor::opcode0xa9() { XOR_register(A, C); }
 // void Processor::opcode0xaa() { XOR_register(A, D); }
@@ -796,9 +771,15 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0xac() { XOR_register(A, H); }
 // void Processor::opcode0xad() { XOR_register(A, L); }
 // void Processor::opcode0xae() { XOR_address(A, HL); }
-// void Processor::opcode0xee() { XOR_immediate(A); }
-
-// void Processor::opcode0xbf() { CP_register(A, A); }
+// void Processor::opcode0xaf() { XOR_register(A, A); }
+// void Processor::opcode0xb0() { OR_register(A, B); }
+// void Processor::opcode0xb1() { OR_register(A, C); }
+// void Processor::opcode0xb2() { OR_register(A, D); }
+// void Processor::opcode0xb3() { OR_register(A, E); }
+// void Processor::opcode0xb4() { OR_register(A, H); }
+// void Processor::opcode0xb5() { OR_register(A, L); }
+// void Processor::opcode0xb6() { OR_address(A, HL); }
+// void Processor::opcode0xb7() { OR_register(A, A); }
 // void Processor::opcode0xb8() { CP_register(A, B); }
 // void Processor::opcode0xb9() { CP_register(A, C); }
 // void Processor::opcode0xba() { CP_register(A, D); }
@@ -806,6 +787,11 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::opcode0xbc() { CP_register(A, H); }
 // void Processor::opcode0xbd() { CP_register(A, L); }
 // void Processor::opcode0xbe() { CP_address(A, HL); }
+// void Processor::opcode0xbf() { CP_register(A, A); }
+
+// void Processor::opcode0xf6() { OR_immediate(A); }
+// void Processor::opcode0xee() { XOR_immediate(A); }
+
 // void Processor::opcode0xfe() { CP_immediate(A); }
 
 // void Processor::opcode0x3c() { INC_register(A); }
@@ -936,7 +922,10 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // #pragma region
 
 // void Processor::opcode0x07() { RLC(A); }
-// void Processor::cb_opcode0x07() { RLC(A); }
+// void Processor::opcode0x0f() { RRC(A); }
+// void Processor::opcode0x17() { RL(A); }
+// void Processor::opcode0x1f() { RR(A); }
+
 // void Processor::cb_opcode0x00() { RLC(B); }
 // void Processor::cb_opcode0x01() { RLC(C); }
 // void Processor::cb_opcode0x02() { RLC(D); }
@@ -944,9 +933,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x04() { RLC(H); }
 // void Processor::cb_opcode0x05() { RLC(L); }
 // void Processor::cb_opcode0x06() { RLC(HL); }
-
-// void Processor::opcode0x0f() { RRC(A); }
-// void Processor::cb_opcode0x0f() { RRC(A); }
+// void Processor::cb_opcode0x07() { RLC(A); }
 // void Processor::cb_opcode0x08() { RRC(B); }
 // void Processor::cb_opcode0x09() { RRC(C); }
 // void Processor::cb_opcode0x0a() { RRC(D); }
@@ -954,9 +941,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x0c() { RRC(H); }
 // void Processor::cb_opcode0x0d() { RRC(L); }
 // void Processor::cb_opcode0x0e() { RRC(HL); }
-
-// void Processor::opcode0x17() { RL(A); }
-// void Processor::cb_opcode0x17() { RL(A); }
+// void Processor::cb_opcode0x0f() { RRC(A); }
 // void Processor::cb_opcode0x10() { RL(B); }
 // void Processor::cb_opcode0x11() { RL(C); }
 // void Processor::cb_opcode0x12() { RL(D); }
@@ -964,9 +949,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x14() { RL(H); }
 // void Processor::cb_opcode0x15() { RL(L); }
 // void Processor::cb_opcode0x16() { RL(HL); }
-
-// void Processor::opcode0x1f() { RR(A); }
-// void Processor::cb_opcode0x1f() { RR(A); }
+// void Processor::cb_opcode0x17() { RL(A); }
 // void Processor::cb_opcode0x18() { RR(B); }
 // void Processor::cb_opcode0x19() { RR(C); }
 // void Processor::cb_opcode0x1a() { RR(D); }
@@ -974,8 +957,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x1c() { RR(H); }
 // void Processor::cb_opcode0x1d() { RR(L); }
 // void Processor::cb_opcode0x1e() { RR(HL); }
-
-// void Processor::cb_opcode0x27() { SLA(A); }
+// void Processor::cb_opcode0x1f() { RR(A); }
 // void Processor::cb_opcode0x20() { SLA(B); }
 // void Processor::cb_opcode0x21() { SLA(C); }
 // void Processor::cb_opcode0x22() { SLA(D); }
@@ -983,8 +965,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x24() { SLA(H); }
 // void Processor::cb_opcode0x25() { SLA(L); }
 // void Processor::cb_opcode0x26() { SLA(HL); }
-
-// void Processor::cb_opcode0x2f() { SRA(A); }
+// void Processor::cb_opcode0x27() { SLA(A); }
 // void Processor::cb_opcode0x28() { SRA(B); }
 // void Processor::cb_opcode0x29() { SRA(C); }
 // void Processor::cb_opcode0x2a() { SRA(D); }
@@ -992,8 +973,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x2c() { SRA(H); }
 // void Processor::cb_opcode0x2d() { SRA(L); }
 // void Processor::cb_opcode0x2e() { SRA(HL); }
-
-// void Processor::cb_opcode0x37() { SWAP(A); } 
+// void Processor::cb_opcode0x2f() { SRA(A); }
 // void Processor::cb_opcode0x30() { SWAP(B); } 
 // void Processor::cb_opcode0x31() { SWAP(C); } 
 // void Processor::cb_opcode0x32() { SWAP(D); } 
@@ -1001,8 +981,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x34() { SWAP(H); } 
 // void Processor::cb_opcode0x35() { SWAP(L); } 
 // void Processor::cb_opcode0x36() { SWAP(HL); }
-
-// void Processor::cb_opcode0x3f() { SRL(A); }
+// void Processor::cb_opcode0x37() { SWAP(A); } 
 // void Processor::cb_opcode0x38() { SRL(B); }
 // void Processor::cb_opcode0x39() { SRL(C); }
 // void Processor::cb_opcode0x3a() { SRL(D); }
@@ -1010,14 +989,7 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x3c() { SRL(H); }
 // void Processor::cb_opcode0x3d() { SRL(L); }
 // void Processor::cb_opcode0x3e() { SRL(HL); }
-
-// #pragma endregion
-
-
-// /*	Bit opcodes
-// */
-// #pragma region
-
+// void Processor::cb_opcode0x3f() { SRL(A); }
 // void Processor::cb_opcode0x40() { BIT(B, 0); } 
 // void Processor::cb_opcode0x41() { BIT(C, 0); } 
 // void Processor::cb_opcode0x42() { BIT(D, 0); } 
@@ -1026,7 +998,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x45() { BIT(L, 0); } 
 // void Processor::cb_opcode0x46() { BIT(HL, 0); }
 // void Processor::cb_opcode0x47() { BIT(A, 0); } 
-                                               
 // void Processor::cb_opcode0x48() { BIT(B, 1); } 
 // void Processor::cb_opcode0x49() { BIT(C, 1); } 
 // void Processor::cb_opcode0x4a() { BIT(D, 1); } 
@@ -1035,7 +1006,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x4d() { BIT(L, 1); } 
 // void Processor::cb_opcode0x4e() { BIT(HL, 1); }
 // void Processor::cb_opcode0x4f() { BIT(A, 1); } 
-                                               
 // void Processor::cb_opcode0x50() { BIT(B, 2); } 
 // void Processor::cb_opcode0x51() { BIT(C, 2); } 
 // void Processor::cb_opcode0x52() { BIT(D, 2); } 
@@ -1044,7 +1014,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x55() { BIT(L, 2); } 
 // void Processor::cb_opcode0x56() { BIT(HL, 2); }
 // void Processor::cb_opcode0x57() { BIT(A, 2); } 
-                                               
 // void Processor::cb_opcode0x58() { BIT(B, 3); } 
 // void Processor::cb_opcode0x59() { BIT(C, 3); } 
 // void Processor::cb_opcode0x5a() { BIT(D, 3); } 
@@ -1053,7 +1022,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x5d() { BIT(L, 3); } 
 // void Processor::cb_opcode0x5e() { BIT(HL, 3); }
 // void Processor::cb_opcode0x5f() { BIT(A, 3); } 
-                                               
 // void Processor::cb_opcode0x60() { BIT(B, 4); } 
 // void Processor::cb_opcode0x61() { BIT(C, 4); } 
 // void Processor::cb_opcode0x62() { BIT(D, 4); } 
@@ -1062,7 +1030,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x65() { BIT(L, 4); } 
 // void Processor::cb_opcode0x66() { BIT(HL, 4); }
 // void Processor::cb_opcode0x67() { BIT(A, 4); } 
-                                               
 // void Processor::cb_opcode0x68() { BIT(B, 5); } 
 // void Processor::cb_opcode0x69() { BIT(C, 5); } 
 // void Processor::cb_opcode0x6a() { BIT(D, 5); } 
@@ -1071,7 +1038,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x6d() { BIT(L, 5); } 
 // void Processor::cb_opcode0x6e() { BIT(HL, 5); }
 // void Processor::cb_opcode0x6f() { BIT(A, 5); } 
-                                               
 // void Processor::cb_opcode0x70() { BIT(B, 6); } 
 // void Processor::cb_opcode0x71() { BIT(C, 6); } 
 // void Processor::cb_opcode0x72() { BIT(D, 6); } 
@@ -1080,7 +1046,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x75() { BIT(L, 6); } 
 // void Processor::cb_opcode0x76() { BIT(HL, 6); }
 // void Processor::cb_opcode0x77() { BIT(A, 6); } 
-                                               
 // void Processor::cb_opcode0x78() { BIT(B, 7); } 
 // void Processor::cb_opcode0x79() { BIT(C, 7); } 
 // void Processor::cb_opcode0x7a() { BIT(D, 7); } 
@@ -1089,7 +1054,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x7d() { BIT(L, 7); } 
 // void Processor::cb_opcode0x7e() { BIT(HL, 7); }
 // void Processor::cb_opcode0x7f() { BIT(A, 7); } 
-
 // void Processor::cb_opcode0x80() { RES(B, 0); }
 // void Processor::cb_opcode0x81() { RES(C, 0); }
 // void Processor::cb_opcode0x82() { RES(D, 0); }
@@ -1098,7 +1062,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x85() { RES(L, 0); }
 // void Processor::cb_opcode0x86() { RES(HL, 0); }
 // void Processor::cb_opcode0x87() { RES(A, 0); }
-
 // void Processor::cb_opcode0x88() { RES(B, 1); }
 // void Processor::cb_opcode0x89() { RES(C, 1); }
 // void Processor::cb_opcode0x8a() { RES(D, 1); }
@@ -1107,7 +1070,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x8d() { RES(L, 1); }
 // void Processor::cb_opcode0x8e() { RES(HL, 1); }
 // void Processor::cb_opcode0x8f() { RES(A, 1); }
-
 // void Processor::cb_opcode0x90() { RES(B, 2); }
 // void Processor::cb_opcode0x91() { RES(C, 2); }
 // void Processor::cb_opcode0x92() { RES(D, 2); }
@@ -1116,7 +1078,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x95() { RES(L, 2); }
 // void Processor::cb_opcode0x96() { RES(HL, 2); }
 // void Processor::cb_opcode0x97() { RES(A, 2); }
-
 // void Processor::cb_opcode0x98() { RES(B, 3); }
 // void Processor::cb_opcode0x99() { RES(C, 3); }
 // void Processor::cb_opcode0x9a() { RES(D, 3); }
@@ -1125,7 +1086,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0x9d() { RES(L, 3); }
 // void Processor::cb_opcode0x9e() { RES(HL, 3); }
 // void Processor::cb_opcode0x9f() { RES(A, 3); }
-
 // void Processor::cb_opcode0xa0() { RES(B, 4); }
 // void Processor::cb_opcode0xa1() { RES(C, 4); }
 // void Processor::cb_opcode0xa2() { RES(D, 4); }
@@ -1134,7 +1094,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xa5() { RES(L, 4); }
 // void Processor::cb_opcode0xa6() { RES(HL, 4); }
 // void Processor::cb_opcode0xa7() { RES(A, 4); }
-
 // void Processor::cb_opcode0xa8() { RES(B, 5); }
 // void Processor::cb_opcode0xa9() { RES(C, 5); }
 // void Processor::cb_opcode0xaa() { RES(D, 5); }
@@ -1143,7 +1102,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xad() { RES(L, 5); }
 // void Processor::cb_opcode0xae() { RES(HL, 5); }
 // void Processor::cb_opcode0xaf() { RES(A, 5); }
-
 // void Processor::cb_opcode0xb0() { RES(B, 6); }
 // void Processor::cb_opcode0xb1() { RES(C, 6); }
 // void Processor::cb_opcode0xb2() { RES(D, 6); }
@@ -1152,7 +1110,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xb5() { RES(L, 6); }
 // void Processor::cb_opcode0xb6() { RES(HL, 6); }
 // void Processor::cb_opcode0xb7() { RES(A, 6); }
-
 // void Processor::cb_opcode0xb8() { RES(B, 7); }
 // void Processor::cb_opcode0xb9() { RES(C, 7); }
 // void Processor::cb_opcode0xba() { RES(D, 7); }
@@ -1161,7 +1118,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xbd() { RES(L, 7); }
 // void Processor::cb_opcode0xbe() { RES(HL, 7); }
 // void Processor::cb_opcode0xbf() { RES(A, 7); }
-
 // void Processor::cb_opcode0xc0() { SET(B, 0); }
 // void Processor::cb_opcode0xc1() { SET(C, 0); }
 // void Processor::cb_opcode0xc2() { SET(D, 0); }
@@ -1170,7 +1126,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xc5() { SET(L, 0); }
 // void Processor::cb_opcode0xc6() { SET(HL, 0); }
 // void Processor::cb_opcode0xc7() { SET(A, 0); }
-
 // void Processor::cb_opcode0xc8() { SET(B, 1); }
 // void Processor::cb_opcode0xc9() { SET(C, 1); }
 // void Processor::cb_opcode0xca() { SET(D, 1); }
@@ -1179,7 +1134,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xcd() { SET(L, 1); }
 // void Processor::cb_opcode0xce() { SET(HL, 1); }
 // void Processor::cb_opcode0xcf() { SET(A, 1); }
-
 // void Processor::cb_opcode0xd0() { SET(B, 2); }
 // void Processor::cb_opcode0xd1() { SET(C, 2); }
 // void Processor::cb_opcode0xd2() { SET(D, 2); }
@@ -1188,7 +1142,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xd5() { SET(L, 2); }
 // void Processor::cb_opcode0xd6() { SET(HL, 2); }
 // void Processor::cb_opcode0xd7() { SET(A, 2); }
-
 // void Processor::cb_opcode0xd8() { SET(B, 3); }
 // void Processor::cb_opcode0xd9() { SET(C, 3); }
 // void Processor::cb_opcode0xda() { SET(D, 3); }
@@ -1197,7 +1150,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xdd() { SET(L, 3); }
 // void Processor::cb_opcode0xde() { SET(HL, 3); }
 // void Processor::cb_opcode0xdf() { SET(A, 3); }
-
 // void Processor::cb_opcode0xe0() { SET(B, 4); }
 // void Processor::cb_opcode0xe1() { SET(C, 4); }
 // void Processor::cb_opcode0xe2() { SET(D, 4); }
@@ -1206,7 +1158,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xe5() { SET(L, 4); }
 // void Processor::cb_opcode0xe6() { SET(HL, 4); }
 // void Processor::cb_opcode0xe7() { SET(A, 4); }
-
 // void Processor::cb_opcode0xe8() { SET(B, 5); }
 // void Processor::cb_opcode0xe9() { SET(C, 5); }
 // void Processor::cb_opcode0xea() { SET(D, 5); }
@@ -1215,7 +1166,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xed() { SET(L, 5); }
 // void Processor::cb_opcode0xee() { SET(HL, 5); }
 // void Processor::cb_opcode0xef() { SET(A, 5); }
-
 // void Processor::cb_opcode0xf0() { SET(B, 6); }
 // void Processor::cb_opcode0xf1() { SET(C, 6); }
 // void Processor::cb_opcode0xf2() { SET(D, 6); }
@@ -1224,7 +1174,6 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xf5() { SET(L, 6); }
 // void Processor::cb_opcode0xf6() { SET(HL, 6); }
 // void Processor::cb_opcode0xf7() { SET(A, 6); }
-
 // void Processor::cb_opcode0xf8() { SET(B, 7); }
 // void Processor::cb_opcode0xf9() { SET(C, 7); }
 // void Processor::cb_opcode0xfa() { SET(D, 7); }
@@ -1233,6 +1182,19 @@ void Processor::opcode0x2e() { op::LD_imm(this, L); }
 // void Processor::cb_opcode0xfd() { SET(L, 7); }
 // void Processor::cb_opcode0xfe() { SET(HL, 7); }
 // void Processor::cb_opcode0xff() { SET(A, 7); }
+
+// #pragma endregion
+
+
+// /*	Bit opcodes
+// */
+// #pragma region
+
+
+                                               
+
+
+
 
 // #pragma endregion
 
