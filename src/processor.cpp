@@ -21,21 +21,6 @@ bool Processor::step(int break_point)
     }
 }
 
-u8 Processor::fetch_byte()
-{
-    u8 data = memory[PC.value()];
-    PC.increment();
-    return data;
-}
-
-u16 Processor::fetch_word()
-{
-    u8 low = fetch_byte();
-    u8 high = fetch_byte();
-    u16 word = (high << 8) | low;
-    return word;
-}
-
 void Processor::print_registers()
 {
     std::cout << "AF:\t"  << std::setw(4) << std::setfill('0')
@@ -51,6 +36,39 @@ void Processor::print_registers()
               << "PC:\t"  << std::setw(4) << std::setfill('0')
               << std::hex << (int)PC.value() << "\n";
 }
+
+u8 Processor::fetch_byte()
+{
+    u8 data = memory.read(PC.value());
+    PC.increment();
+    return data;
+}
+
+u16 Processor::fetch_word()
+{
+    u8 low = fetch_byte();
+    u8 high = fetch_byte();
+    u16 word = (high << 8) | low;
+    return word;
+}
+
+void Processor::set_flag(u8 mask, bool b)
+{
+    if (b) {
+        F.set(F.value() | mask);
+    } else {
+        F.set(F.value() & ~mask);
+    }
+}
+
+bool Processor::carry_flag() { return F.value() & ZERO; }
+
+bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
+
+bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
+
+bool Processor::carry_flag() { return F.value() & CARRY; }
+
 
 void Processor::execute(u8 instr)
 {
@@ -129,7 +147,7 @@ void Processor::execute(u8 instr)
         op::RL(this, A);                       
         break;
     case 0x18:
-        op::JR(this);                          
+        op::JR(this, true);
         break;
     case 0x19:
         op::ADD(this, HL, DE);                 
@@ -153,7 +171,7 @@ void Processor::execute(u8 instr)
         op::RR(this, A);                       
         break;
     case 0x20:
-        op::JR_NZ(this);                       
+        op::JR(this, !(flags() & ZERO));
         break;
     case 0x21:
         op::LD_imm(this, HL);                  
@@ -177,7 +195,7 @@ void Processor::execute(u8 instr)
         op::DAA(this);                         
         break;
     case 0x28:
-        op::JRZ(this);                         
+        op::JR(this, flags() & ZERO);
         break;
     case 0x29:
         op::ADD(this, HL, HL);                 
@@ -201,13 +219,14 @@ void Processor::execute(u8 instr)
         op::CPL(this);                         
         break;
     case 0x30:
-        op::JRNC(this);                        
+        op::JR(this, !(flags() & CARRY));                        
         break;
     case 0x31:
         op::LD_imm(this, SP);                  
         break;
     case 0x32:
-        op::LD_mem_dec(this, HL, A);           
+        op::LD_mem(this, HL, A);
+        HL.decrement();
         break;
     case 0x33:
         op::INC(this, SP);                     
@@ -225,7 +244,7 @@ void Processor::execute(u8 instr)
         op::SCF(this);                         
         break;
     case 0x38:
-        op::JRC(this);                         
+        op::JR(this, flags() & CARRY);
         break;
     case 0x39:
         op::ADD(this, HL, SP);    
@@ -249,148 +268,148 @@ void Processor::execute(u8 instr)
         op::CCF(this);                         
         break;
     case 0x40:
-        op::LD(this, B, B);                    
+        op::LD(B, B);                    
         break;
     case 0x41:
-        op::LD(this, B, C);                    
+        op::LD(B, C);                    
         break;
     case 0x42:
-        op::LD(this, B, D);                    
+        op::LD(B, D);                    
         break;
     case 0x43:
-        op::LD(this, B, E);                    
+        op::LD(B, E);                    
         break;
     case 0x44:
-        op::LD(this, B, H);                    
+        op::LD(B, H);                    
         break;
     case 0x45:
-        op::LD(this, B, L);                    
+        op::LD(B, L);                    
         break;
     case 0x46:
         op::LD_mem(this, B, HL);               
         break;
     case 0x47:
-        op::LD(this, B, A);                    
+        op::LD(B, A);                    
         break;
     case 0x48:
-        op::LD(this, C, B);                    
+        op::LD(C, B);                    
         break;
     case 0x49:
-        op::LD(this, C, C);                    
+        op::LD(C, C);                    
         break;
     case 0x4a:
-        op::LD(this, C, D);                    
+        op::LD(C, D);                    
         break;
     case 0x4b:
-        op::LD(this, C, E);                    
+        op::LD(C, E);                    
         break;
     case 0x4c:
-        op::LD(this, C, H);                    
+        op::LD(C, H);                    
         break;
     case 0x4d:
-        op::LD(this, C, L);                    
+        op::LD(C, L);                    
         break;
     case 0x4e:
         op::LD_mem(this, C, HL);               
         break;
     case 0x4f:
-        op::LD(this, C, A);                    
+        op::LD(C, A);                    
         break;
     case 0x50:
-        op::LD(this, D, B);                    
+        op::LD(D, B);                    
         break;
     case 0x51:
-        op::LD(this, D, C);                    
+        op::LD(D, C);                    
         break;
     case 0x52:
-        op::LD(this, D, D);                    
+        op::LD(D, D);                    
         break;
     case 0x53:
-        op::LD(this, D, E);                    
+        op::LD(D, E);                    
         break;
     case 0x54:
-        op::LD(this, D, H);                    
+        op::LD(D, H);                    
         break;
     case 0x55:
-        op::LD(this, D, L);                    
+        op::LD(D, L);                    
         break;
     case 0x56:
         op::LD_mem(this, D, HL);               
         break;
     case 0x57:
-        op::LD(this, D, A);                    
+        op::LD(D, A);                    
         break;
     case 0x58:
-        op::LD(this, E, B);                    
+        op::LD(E, B);                    
         break;
     case 0x59:
-        op::LD(this, E, C);                    
+        op::LD(E, C);                    
         break;
     case 0x5a:
-        op::LD(this, E, D);                    
+        op::LD(E, D);                    
         break;
     case 0x5b:
-        op::LD(this, E, E);                    
+        op::LD(E, E);                    
         break;
     case 0x5c:
-        op::LD(this, E, H);                    
+        op::LD(E, H);                    
         break;
     case 0x5d:
-        op::LD(this, E, L);                    
+        op::LD(E, L);                    
         break;
     case 0x5e:
         op::LD_mem(this, E, HL);               
         break;
     case 0x5f:
-        op::LD(this, E, A);                    
+        op::LD(E, A);                    
         break;
     case 0x60:
-        op::LD(this, H, B);                    
+        op::LD(H, B);                    
         break;
     case 0x61:
-        op::LD(this, H, C);                    
+        op::LD(H, C);                    
         break;
     case 0x62:
-        op::LD(this, H, D);                    
+        op::LD(H, D);                    
         break;
     case 0x63:
-        op::LD(this, H, E);                    
+        op::LD(H, E);                    
         break;
     case 0x64:
-        op::LD(this, H, H);                    
+        op::LD(H, H);                    
         break;
     case 0x65:
-        op::LD(this, H, L);                    
+        op::LD(H, L);                    
         break;
     case 0x66:
         op::LD_mem(this, H, HL);               
         break;
     case 0x67:
-        op::LD(this, H, A);                    
+        op::LD(H, A);                    
         break;
     case 0x68:
-        op::LD(this, L, B);                    
+        op::LD(L, B);                    
         break;
     case 0x69:
-        op::LD(this, L, C);                    
+        op::LD(L, C);                    
         break;
     case 0x6a:
-        op::LD(this, L, D);                    
+        op::LD(L, D);                    
         break;
     case 0x6b:
-        op::LD(this, L, E);                    
+        op::LD(L, E);                    
         break;
     case 0x6c:
-        op::LD(this, L, H);                    
+        op::LD(L, H);                    
         break;
     case 0x6d:
-        op::LD(this, L, L);                    
+        op::LD(L, L);                    
         break;
     case 0x6e:
         op::LD_mem(this, L, HL);               
         break;
     case 0x6f:
-        op::LD(this, L, A);                    
+        op::LD(L, A);                    
         break;
     case 0x70:
         op::LD_mem(this, HL, B);               
@@ -411,34 +430,34 @@ void Processor::execute(u8 instr)
         op::LD_mem(this, HL, L);               
         break;
     case 0x76:
-        op::HALT(this);                        
+        op::HALT();                        
         break;
     case 0x77:
         op::LD_mem(this, HL, A);               
         break;
     case 0x78:
-        op::LD(this, A, B);                    
+        op::LD(A, B);                    
         break;
     case 0x79:
-        op::LD(this, A, C);                    
+        op::LD(A, C);                    
         break;
     case 0x7a:
-        op::LD(this, A, D);                    
+        op::LD(A, D);                    
         break;
     case 0x7b:
-        op::LD(this, A, E);                    
+        op::LD(A, E);                    
         break;
     case 0x7c:
-        op::LD(this, A, H);                    
+        op::LD(A, H);                    
         break;
     case 0x7d:
-        op::LD(this, A, L);                    
+        op::LD(A, L);                    
         break;
     case 0x7e:
         op::LD_mem(this, A, HL);               
         break;
     case 0x7f:
-        op::LD(this, A, A);                    
+        op::LD(A, A);                    
         break;
     case 0x80:
         op::ADD(this, A, B);                   
@@ -633,19 +652,19 @@ void Processor::execute(u8 instr)
         op::CP(this, A, A);;                   
         break;
     case 0xc0:
-        op::RETNZ(this);                       
+        op::RET(this, !(flags() & ZERO));
         break;
     case 0xc1:
         op::POP(this, BC);                     
         break;
     case 0xc2:
-        op::JPNZ(this);                        
+        op::JP(this, !(flags() & ZERO));
         break;
     case 0xc3:
-        op::JP(this);                          
+        op::JP(this, true);
         break;
     case 0xc4:
-        op::CALLNZ(this);                      
+        op::CALL(this, !(flags() & ZERO));                      
         break;
     case 0xc5:
         op::PUSH(this, BC);                    
@@ -657,23 +676,23 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x00);                   
         break;
     case 0xc8:
-        op::RETZ(this);                        
+        op::RET(this, flags() & ZERO);
         break;
     case 0xc9:
-        op::RET(this);                         
+        op::RET(this, true);
         break;
     case 0xca:
-        op::JPZ(this);                         
+        op::JP(this, flags() & ZERO);
         break;
     case 0xcb:
         instr = fetch_byte();
         cb_execute(instr);
         break;
     case 0xcc:
-        op::CALLZ(this);                       
+        op::CALL(this, flags() & ZERO);                       
         break;
     case 0xcd:
-        op::CALL(this);                        
+        op::CALL(this, true);
         break;
     case 0xce:
         op::ADC_imm(this, A);                  
@@ -682,19 +701,19 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x08);                   
         break;
     case 0xd0:
-        op::RETNC(this);                       
+        op::RET(this, !(flags() & CARRY));
         break;
     case 0xd1:
         op::POP(this, DE);                     
         break;
     case 0xd2:
-        op::JPNC(this);                        
+        op::JP(this, !(flags() & CARRY));
         break;
     case 0xd3:
         op::INVALID();                         
         break;
     case 0xd4:
-        op::CALLNC(this);                      
+        op::CALL(this, !(flags() & CARRY));
         break;
     case 0xd5:
         op::PUSH(this, DE);                    
@@ -706,19 +725,19 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x10);                   
         break;
     case 0xd8:
-        op::RETC(this);                        
+        op::RET(this, flags() & CARRY);
         break;
     case 0xd9:
         op::RETI(this);                        
         break;
     case 0xda:
-        op::JPC(this);                         
+        op::JP(this, flags() & CARRY);
         break;
     case 0xdb:
         op::INVALID();                         
         break;
     case 0xdc:
-        op::CALLC(this);                       
+        op::CALL(this, flags() & CARRY);
         break;
     case 0xdd:
         op::INVALID();                         
@@ -730,7 +749,7 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x18);                   
         break;
     case 0xe0:
-        op::LDH(this, A);
+        memory.write(0xff00 + fetch_byte(), A.value());
         break;
     case 0xe1:
         op::POP(this, HL);       
@@ -757,7 +776,7 @@ void Processor::execute(u8 instr)
         op::ADD_imm(this, SP);                 
         break;
     case 0xe9:
-        op::JP(this, HL);    
+        op::JP(this, HL);
         break;
     case 0xea:
         
@@ -778,16 +797,16 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x28);                   
         break;
     case 0xf0:
-        op::LDH(this, A);
+        A.set(memory.read(0xff00 + fetch_byte()));
         break;
     case 0xf1:
         op::POP(this, AF);                     
         break;
     case 0xf2:
-        op::LD_mem(this, A, C);
+        A.set(memory.read(0xff00 + C.value()));
         break;
     case 0xf3:
-        op::DI();                              
+        op::DI(this);                              
         break;
     case 0xf4:
         op::INVALID();                         
@@ -805,13 +824,13 @@ void Processor::execute(u8 instr)
         
         break;
     case 0xf9:
-        op::LD(this, SP, HL); 
+        op::LD(SP, HL); 
         break;
     case 0xfa:
         
         break;
     case 0xfb:
-        op::EI();                              
+        op::EI(this);                              
         break;
     case 0xfc:
         op::INVALID();                         
@@ -825,6 +844,8 @@ void Processor::execute(u8 instr)
     case 0xff:
         op::RST(this, 0x38);    
         break;
+    default:
+        // TODO ?
     }
 }
 

@@ -6,32 +6,34 @@
 #include "register8bit.h"
 #include "register16bit.h"
 #include "functions.h"
-#include "memory.h"
+#include "include/memory.h"
 #include "operations.h"
 
 class Processor
 {
 public:
-    Processor(u8 *mem = nullptr);
-
+    Processor(Memory mem);
     bool step(int break_point = 0);
     void print_registers();
-
-    void execute(u8 instr);
-    void cb_execute(u8 instr);
-    void process_interrupts() {}
 
     u8 fetch_byte();
     u16 fetch_word();
 
     void set_flag(u8 mask, bool b);
+    void process_interrupts() {}
+    void execute(u8 instr);
+    void cb_execute(u8 instr);
 
-    static const u8 ZERO = 1 << 7;       // Z
-    static const u8 SUBTRACT = 1 << 6;   // N
-    static const u8 HALF_CARRY = 1 << 5; // C
-    static const u8 CARRY = 1 << 4;      // H
+    bool zero_flag();         // Z
+    bool subtract_flag();     // N
+    bool half_carry_flag();   // H
+    bool carry_flag();        // C
 
-private:
+    static const u8 ZERO = 1 << 7;       
+    static const u8 SUBTRACT = 1 << 6;   
+    static const u8 HALF_CARRY = 1 << 5; 
+    static const u8 CARRY = 1 << 4;      
+
     Register8bit A;
     Register8bit F;
     Register8bit B;
@@ -48,10 +50,9 @@ private:
     Register16bit SP;
     Register16bit PC;
 
-    u8 *memory; 
+    Memory memory; 
     int clock_cycles;
-
-    
+};    
 
     // For setting the correct bits of the flag register F
     /*void set(int b);
@@ -73,6 +74,6 @@ private:
     
     void stack_push(u8 data);
     u8 stack_pop();*/
-};
+
 
 #endif
