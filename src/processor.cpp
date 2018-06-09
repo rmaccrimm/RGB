@@ -11,16 +11,24 @@ Processor::Processor(Memory *mem) : memory(mem) {}
 bool Processor::step(int break_point)
 {
     u8 instr = fetch_byte();
-    execute(instr);
+    std::string prefix = "";
+    if (instr == 0xcb) {
+        instr = fetch_byte();
+        cb_execute(instr);
+        prefix = "cb ";
+    } else {
+        execute(instr);
+    }
     process_interrupts();
     
     if (DEBUG_MODE) {
-        std::cout << std::hex << (int)instr << std::endl;
-        //print_register_values();
+        std::cout << prefix << std::hex << (int)instr << std::endl;
     }
-    if (PC.value() == break_point) {
+    if (break_point >=0 && PC.value() >= break_point) {
         return false;
     }
+
+    return true;
 }
 
 void Processor::print_registers()
@@ -100,7 +108,7 @@ void Processor::execute(u8 instr)
         op::RLC(this, A);                      
         break;
     case 0x08:
-        
+        // LD (nn), SP
         break;
     case 0x09:
         op::ADD(this, HL, BC);                 
@@ -178,7 +186,7 @@ void Processor::execute(u8 instr)
         op::LD_imm(this, HL);                  
         break;
     case 0x22:
-        
+        // LD (HL+), A
         break;
     case 0x23:
         op::INC(HL);

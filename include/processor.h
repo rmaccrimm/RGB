@@ -13,16 +13,15 @@ class Processor
 {
 public:
     Processor(Memory *mem);
-    bool step(int break_point = 0);
+    bool step(int break_point = -1);
     void print_registers();
-
-    u8 fetch_byte();
-    u16 fetch_word();
-
     void set_flag(u8 mask, bool b);
     void process_interrupts() {}
     void execute(u8 instr);
     void cb_execute(u8 instr);
+
+    u8 fetch_byte();
+    u16 fetch_word();
 
     bool zero_flag();         // Z
     bool subtract_flag();     // N
@@ -53,27 +52,5 @@ public:
     Memory *memory; 
     int clock_cycles;
 };    
-
-    // For setting the correct bits of the flag register F
-    /*void set(int b);
-    void reset(int b);
-    // Set if true, else reset
-    void set_cond(int b, bool cond);
-    bool is_set(int b);
-
-    void flag_set(Register8bit const &reg);
-
-    void set_add_flags(u16 a, u16 b);
-    void set_sub_flags(u16 a, u16 b);
-
-    void flag_reset(Register8bit const &reg);
-    void flag_reset(Register16bit const &reg);
-
-    void set_and_flags(u8 val);
-    void set_or_flags(u8 val);
-    
-    void stack_push(u8 data);
-    u8 stack_pop();*/
-
 
 #endif
