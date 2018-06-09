@@ -15,6 +15,9 @@ namespace op
     typedef Register8bit r8;
     typedef Register16bit r16;
 
+    void set_nhc_flags_add(Processor *proc, int a, int b);
+    void set_nhc_flags_sub(Processor *proc, int a, int b);
+
     void NOP() {}
     void INVALID();
     void HALT();
@@ -49,7 +52,7 @@ namespace op
     void SBC_mem(Processor *proc, r8 &dest, r16 const &src);
 
     void INC(Processor *proc, r8 &reg);
-    void INC(Processor *proc, r16 &reg);
+    void INC(r16 &reg);
     void INC_mem(Processor *proc, r16 const &reg); 
     void DEC(Processor *proc, r8 &reg);
     void DEC(Processor *proc, r16 &reg);
@@ -69,15 +72,15 @@ namespace op
     void CP_mem(Processor *proc, r8 &dest, r16 const &src);
 
     void SWAP(Processor *proc, r8 &reg);
-    void SWAP(Processor *proc, r16 const &reg);
+    void SWAP_mem(Processor *proc, r16 const &reg);
 
     void RL(Processor *proc, r8 &reg);
-    void RR(Processor *proc, r8 &reg);
-    void RLC(Processor *proc, r8 &reg);
-    void RRC(Processor *proc, r8 &reg);
     void RL(Processor *proc, r16 const &reg);
-    void RR(Processor *proc, r16 const &reg);
+    void RLC(Processor *proc, r8 &reg);
     void RLC(Processor *proc, r16 const &reg);
+    void RR(Processor *proc, r8 &reg);
+    void RR(Processor *proc, r16 const &reg);
+    void RRC(Processor *proc, r8 &reg);
     void RRC(Processor *proc, r16 const &reg);
 
     void SLA(Processor *proc, r8 &reg);
@@ -94,10 +97,20 @@ namespace op
     void RES(Processor *proc, r8 &reg, u8 bit);
     void RES(Processor *proc, r16 const &reg, u8 bit);
 
-    void JP_cond(Processor *proc, bool cond);
-    void JR_cond(Processor *proc, bool cond);
-    void CALL_cond(Processor *proc, bool cond);
+    void JP(Processor *proc, bool cond);
+    void JP(Processor *proc, r16 &reg);
+    void JR(Processor *proc, bool cond);
+    void CALL(Processor *proc, bool cond);
+    void RET(Processor *proc, bool cond);
+    void RETI(Processor *proc);
+
     void RST(Processor *proc, u8 addr);
+    void DAA(Processor *proc);
+    void CPL(Processor *proc);
+    void SCF(Processor *proc);
+    void CCF(Processor *proc);
+    void EI(Processor *proc);
+    void DI(Processor *proc);
 }
 
 #endif

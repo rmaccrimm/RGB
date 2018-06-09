@@ -6,74 +6,74 @@
 #pragma region
 
 
-// void Processor::stack_push(u8 data)
-// {
-//     SP.decrement();
-//     memory[SP.value()] = data;
-// }
+void Processor::stack_push(u8 data)
+{
+    SP.decrement();
+    memory[SP.value()] = data;
+}
 
-// u8 Processor::stack_pop()
-// {
-//     u8 data = memory[SP.value()];
-//     SP.increment();
-//     return data;
-// }
+u8 Processor::stack_pop()
+{
+    u8 data = memory[SP.value()];
+    SP.increment();
+    return data;
+}
 
-// void Processor::set_add_flags(u16 a, u16 b)
-// {
-//     set_cond(flags.carry, full_carry_add(a, b));
-//     set_cond(flags.half_carry, half_carry_add(a, b));
-//     set_cond(flags.zero, (a + b) == 0);
-//     reset(flags.subtract);
-// }
+void Processor::set_add_flags(u16 a, u16 b)
+{
+    set_cond(flags.carry, full_carry_add(a, b));
+    set_cond(flags.half_carry, half_carry_add(a, b));
+    set_cond(flags.zero, (a + b) == 0);
+    reset(flags.subtract);
+}
 
-// void Processor::set_sub_flags(u16 a, u16 b)
-// {
-//     set_cond(flags.carry, full_carry_sub(a, b));
-//     set_cond(flags.half_carry, half_carry_sub(a, b));
-//     set_cond(flags.zero, (a - b) == 0);
-//     set(flags.subtract);
-// }
+void Processor::set_sub_flags(u16 a, u16 b)
+{
+    set_cond(flags.carry, full_carry_sub(a, b));
+    set_cond(flags.half_carry, half_carry_sub(a, b));
+    set_cond(flags.zero, (a - b) == 0);
+    set(flags.subtract);
+}
 
-// void Processor::flag_reset(Register8bit const &reg)
-// {
-//     set_cond(flags.zero, reg.value() == 0);
-//     reset(flags.subtract);
-//     reset(flags.half_carry);
-// }
+void Processor::flag_reset(Register8bit const &reg)
+{
+    set_cond(flags.zero, reg.value() == 0);
+    reset(flags.subtract);
+    reset(flags.half_carry);
+}
 
-// void Processor::flag_reset(Register16bit const &reg)
-// {
-//     set_cond(flags.zero, memory[reg.value()] == 0);
-//     reset(flags.subtract);
-//     reset(flags.half_carry);
-// }
+void Processor::flag_reset(Register16bit const &reg)
+{
+    set_cond(flags.zero, memory[reg.value()] == 0);
+    reset(flags.subtract);
+    reset(flags.half_carry);
+}
 
-// void Processor::set_and_flags(u8 val)
-// {
-//     if (val == 0) {
-//         set(flags.zero);
-//     }
-//     reset(flags.subtract);
-//     set(flags.half_carry);
-//     reset(flags.carry);
-// }
+void Processor::set_and_flags(u8 val)
+{
+    if (val == 0) {
+        set(flags.zero);
+    }
+    reset(flags.subtract);
+    set(flags.half_carry);
+    reset(flags.carry);
+}
 
-// void Processor::set_or_flags(u8 val)
-// {
-//     if (val == 0) {
-//         set(flags.zero);
-//     }
-//     reset(flags.subtract);
-//     reset(flags.half_carry);
-//     reset(flags.carry);
-// }
+void Processor::set_or_flags(u8 val)
+{
+    if (val == 0) {
+        set(flags.zero);
+    }
+    reset(flags.subtract);
+    reset(flags.half_carry);
+    reset(flags.carry);
+}
 
-// #pragma endregion
+#pragma endregion
 
 
-// // Load operations
-// #pragma region
+// Load operations
+#pragma region
 
 // void Processor::LD_immediate(Register8bit &reg)
 // {
@@ -130,156 +130,156 @@
 //     reg.set_high(stack_pop());
 // }
 
-// #pragma endregion
+#pragma endregion
 
 
-// // Add/Subtract operations
-// #pragma region
+// Add/Subtract operations
+#pragma region
 
-// void Processor::INC_register(Register8bit &reg) 
-// {
-//     set_cond(flags.half_carry, half_carry_add(reg.value(), 1));
-//     reset(flags.subtract);
-//     reg.increment();
-//     set_cond(flags.zero, (reg.value() == 0));
-// }
+void Processor::INC_register(Register8bit &reg) 
+{
+    set_cond(flags.half_carry, half_carry_add(reg.value(), 1));
+    reset(flags.subtract);
+    reg.increment();
+    set_cond(flags.zero, (reg.value() == 0));
+}
 
-// void Processor::INC_register(Register16bit &reg)
-// {
-//     reg.increment();
-// }
+void Processor::INC_register(Register16bit &reg)
+{
+    reg.increment();
+}
 
-// void Processor::INC_address(Register16bit const &reg)
-// {	
-//     set_cond(flags.half_carry, half_carry_add(memory[reg.value()], 1));
-//     reset(flags.subtract);
-//     memory[reg.value()]++;
-//     set_cond(flags.zero, (memory[reg.value()] == 0));
-// }
+void Processor::INC_address(Register16bit const &reg)
+{	
+    set_cond(flags.half_carry, half_carry_add(memory[reg.value()], 1));
+    reset(flags.subtract);
+    memory[reg.value()]++;
+    set_cond(flags.zero, (memory[reg.value()] == 0));
+}
 
-// void Processor::DEC_register(Register8bit &reg)
-// {
-//     set_cond(flags.half_carry, half_carry_sub(reg.value(), 1));
-//     set(flags.subtract);
-//     reg.decrement();
-//     set_cond(flags.zero, (reg.value() == 0));
-// }
+void Processor::DEC_register(Register8bit &reg)
+{
+    set_cond(flags.half_carry, half_carry_sub(reg.value(), 1));
+    set(flags.subtract);
+    reg.decrement();
+    set_cond(flags.zero, (reg.value() == 0));
+}
 
-// void Processor::DEC_register(Register16bit &reg)
-// {
-//     reg.decrement();
-// }
+void Processor::DEC_register(Register16bit &reg)
+{
+    reg.decrement();
+}
 
-// void Processor::DEC_address(Register16bit const &reg)
-// {
-//     set_cond(flags.half_carry, half_carry_sub(memory[reg.value()], 1));
-//     set(flags.subtract);
-//     memory[reg.value()]--;
-//     set_cond(flags.zero, (memory[reg.value()] == 0));
-// }
+void Processor::DEC_address(Register16bit const &reg)
+{
+    set_cond(flags.half_carry, half_carry_sub(memory[reg.value()], 1));
+    set(flags.subtract);
+    memory[reg.value()]--;
+    set_cond(flags.zero, (memory[reg.value()] == 0));
+}
 
-// void Processor::ADD_register(Register8bit &dest, Register8bit const &src, bool carry)
-// {
-//     int add = src.value();
-//     if (carry) {
-//         add += flags.carry;
-//     }
-//     set_add_flags(dest.value(), add);
-//     dest.set(dest.value() + add);
-// }
+void Processor::ADD_register(Register8bit &dest, Register8bit const &src, bool carry)
+{
+    int add = src.value();
+    if (carry) {
+        add += flags.carry;
+    }
+    set_add_flags(dest.value(), add);
+    dest.set(dest.value() + add);
+}
 
-// void Processor::ADD_register(Register16bit &dest, Register16bit const &src)
-// {
-//     u16 a = dest.value();
-//     u16 b = src.value();
-//     // carry from bit 11
-//     set_cond(flags.half_carry, (((a & 0xfff) + (b & 0xfff)) & 0x1000) == 0x1000);
-//     // carry from bit 15
-//     set_cond(flags.half_carry, (((a & 0xffff) + (b & 0xffff)) & 0x10000) == 0x10000);
-//     dest.set(dest.value() + src.value());
-// }
+void Processor::ADD_register(Register16bit &dest, Register16bit const &src)
+{
+    u16 a = dest.value();
+    u16 b = src.value();
+    // carry from bit 11
+    set_cond(flags.half_carry, (((a & 0xfff) + (b & 0xfff)) & 0x1000) == 0x1000);
+    // carry from bit 15
+    set_cond(flags.half_carry, (((a & 0xffff) + (b & 0xffff)) & 0x10000) == 0x10000);
+    dest.set(dest.value() + src.value());
+}
 
-// void Processor::ADD_immediate(Register8bit &reg, bool carry)
-// {
-//     int add = fetch_byte();
-//     if (carry) {
-//         add += flags.carry;
-//     }
-//     set_add_flags(reg.value(), add);
-//     reg.set(reg.value() + add);
-// }
+void Processor::ADD_immediate(Register8bit &reg, bool carry)
+{
+    int add = fetch_byte();
+    if (carry) {
+        add += flags.carry;
+    }
+    set_add_flags(reg.value(), add);
+    reg.set(reg.value() + add);
+}
 
-// void Processor::ADD_immediate(Register16bit &reg)
-// {
-//     i8 val = fetch_byte();
-//     set_cond(flags.carry, full_carry_add(reg.value_low(), val));
-//     set_cond(flags.half_carry, half_carry_add(reg.value_low(), val));
-//     reset(flags.zero);
-//     reset(flags.subtract);
-//     reg.set(reg.value() + val);
-// }
+void Processor::ADD_immediate(Register16bit &reg)
+{
+    i8 val = fetch_byte();
+    set_cond(flags.carry, full_carry_add(reg.value_low(), val));
+    set_cond(flags.half_carry, half_carry_add(reg.value_low(), val));
+    reset(flags.zero);
+    reset(flags.subtract);
+    reg.set(reg.value() + val);
+}
 
-// void Processor::ADD_address(Register8bit &dest, Register16bit const &src, bool carry)
-// {
-//     int add = memory[src.value()];
-//     if (carry) {
-//         add += flags.carry;
-//     }
-//     set_add_flags(dest.value(), add);
-//     dest.set(dest.value() + add);
-// }
+void Processor::ADD_address(Register8bit &dest, Register16bit const &src, bool carry)
+{
+    int add = memory[src.value()];
+    if (carry) {
+        add += flags.carry;
+    }
+    set_add_flags(dest.value(), add);
+    dest.set(dest.value() + add);
+}
 
-// void Processor::SUB_register(Register8bit &dest, Register8bit const &src, bool carry)
-// {
-//     int sub = src.value();
-//     if (carry) {
-//         sub += flags.carry;
-//     }
-//     set_add_flags(dest.value(), sub);
-//     dest.set(dest.value() + sub);
-// }
+void Processor::SUB_register(Register8bit &dest, Register8bit const &src, bool carry)
+{
+    int sub = src.value();
+    if (carry) {
+        sub += flags.carry;
+    }
+    set_add_flags(dest.value(), sub);
+    dest.set(dest.value() + sub);
+}
 
-// void Processor::SUB_immediate(Register8bit &reg, bool carry)
-// {
-//     int sub = fetch_byte();
-//     if (carry) {
-//         sub += flags.carry;
-//     }
-//     set_add_flags(reg.value(), sub);
-//     reg.set(reg.value() + sub);
-// }
+void Processor::SUB_immediate(Register8bit &reg, bool carry)
+{
+    int sub = fetch_byte();
+    if (carry) {
+        sub += flags.carry;
+    }
+    set_add_flags(reg.value(), sub);
+    reg.set(reg.value() + sub);
+}
 
-// void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool carry)
-// {
-//     int sub = memory[src.value()];
-//     if (carry) {
-//         sub += flags.carry;
-//     }
-//     set_add_flags(dest.value(), sub);
-//     dest.set(dest.value() + sub);
-// }
+void Processor::SUB_address(Register8bit &dest, Register16bit const &src, bool carry)
+{
+    int sub = memory[src.value()];
+    if (carry) {
+        sub += flags.carry;
+    }
+    set_add_flags(dest.value(), sub);
+    dest.set(dest.value() + sub);
+}
 
-// #pragma endregion
+#pragma endregion
 
 
-// // Rotates
-// #pragma region
+// Rotates
+#pragma region
 
 // void Processor::RL(Register8bit &reg)
 // {
 //     int temp = reg.value() >> 7; // bit 7
-//     reg.set((reg.value() << 1) | (u8)flags.carry); // through carry
+//     reg.set((reg.value() << 1) | (u8)flags.carry); // rotate through carry
 //     set_cond(flags.carry, temp);
 //     flag_reset(reg);
 // }
 
-// void Processor::RR(Register8bit &reg)
-// {
-//     int temp = reg.value() & 1; // bit 0
-//     reg.set((reg.value() >> 1) | (flags.carry << 7)); // through carry
-//     set_cond(flags.carry, temp);
-//     flag_reset(reg);
-// }
+void Processor::RR(Register8bit &reg)
+{
+    int temp = reg.value() & 1; // bit 0
+    reg.set((reg.value() >> 1) | (flags.carry << 7)); // through carry
+    set_cond(flags.carry, temp);
+    flag_reset(reg);
+}
 
 // void Processor::RLC(Register8bit &reg)
 // {
@@ -289,269 +289,269 @@
 //     flag_reset(reg);
 // }
 
-// void Processor::RRC(Register8bit &reg)
-// {
-//     int temp = reg.value() & 1; // bit 0
-//     reg.set((reg.value() >> 1) | (temp << 7));
-//     set_cond(flags.carry, temp);
-//     flag_reset(reg);
-// }
+void Processor::RRC(Register8bit &reg)
+{
+    int temp = reg.value() & 1; // bit 0
+    reg.set((reg.value() >> 1) | (temp << 7));
+    set_cond(flags.carry, temp);
+    flag_reset(reg);
+}
 
-// void Processor::SLA(Register8bit &reg)
-// {
-//     set_cond(flags.carry, reg.value() >> 7);
-//     reg.set(reg.value() << 1);
-//     flag_reset(reg);
-// }
+void Processor::SLA(Register8bit &reg)
+{
+    set_cond(flags.carry, reg.value() >> 7);
+    reg.set(reg.value() << 1);
+    flag_reset(reg);
+}
 
-// void Processor::SRA(Register8bit &reg)
-// {
-//     set_cond(flags.carry, reg.value() & 1);
-//     u8 temp = reg.value() & (1 << 7); 
-//     reg.set((reg.value() >> 1) | temp);
-//     flag_reset(reg);
-// }
+void Processor::SRA(Register8bit &reg)
+{
+    set_cond(flags.carry, reg.value() & 1);
+    u8 temp = reg.value() & (1 << 7); 
+    reg.set((reg.value() >> 1) | temp);
+    flag_reset(reg);
+}
 
-// void Processor::SRL(Register8bit &reg)
-// {
-//     set_cond(flags.carry, reg.value() & 1);
-//     reg.set(reg.value() >> 1);
-//     flag_reset(reg);
-// }
-
-
-// // Address
-// void Processor::RL(Register16bit const &reg)
-// {
-//     int temp = memory[reg.value()] >> 7; // bit 7
-//     memory[reg.value()] = (memory[reg.value()] << 1) | (u8)flags.carry; // through carry
-//     set_cond(flags.carry, temp);
-//     flag_reset(reg);
-// }
-
-// void Processor::RR(Register16bit const &reg)
-// {
-//     int temp = memory[reg.value()] & 1; // bit 0
-//     memory[reg.value()] = (memory[reg.value()] >> 1) | (flags.carry << 7); // through carry
-//     set_cond(flags.carry, temp);
-//     flag_reset(reg);
-// }
-
-// void Processor::RLC(Register16bit const &reg)
-// {
-//     int temp = memory[reg.value()] >> 7; // bit 7
-//     memory[reg.value()] = (memory[reg.value()] << 1) | temp;
-//     set_cond(flags.carry, temp);
-//     flag_reset(reg);
-// }
-
-// void Processor::RRC(Register16bit const &reg)
-// {
-//     int temp = memory[reg.value()] & 1; // bit 0
-//     memory[reg.value()] = (memory[reg.value()] >> 1) | (temp << 7);
-//     set_cond(flags.carry, temp);
-//     flag_reset(reg);
-// }
-
-// void Processor::SLA(Register16bit const &reg)
-// {
-//     set_cond(flags.carry, memory[reg.value()] >> 7);
-//     memory[reg.value()] = memory[reg.value()] << 1;
-//     flag_reset(reg);
-// }
-
-// void Processor::SRA(Register16bit const &reg)
-// {
-//     set_cond(flags.carry, memory[reg.value()] & 1);
-//     u8 temp = memory[reg.value()] & (1 << 7); 
-//     memory[reg.value()] = (memory[reg.value()] >> 1) | temp;
-//     flag_reset(reg);
-// }
-
-// void Processor::SRL(Register16bit const &reg)
-// {
-//     set_cond(flags.carry, memory[reg.value()] & 1);
-//     memory[reg.value()] = memory[reg.value()] >> 1;
-//     flag_reset(reg);
-// }
-
-// #pragma endregion
-
-// void Processor::BIT(Register8bit &reg, u8 bit)
-// {
-//     set_cond(flags.zero, ((reg.value() >> bit) & 1) == 0);
-//     reset(flags.subtract);
-//     set(flags.half_carry);
-// }
-
-// void Processor::BIT(Register16bit const &reg, u8 bit)
-// {
-//     set_cond(flags.zero, ((memory[reg.value()] >> bit) & 1) == 0);
-//     reset(flags.subtract);
-//     set(flags.half_carry);
-// }
-
-// void Processor::SET(Register8bit &reg, u8 bit)
-// {
-//     reg.set(reg.value() | (1 << bit));
-// }
-
-// void Processor::SET(Register16bit const &reg, u8 bit)
-// {
-//     memory[reg.value()] = memory[reg.value()] | (1 << bit);
-// }
-
-// void Processor::RES(Register8bit &reg, u8 bit)
-// {
-//     reg.set(reg.value() & (0 << bit));
-// }
-
-// void Processor::RES(Register16bit const &reg, u8 bit)
-// {
-//     memory[reg.value()] = memory[reg.value()] & (0 << bit);
-// }
+void Processor::SRL(Register8bit &reg)
+{
+    set_cond(flags.carry, reg.value() & 1);
+    reg.set(reg.value() >> 1);
+    flag_reset(reg);
+}
 
 
-// // Logic functions
-// #pragma region
+// Address
+void Processor::RL(Register16bit const &reg)
+{
+    int temp = memory[reg.value()] >> 7; // bit 7
+    memory[reg.value()] = (memory[reg.value()] << 1) | (u8)flags.carry; // through carry
+    set_cond(flags.carry, temp);
+    flag_reset(reg);
+}
 
-// void Processor::AND_register(Register8bit &dest, Register8bit &src)
-// {
-//     dest.set(dest.value() & src.value());
-//     set_and_flags(dest.value());
-// }
+void Processor::RR(Register16bit const &reg)
+{
+    int temp = memory[reg.value()] & 1; // bit 0
+    memory[reg.value()] = (memory[reg.value()] >> 1) | (flags.carry << 7); // through carry
+    set_cond(flags.carry, temp);
+    flag_reset(reg);
+}
 
-// void Processor::AND_immediate(Register8bit &reg)
-// {
-//     u8 val = fetch_byte();
-//     reg.set(reg.value() & val);
-//     set_and_flags(val);
-// }
+void Processor::RLC(Register16bit const &reg)
+{
+    int temp = memory[reg.value()] >> 7; // bit 7
+    memory[reg.value()] = (memory[reg.value()] << 1) | temp;
+    set_cond(flags.carry, temp);
+    flag_reset(reg);
+}
 
-// void Processor::AND_address(Register8bit &dest, Register16bit &src)
-// {
-//     u8 val = memory[src.value()];
-//     dest.set(dest.value() & val);
-//     set_and_flags(val);
-// }
+void Processor::RRC(Register16bit const &reg)
+{
+    int temp = memory[reg.value()] & 1; // bit 0
+    memory[reg.value()] = (memory[reg.value()] >> 1) | (temp << 7);
+    set_cond(flags.carry, temp);
+    flag_reset(reg);
+}
 
-// void Processor::OR_register(Register8bit &dest, Register8bit &src)
-// {
-//     dest.set(dest.value() | src.value());
-//     set_or_flags(dest.value());
-// }
+void Processor::SLA(Register16bit const &reg)
+{
+    set_cond(flags.carry, memory[reg.value()] >> 7);
+    memory[reg.value()] = memory[reg.value()] << 1;
+    flag_reset(reg);
+}
 
-// void Processor::OR_immediate(Register8bit &reg)
-// {
-//     u8 val = fetch_byte();
-//     reg.set(reg.value() | val);
-//     set_or_flags(val);
-// }
+void Processor::SRA(Register16bit const &reg)
+{
+    set_cond(flags.carry, memory[reg.value()] & 1);
+    u8 temp = memory[reg.value()] & (1 << 7); 
+    memory[reg.value()] = (memory[reg.value()] >> 1) | temp;
+    flag_reset(reg);
+}
 
-// void Processor::OR_address(Register8bit &dest, Register16bit &src)
-// {
-//     u8 val = memory[src.value()];
-//     dest.set(dest.value() | val);
-//     set_or_flags(val);
-// }
+void Processor::SRL(Register16bit const &reg)
+{
+    set_cond(flags.carry, memory[reg.value()] & 1);
+    memory[reg.value()] = memory[reg.value()] >> 1;
+    flag_reset(reg);
+}
 
-// void Processor::XOR_register(Register8bit &dest, Register8bit &src)
-// {
-//     dest.set(dest.value() ^ src.value());
-//     set_or_flags(dest.value());
-// }
+#pragma endregion
 
-// void Processor::XOR_immediate(Register8bit &reg)
-// {
-//     u8 val = fetch_byte();
-//     reg.set(reg.value() ^ val);
-//     set_or_flags(val);
-// }
+void Processor::BIT(Register8bit &reg, u8 bit)
+{
+    set_cond(flags.zero, ((reg.value() >> bit) & 1) == 0);
+    reset(flags.subtract);
+    set(flags.half_carry);
+}
 
-// void Processor::XOR_address(Register8bit &dest, Register16bit &src)
-// {
-//     u8 val = memory[src.value()];
-//     dest.set(dest.value() ^ val);
-//     set_or_flags(val);
-// }
+void Processor::BIT(Register16bit const &reg, u8 bit)
+{
+    set_cond(flags.zero, ((memory[reg.value()] >> bit) & 1) == 0);
+    reset(flags.subtract);
+    set(flags.half_carry);
+}
 
-// void Processor::CP_register(Register8bit &dest, Register8bit &src)
-// {
-//     set_sub_flags(dest.value(), src.value());
-// }
+void Processor::SET(Register8bit &reg, u8 bit)
+{
+    reg.set(reg.value() | (1 << bit));
+}
 
-// void Processor::CP_immediate(Register8bit &reg)
-// {
-//     set_sub_flags(reg.value(), fetch_byte());
-// }
+void Processor::SET(Register16bit const &reg, u8 bit)
+{
+    memory[reg.value()] = memory[reg.value()] | (1 << bit);
+}
 
-// void Processor::CP_address(Register8bit &dest, Register16bit &src)
-// {
-//     set_sub_flags(dest.value(), memory[src.value()]);
-// }
+void Processor::RES(Register8bit &reg, u8 bit)
+{
+    reg.set(reg.value() & (0 << bit));
+}
 
-// #pragma endregion
+void Processor::RES(Register16bit const &reg, u8 bit)
+{
+    memory[reg.value()] = memory[reg.value()] & (0 << bit);
+}
 
-// void Processor::SWAP(Register8bit &reg)
-// {
-//     reg.set(swap(reg.value()));
-//     if (reg.value() == 0) {
-//         set(flags.zero);
-//     }
-//     reset(flags.subtract);
-//     reset(flags.half_carry);
-//     reset(flags.carry);
-// }
 
-// void Processor::SWAP(Register16bit const &reg)
-// {
-//     memory[reg.value()] = swap(memory[reg.value()]);
-//     if (memory[reg.value()] == 0) {
-//         set(flags.zero);
-//     }
-//     reset(flags.subtract);
-//     reset(flags.half_carry);
-//     reset(flags.carry);
-// }
+// Logic functions
+#pragma region
 
-// void Processor::RET()
-// {
-//     PC.set_low(stack_pop());
-//     PC.set_high(stack_pop());
-// }
+void Processor::AND_register(Register8bit &dest, Register8bit &src)
+{
+    dest.set(dest.value() & src.value());
+    set_and_flags(dest.value());
+}
 
-// void Processor::JP_cond(bool cond)
-// {
-//     u16 n = fetch_word();
-//     if (cond) {
-//         PC.set(n);
-//     }
-// }
+void Processor::AND_immediate(Register8bit &reg)
+{
+    u8 val = fetch_byte();
+    reg.set(reg.value() & val);
+    set_and_flags(val);
+}
 
-// void Processor::JR_cond(bool cond)
-// {
-//     i8 n = (i8)fetch_byte();
-//     if (cond) {
-//         PC.add(n);
-//     }
-// }
+void Processor::AND_address(Register8bit &dest, Register16bit &src)
+{
+    u8 val = memory[src.value()];
+    dest.set(dest.value() & val);
+    set_and_flags(val);
+}
 
-// void Processor::CALL_cond(bool cond)
-// {
-//     u16 n = fetch_word();
-//     if (cond) {
-//         PUSH_register(PC);
-//         PC.set(n);
-//     }
-// }
+void Processor::OR_register(Register8bit &dest, Register8bit &src)
+{
+    dest.set(dest.value() | src.value());
+    set_or_flags(dest.value());
+}
 
-// void Processor::RST(u8 addr)
-// {
-//     PUSH_register(PC); // possibly - 1?
-//     PC.set(addr);
-// }
+void Processor::OR_immediate(Register8bit &reg)
+{
+    u8 val = fetch_byte();
+    reg.set(reg.value() | val);
+    set_or_flags(val);
+}
 
-//  8-bit load opcodes
+void Processor::OR_address(Register8bit &dest, Register16bit &src)
+{
+    u8 val = memory[src.value()];
+    dest.set(dest.value() | val);
+    set_or_flags(val);
+}
+
+void Processor::XOR_register(Register8bit &dest, Register8bit &src)
+{
+    dest.set(dest.value() ^ src.value());
+    set_or_flags(dest.value());
+}
+
+void Processor::XOR_immediate(Register8bit &reg)
+{
+    u8 val = fetch_byte();
+    reg.set(reg.value() ^ val);
+    set_or_flags(val);
+}
+
+void Processor::XOR_address(Register8bit &dest, Register16bit &src)
+{
+    u8 val = memory[src.value()];
+    dest.set(dest.value() ^ val);
+    set_or_flags(val);
+}
+
+void Processor::CP_register(Register8bit &dest, Register8bit &src)
+{
+    set_sub_flags(dest.value(), src.value());
+}
+
+void Processor::CP_immediate(Register8bit &reg)
+{
+    set_sub_flags(reg.value(), fetch_byte());
+}
+
+void Processor::CP_address(Register8bit &dest, Register16bit &src)
+{
+    set_sub_flags(dest.value(), memory[src.value()]);
+}
+
+#pragma endregion
+
+void Processor::SWAP(Register8bit &reg)
+{
+    reg.set(swap(reg.value()));
+    if (reg.value() == 0) {
+        set(flags.zero);
+    }
+    reset(flags.subtract);
+    reset(flags.half_carry);
+    reset(flags.carry);
+}
+
+void Processor::SWAP(Register16bit const &reg)
+{
+    memory[reg.value()] = swap(memory[reg.value()]);
+    if (memory[reg.value()] == 0) {
+        set(flags.zero);
+    }
+    reset(flags.subtract);
+    reset(flags.half_carry);
+    reset(flags.carry);
+}
+
+void Processor::RET()
+{
+    PC.set_low(stack_pop());
+    PC.set_high(stack_pop());
+}
+
+void Processor::JP_cond(bool cond)
+{
+    u16 n = fetch_word();
+    if (cond) {
+        PC.set(n);
+    }
+}
+
+void Processor::JR_cond(bool cond)
+{
+    i8 n = (i8)fetch_byte();
+    if (cond) {
+        PC.add(n);
+    }
+}
+
+void Processor::CALL_cond(bool cond)
+{
+    u16 n = fetch_word();
+    if (cond) {
+        PUSH_register(PC);
+        PC.set(n);
+    }
+}
+
+void Processor::RST(u8 addr)
+{
+    PUSH_register(PC); // possibly - 1?
+    PC.set(addr);
+}
+
+ 8-bit load opcodes
 #pragma region
 void Processor::opcode0x3e() { op::LD_imm(this, A); }
 void Processor::opcode0x06() { op::LD_imm(this, B); }
