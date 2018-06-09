@@ -11,3 +11,5 @@ void Register8bit::increment() { byte++; }
 void Register8bit::decrement() { byte--; }
 
 void Register8bit::add(u8 x) { byte += x; }
+
+void Register8bit::sub(u8 x) { byte -= x; }
