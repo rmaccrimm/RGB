@@ -37,4 +37,6 @@ void Register16bit::increment() { set(value() + 1); }
 
 void Register16bit::decrement() { set(value() - 1); }
 
-void Register16bit::add(i16 x) { set(value() + x); }
+void Register16bit::add(u16 x) { set(value() + x); }
+
+void Register16bit::sub(u16 x) { set(value() - x); }

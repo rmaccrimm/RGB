@@ -26,7 +26,8 @@ public:
 
     void increment();
     void decrement();
-    void add(i16 x);
+    void add(u16 x);
+    void sub(u16 x);
 
 private:
     const bool referencing;
