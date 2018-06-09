@@ -5,7 +5,7 @@
 #include "gpu.h"
 using namespace std;
 
-void load_rom(u8 memory[], const char *path)
+void utils::load_rom(u8 memory[], const char *path)
 {
     size_t file_size;
     ifstream ifs(path, ios_base::in | ios_base::binary);
@@ -22,32 +22,32 @@ void load_rom(u8 memory[], const char *path)
     delete buff;
 }
 
-void load_rom(u8 memory[], u8 data[], size_t size)
+void utils::load_rom(u8 memory[], u8 data[], size_t size)
 {
     std::memcpy(memory, data, size);
 }
 
-bool half_carry_add(u16 a, u16 b) 
+bool utils::half_carry_add(u16 a, u16 b) 
 {
     return (((a & 0xf) + (b & 0xf)) & 0x10) == 0x10;
 }
 
-bool half_carry_sub(u16 a, u16 b)
+bool utils::half_carry_sub(u16 a, u16 b)
 {
     return ((a & 0xf) - (b & 0xf)) < 0;
 }
 
-bool full_carry_add(u16 a, u16 b)
+bool utils::full_carry_add(u16 a, u16 b)
 {
     return (((a & 0xff) + (b & 0xff)) & 0x100) == 0x100;
 }
 
-bool full_carry_sub(u16 a, u16 b)
+bool utils::full_carry_sub(u16 a, u16 b)
 {
     return ((a & 0xff) - (b & 0xff)) < 0;
 }
 
-u8 swap(u8 x) 
+u8 utils::swap(u8 x) 
 {
     return 0xff & (x >> 4 | x << 4);
 }
