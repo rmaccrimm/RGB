@@ -43,40 +43,40 @@ void op::LD_imm(Processor *proc, r16 &reg)
 
 void op::LD_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    dest.set(proc->memory.read(src.value()));
+    dest.set(proc->memory->read(src.value()));
 }
 
 void op::LD_mem(Processor *proc, r16 const &dest, r8 const &src)
 {
-    proc->memory.write(dest.value(), src.value());
+    proc->memory->write(dest.value(), src.value());
 }
 
 void op::PUSH(Processor *proc, r8 const &reg)
 {
     // Stack goes backwards, SP points to last element pushed so decrement first
     proc->SP.decrement();
-    proc->memory.write(proc->SP.value(), reg.value());
+    proc->memory->write(proc->SP.value(), reg.value());
 }
 
 void op::PUSH(Processor *proc, r16 const &reg)
 {
     proc->SP.decrement();
-    proc->memory.write(proc->SP.value(), reg.value_high());
+    proc->memory->write(proc->SP.value(), reg.value_high());
     proc->SP.decrement();
-    proc->memory.write(proc->SP.value(), reg.value_low());
+    proc->memory->write(proc->SP.value(), reg.value_low());
 }
 
 void op::POP(Processor *proc, r8 &reg)
 {
-    reg.set(proc->memory.read(proc->SP.value()));
+    reg.set(proc->memory->read(proc->SP.value()));
     proc->SP.increment();
 }
 
 void op::POP(Processor *proc, r16 &reg)
 {
-    reg.set_low(proc->memory.read(proc->SP.value()));
+    reg.set_low(proc->memory->read(proc->SP.value()));
     proc->SP.increment();
-    reg.set_high(proc->memory.read(proc->SP.value()));
+    reg.set_high(proc->memory->read(proc->SP.value()));
     proc->SP.increment();
 }
 
@@ -113,7 +113,7 @@ void op::ADD_imm(Processor *proc, r16 &reg)
 
 void op::ADD_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    u8 add = proc->memory.read(src.value());
+    u8 add = proc->memory->read(src.value());
     set_nhc_flags_add(proc, dest.value(), add);
     dest.add(add);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
@@ -137,7 +137,7 @@ void op::ADC_imm(Processor *proc, r8 &reg)
 
 void op::ADC_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    u8 add = proc->memory.read(src.value()) + proc->carry_flag();
+    u8 add = proc->memory->read(src.value()) + proc->carry_flag();
     set_nhc_flags_add(proc, dest.value(), add);
     dest.add(add);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
@@ -160,7 +160,7 @@ void op::SUB_imm(Processor *proc, r8 &reg)
 
 void op::SUB_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    u8 sub = proc->memory.read(src.value());
+    u8 sub = proc->memory->read(src.value());
     set_nhc_flags_sub(proc, dest.value(), sub);
     dest.sub(sub);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
@@ -182,7 +182,7 @@ void op::SBC_imm(Processor *proc, r8 &reg)
 
 void op::SBC_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    u8 sub = proc->memory.read(src.value()) + proc->carry_flag();
+    u8 sub = proc->memory->read(src.value()) + proc->carry_flag();
     set_nhc_flags_sub(proc, dest.value(), sub);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
 }
@@ -204,11 +204,11 @@ void op::INC(r16 &reg)
 
 void op::INC_mem(Processor *proc, r16 const &reg)
 {
-    u8 val = proc->memory.read(reg.value());
+    u8 val = proc->memory->read(reg.value());
     // carry flag unaffected
     proc->set_flag(Processor::HALF_CARRY, utils::half_carry_add(val, 1));
     proc->set_flag(Processor::SUBTRACT, 0);
-    proc->memory.write(reg.value(), val + 1);
+    proc->memory->write(reg.value(), val + 1);
     proc->set_flag(Processor::ZERO, val + 1 == 0);
 }
 
@@ -229,10 +229,10 @@ void op::DEC(Processor *proc, r16 &reg)
 
 void op::DEC_mem(Processor *proc, r16 const &reg)
 {
-    u8 val = proc->memory.read(reg.value());
+    u8 val = proc->memory->read(reg.value());
     proc->set_flag(Processor::HALF_CARRY, utils::half_carry_sub(val, 1));
     proc->set_flag(Processor::SUBTRACT, 1);
-    proc->memory.write(reg.value(), val - 1);
+    proc->memory->write(reg.value(), val - 1);
     proc->set_flag(Processor::ZERO, val - 1 == 0);
 }
 
@@ -255,7 +255,7 @@ void op::AND_imm(Processor *proc, r8 &reg)
 
 void op::AND_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    dest.set(dest.value() & proc->memory.read(src.value()));
+    dest.set(dest.value() & proc->memory->read(src.value()));
     proc->set_flag(Processor::SUBTRACT | Processor::CARRY, 0);
     proc->set_flag(Processor::HALF_CARRY, 1);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
@@ -277,7 +277,7 @@ void op::OR_imm(Processor *proc, r8 &reg)
 
 void op::OR_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    dest.set(dest.value() | proc->memory.read(src.value()));
+    dest.set(dest.value() | proc->memory->read(src.value()));
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
 }
@@ -298,7 +298,7 @@ void op::XOR_imm(Processor *proc, r8 &reg)
 
 void op::XOR_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    dest.set(dest.value() ^ proc->memory.read(src.value()));
+    dest.set(dest.value() ^ proc->memory->read(src.value()));
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
     proc->set_flag(Processor::ZERO, dest.value() == 0);
 }
@@ -319,7 +319,7 @@ void op::CP_imm(Processor *proc, r8 &reg)
 
 void op::CP_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    u8 val = proc->memory.read(src.value());
+    u8 val = proc->memory->read(src.value());
     proc->set_flag(Processor::ZERO, dest.value() == val);
     set_nhc_flags_sub(proc, dest.value(), val);  
 }
@@ -333,10 +333,10 @@ void op::SWAP(Processor *proc, r8 &reg)
 
 void op::SWAP_mem(Processor *proc, r16 const &reg)
 {
-    u8 val = proc->memory.read(reg.value());
-    proc->memory.write(reg.value(), utils::swap(val));
+    u8 val = proc->memory->read(reg.value());
+    proc->memory->write(reg.value(), utils::swap(val));
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
-    val = proc->memory.read(reg.value());
+    val = proc->memory->read(reg.value());
     proc->set_flag(Processor::ZERO, val == 0);
 }
 
@@ -352,13 +352,13 @@ void op::RL(Processor *proc, r8 &reg)
 
 void op::RL(Processor *proc, r16 const &reg)
 {
-    u8 val = proc->memory.read(reg.value());
+    u8 val = proc->memory->read(reg.value());
     // rotate through carry
-    proc->memory.write(reg.value(), (val << 1) | proc->carry_flag());
+    proc->memory->write(reg.value(), (val << 1) | proc->carry_flag());
     // old bit 7 to carry
     proc->set_flag(Processor::CARRY, (val >> 7) & 1);
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
-    val = proc->memory.read(reg.value());
+    val = proc->memory->read(reg.value());
     proc->set_flag(Processor::ZERO, val == 0);
     
 }
@@ -375,9 +375,9 @@ void op::RLC(Processor *proc, r8 &reg)
 
 void op::RLC(Processor *proc, r16 const &reg)
 {
-    u8 val = proc->memory.read(reg.value());
+    u8 val = proc->memory->read(reg.value());
     // simple rotate
-    proc->memory.write(reg.value(), (val << 1) | ((val >> 7) & 1));
+    proc->memory->write(reg.value(), (val << 1) | ((val >> 7) & 1));
     // old bit 7 to carry
     proc->set_flag(Processor::CARRY, (val >> 7) & 1);
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
@@ -397,12 +397,12 @@ void op::RR(Processor *proc, r8 &reg)
 void op::RR(Processor *proc, r16 const &reg)
 {
     // rotate through carry
-    u8 val = proc->memory.read(reg.value());
-    proc->memory.write(reg.value(), (val >> 1) | (proc->carry_flag() << 7));
+    u8 val = proc->memory->read(reg.value());
+    proc->memory->write(reg.value(), (val >> 1) | (proc->carry_flag() << 7));
     // old bit 0 to carry
     proc->set_flag(Processor::CARRY, val & 1);
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
-    val = proc->memory.read(reg.value());
+    val = proc->memory->read(reg.value());
     proc->set_flag(Processor::ZERO, val == 0);
 }
 
@@ -418,40 +418,200 @@ void op::RRC(Processor *proc, r8 &reg)
 
 void op::RRC(Processor *proc, r16 const &reg)
 {
-    u8 val = proc->memory.read(reg.value());
+    u8 val = proc->memory->read(reg.value());
     // simple rotate
-    proc->memory.write(reg.value(), (val >> 1) | (val << 7));
+    proc->memory->write(reg.value(), (val >> 1) | (val << 7));
     // old bit 0 to carry
     proc->set_flag(Processor::CARRY, val & 1);
     proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
     proc->set_flag(Processor::ZERO, reg.value() == 0);
 }
 
-void SLA(Processor *proc, r8 &reg);
-void SRA(Processor *proc, r8 &reg);
-void SRL(Processor *proc, r8 &reg);
-void SLA(Processor *proc, r16 const &reg);
-void SRA(Processor *proc, r16 const &reg);
-void SRL(Processor *proc, r16 const &reg);
+void op::SLA(Processor *proc, r8 &reg)
+{
+    // old bit 7 to carry
+    proc->set_flag(Processor::CARRY, reg.value() >> 7);
+    reg.set(reg.value() << 1);
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
+    proc->set_flag(Processor::ZERO, reg.value() == 0);
+}
 
-void BIT(Processor *proc, r8 &reg, u8 bit);
-void BIT(Processor *proc, r16 const &reg, u8 bit);
-void SET(Processor *proc, r8 &reg, u8 bit);
-void SET(Processor *proc, r16 const &reg, u8 bit);
-void RES(Processor *proc, r8 &reg, u8 bit);
-void RES(Processor *proc, r16 const &reg, u8 bit);
+void op::SLA(Processor *proc, r16 const &reg)
+{
+    u8 val = proc->memory->read(reg.value());
+    proc->memory->write(reg.value(), val << 1);
+    // old bit 7 to carry
+    proc->set_flag(Processor::CARRY, val >> 7);
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
+    val = proc->memory->read(reg.value());
+    proc->set_flag(Processor::ZERO, val == 0);
+}
 
-void JP(Processor *proc, bool cond);
-void JP(Processor *proc, r16 &reg);
-void JR(Processor *proc, bool cond);
-void CALL(Processor *proc, bool cond);
-void RET(Processor *proc, bool cond);
-void RETI(Processor *proc);
+void op::SRA(Processor *proc, r8 &reg)
+{
+    // shift bit 7 in from right
+    u8 val = reg.value() & (1 << 7);
+    reg.set(reg.value() >> 1 | val);
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
+    proc->set_flag(Processor::ZERO, reg.value() == 0);
+}
 
-void RST(Processor *proc, u8 addr);
-void DAA(Processor *proc);
-void CPL(Processor *proc);
-void SCF(Processor *proc);
-void CCF(Processor *proc);
-void EI(Processor *proc);
-void DI(Processor *proc);
+void op::SRA(Processor *proc, r16 const &reg)
+{
+    u8 val = proc->memory->read(reg.value());
+    // shift bit 7 in from right
+    proc->memory->write(reg.value(), (val >> 1) | (val & (1 << 7)));
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
+    val = proc->memory->read(reg.value());
+    proc->set_flag(Processor::ZERO, val == 0);
+}
+
+void op::SRL(Processor *proc, r8 &reg)
+{
+    // old bit 0 to carry
+    proc->set_flag(Processor::CARRY, reg.value() & 1);
+    // shift 0 in from right
+    reg.set(reg.value() >> 1);
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
+    proc->set_flag(Processor::ZERO, reg.value() == 0);
+}
+
+void op::SRL(Processor *proc, r16 const &reg)
+{
+    u8 val = proc->memory->read(reg.value());
+    // old bit 0 to carry
+    proc->set_flag(Processor::CARRY, val & 1);
+    proc->memory->write(reg.value(), val >> 1);
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
+    val = proc->memory->read(reg.value());
+    proc->set_flag(Processor::ZERO, reg.value() == 0);
+}
+
+void op::BIT(Processor *proc, r8 &reg, u8 bit)
+{
+    proc->set_flag(Processor::ZERO, (reg.value() >> bit) & 1 == 0);
+    proc->set_flag(Processor::SUBTRACT, 0);
+    proc->set_flag(Processor::HALF_CARRY, 1);
+}
+
+void op::BIT(Processor *proc, r16 const &reg, u8 bit)
+{
+    u8 val = proc->memory->read(reg.value());
+    proc->set_flag(Processor::ZERO, (val >> bit) & 1 == 0);
+    proc->set_flag(Processor::SUBTRACT, 0);
+    proc->set_flag(Processor::HALF_CARRY, 1);
+}
+
+void op::SET(r8 &reg, u8 bit)
+{
+    reg.set(reg.value() | (1 << bit));
+}
+
+void op::SET(Processor *proc, r16 const &reg, u8 bit)
+{
+    u8 val = proc->memory->read(reg.value());
+    proc->memory->write(reg.value(), val | (1 << bit));
+}
+
+void op::RES(r8 &reg, u8 bit)
+{
+    reg.set(reg.value() & (~(1 << bit)));
+}
+
+void op::RES(Processor *proc, r16 const &reg, u8 bit)
+{
+    u8 val = proc->memory->read(reg.value());
+    proc->memory->write(reg.value(), val & (~(1 << bit)));
+}
+
+void op::JP(Processor *proc, bool cond)
+{
+    u16 addr = proc->fetch_word();
+    if (cond) {
+        proc->PC.set(addr);
+    }
+}
+
+void op::JP(Processor *proc, r16 &reg)
+{
+    proc->PC.set(reg.value());
+}
+
+void op::JR(Processor *proc, bool cond)
+{
+    i8 jp = (i8)proc->fetch_byte();
+    if (cond) {
+        proc->PC.add(jp);
+    }
+}
+
+void op::CALL(Processor *proc, bool cond)
+{
+    u16 addr = proc->fetch_word();
+    if (cond) {
+        PUSH(proc, proc->PC);
+        proc->PC.set(addr);
+    }
+}
+
+void op::RET(Processor *proc, bool cond)
+{
+    POP(proc, proc->PC);
+}
+
+void op::RST(Processor *proc, u8 addr)
+{
+    PUSH(proc, proc->PC);
+    proc->PC.set(addr);
+}
+
+void op::DAA(Processor *proc)
+{
+    // DAA - retroactively convert binary add/sub to BCD
+    if (proc->subtract_flag()) {
+        if (proc->carry_flag() || proc->A.value() > 0x99) {
+            proc->A.add(0x60);
+            proc->set_flag(Processor::CARRY, 1);
+        }
+        if (proc->half_carry_flag() || (proc->A.value() & 0x0f) > 0x09) {
+            proc->A.add(0x6);
+        }
+    } else {
+        if (proc->carry_flag()) {
+            proc->A.sub(0x60);
+        }
+        if (proc->half_carry_flag()) {
+            proc->A.sub(0x6);
+        }
+    }
+    proc->set_flag(Processor::ZERO, proc->A.value() == 0);
+    proc->set_flag(Processor::HALF_CARRY, 0);
+}
+
+void op::CPL(Processor *proc)
+{
+    proc->A.set(~proc->A.value());
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 1);
+}
+
+void op::SCF(Processor *proc)
+{
+    proc->set_flag(Processor::CARRY, 1);
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
+}
+
+void op::CCF(Processor *proc)
+{
+    proc->set_flag(Processor::CARRY, !proc->carry_flag());
+    proc->set_flag(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
+}
+
+void op::EI(Processor *proc)
+{
+
+}
+
+void op::DI(Processor *proc)
+{
+
+}

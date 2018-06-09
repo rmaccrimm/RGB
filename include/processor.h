@@ -12,7 +12,7 @@
 class Processor
 {
 public:
-    Processor(Memory mem);
+    Processor(Memory *mem);
     bool step(int break_point = 0);
     void print_registers();
 
@@ -50,7 +50,7 @@ public:
     Register16bit SP;
     Register16bit PC;
 
-    Memory memory; 
+    Memory *memory; 
     int clock_cycles;
 };    
 

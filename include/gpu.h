@@ -2,13 +2,13 @@
 #define GPU_H
 
 #include "definitions.h"
+#include "include/memory.h"
 
 class GPU 
 {
 public:
-    GPU(u8 *mem = nullptr);
+    GPU(Memory *mem);
     ~GPU();
-    void set_memory(u8 *mem);
     float* build_framebuffer();
 
     static const u16 LCDC = 0xff40;
@@ -24,7 +24,7 @@ public:
 
 private:
     float* framebuffer;
-    u8 *memory;
+    Memory *memory;
 
     void read_tile(float *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
     void render_background();

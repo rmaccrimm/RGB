@@ -6,6 +6,8 @@
 #include <cstring>
 #include <cassert>
 
+Processor::Processor(Memory *mem) : memory(mem) {}
+
 bool Processor::step(int break_point)
 {
     u8 instr = fetch_byte();
@@ -39,7 +41,7 @@ void Processor::print_registers()
 
 u8 Processor::fetch_byte()
 {
-    u8 data = memory.read(PC.value());
+    u8 data = memory->read(PC.value());
     PC.increment();
     return data;
 }
@@ -61,14 +63,13 @@ void Processor::set_flag(u8 mask, bool b)
     }
 }
 
-bool Processor::carry_flag() { return F.value() & ZERO; }
+bool Processor::zero_flag() { return F.value() & ZERO; }
 
 bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
 
 bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
 
 bool Processor::carry_flag() { return F.value() & CARRY; }
-
 
 void Processor::execute(u8 instr)
 {
@@ -84,7 +85,7 @@ void Processor::execute(u8 instr)
         op::LD_mem(this, BC, A);               
         break;
     case 0x03:
-        op::INC(this, BC);                     
+        op::INC(BC);
         break;
     case 0x04:
         op::INC(this, B);                      
@@ -132,7 +133,7 @@ void Processor::execute(u8 instr)
         op::LD_mem(this, DE, A);               
         break;
     case 0x13:
-        op::INC(this, DE);                     
+        op::INC(DE);
         break;
     case 0x14:
         op::INC(this, D);                      
@@ -171,7 +172,7 @@ void Processor::execute(u8 instr)
         op::RR(this, A);                       
         break;
     case 0x20:
-        op::JR(this, !(flags() & ZERO));
+        op::JR(this, !zero_flag());
         break;
     case 0x21:
         op::LD_imm(this, HL);                  
@@ -180,7 +181,7 @@ void Processor::execute(u8 instr)
         
         break;
     case 0x23:
-        op::INC(this, HL);                     
+        op::INC(HL);
         break;
     case 0x24:
         op::INC(this, H);                      
@@ -195,7 +196,7 @@ void Processor::execute(u8 instr)
         op::DAA(this);                         
         break;
     case 0x28:
-        op::JR(this, flags() & ZERO);
+        op::JR(this, zero_flag());
         break;
     case 0x29:
         op::ADD(this, HL, HL);                 
@@ -219,7 +220,7 @@ void Processor::execute(u8 instr)
         op::CPL(this);                         
         break;
     case 0x30:
-        op::JR(this, !(flags() & CARRY));                        
+        op::JR(this, !carry_flag());
         break;
     case 0x31:
         op::LD_imm(this, SP);                  
@@ -229,7 +230,7 @@ void Processor::execute(u8 instr)
         HL.decrement();
         break;
     case 0x33:
-        op::INC(this, SP);                     
+        op::INC(SP);
         break;
     case 0x34:
         op::INC_mem(this, HL);                 
@@ -244,7 +245,7 @@ void Processor::execute(u8 instr)
         op::SCF(this);                         
         break;
     case 0x38:
-        op::JR(this, flags() & CARRY);
+        op::JR(this, carry_flag());
         break;
     case 0x39:
         op::ADD(this, HL, SP);    
@@ -652,19 +653,19 @@ void Processor::execute(u8 instr)
         op::CP(this, A, A);;                   
         break;
     case 0xc0:
-        op::RET(this, !(flags() & ZERO));
+        op::RET(this, !zero_flag());
         break;
     case 0xc1:
         op::POP(this, BC);                     
         break;
     case 0xc2:
-        op::JP(this, !(flags() & ZERO));
+        op::JP(this, !zero_flag());
         break;
     case 0xc3:
         op::JP(this, true);
         break;
     case 0xc4:
-        op::CALL(this, !(flags() & ZERO));                      
+        op::CALL(this, !zero_flag());
         break;
     case 0xc5:
         op::PUSH(this, BC);                    
@@ -676,20 +677,20 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x00);                   
         break;
     case 0xc8:
-        op::RET(this, flags() & ZERO);
+        op::RET(this, zero_flag());
         break;
     case 0xc9:
         op::RET(this, true);
         break;
     case 0xca:
-        op::JP(this, flags() & ZERO);
+        op::JP(this, zero_flag());
         break;
     case 0xcb:
         instr = fetch_byte();
         cb_execute(instr);
         break;
     case 0xcc:
-        op::CALL(this, flags() & ZERO);                       
+        op::CALL(this, zero_flag());
         break;
     case 0xcd:
         op::CALL(this, true);
@@ -701,19 +702,19 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x08);                   
         break;
     case 0xd0:
-        op::RET(this, !(flags() & CARRY));
+        op::RET(this, !carry_flag());
         break;
     case 0xd1:
         op::POP(this, DE);                     
         break;
     case 0xd2:
-        op::JP(this, !(flags() & CARRY));
+        op::JP(this, !carry_flag());
         break;
     case 0xd3:
         op::INVALID();                         
         break;
     case 0xd4:
-        op::CALL(this, !(flags() & CARRY));
+        op::CALL(this, !carry_flag());
         break;
     case 0xd5:
         op::PUSH(this, DE);                    
@@ -725,19 +726,20 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x10);                   
         break;
     case 0xd8:
-        op::RET(this, flags() & CARRY);
+        op::RET(this, carry_flag());
         break;
     case 0xd9:
-        op::RETI(this);                        
+        op::RET(this, true);
+        op::EI(this);
         break;
     case 0xda:
-        op::JP(this, flags() & CARRY);
+        op::JP(this, carry_flag());
         break;
     case 0xdb:
         op::INVALID();                         
         break;
     case 0xdc:
-        op::CALL(this, flags() & CARRY);
+        op::CALL(this, carry_flag());
         break;
     case 0xdd:
         op::INVALID();                         
@@ -749,7 +751,7 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x18);                   
         break;
     case 0xe0:
-        memory.write(0xff00 + fetch_byte(), A.value());
+        memory->write(0xff00 + fetch_byte(), A.value());
         break;
     case 0xe1:
         op::POP(this, HL);       
@@ -797,13 +799,14 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x28);                   
         break;
     case 0xf0:
-        A.set(memory.read(0xff00 + fetch_byte()));
+        A.set(memory->read(0xff00 + fetch_byte()));
         break;
     case 0xf1:
-        op::POP(this, AF);                     
+        op::POP(this, AF); 
+        F.set(F.value() & 0xf0);                    
         break;
     case 0xf2:
-        A.set(memory.read(0xff00 + C.value()));
+        A.set(memory->read(0xff00 + C.value()));
         break;
     case 0xf3:
         op::DI(this);                              
@@ -846,6 +849,7 @@ void Processor::execute(u8 instr)
         break;
     default:
         // TODO ?
+        break;
     }
 }
 
@@ -1016,7 +1020,7 @@ void Processor::cb_execute(u8 instr)
         op::SWAP(this, L);   
         break;
     case 0x36:
-        op::SWAP(this, HL);  
+        op::SWAP_mem(this, HL);
         break;
     case 0x37:
         op::SWAP(this, A);   
@@ -1238,390 +1242,391 @@ void Processor::cb_execute(u8 instr)
         op::BIT(this, A, 7);  
         break;
     case 0x80:
-        op::RES(this, B, 0);  
+        op::RES(B, 0);  
         break;
     case 0x81:
-        op::RES(this, C, 0);  
+        op::RES(C, 0);  
         break;
     case 0x82:
-        op::RES(this, D, 0);  
+        op::RES(D, 0);  
         break;
     case 0x83:
-        op::RES(this, E, 0);  
+        op::RES(E, 0);  
         break;
     case 0x84:
-        op::RES(this, H, 0);  
+        op::RES(H, 0);  
         break;
     case 0x85:
-        op::RES(this, L, 0);  
+        op::RES(L, 0);  
         break;
     case 0x86:
         op::RES(this, HL, 0); 
         break;
     case 0x87:
-        op::RES(this, A, 0);  
+        op::RES(A, 0);  
         break;
     case 0x88:
-        op::RES(this, B, 1);  
+        op::RES(B, 1);  
         break;
     case 0x89:
-        op::RES(this, C, 1);  
+        op::RES(C, 1);  
         break;
     case 0x8a:
-        op::RES(this, D, 1);  
+        op::RES(D, 1);  
         break;
     case 0x8b:
-        op::RES(this, E, 1);  
+        op::RES(E, 1);  
         break;
     case 0x8c:
-        op::RES(this, H, 1);  
+        op::RES(H, 1);  
         break;
     case 0x8d:
-        op::RES(this, L, 1);  
+        op::RES(L, 1);  
         break;
     case 0x8e:
         op::RES(this, HL, 1); 
         break;
     case 0x8f:
-        op::RES(this, A, 1);  
+        op::RES(A, 1);  
         break;
     case 0x90:
-        op::RES(this, B, 2);  
+        op::RES(B, 2);  
         break;
     case 0x91:
-        op::RES(this, C, 2);  
+        op::RES(C, 2);  
         break;
     case 0x92:
-        op::RES(this, D, 2);  
+        op::RES(D, 2);  
         break;
     case 0x93:
-        op::RES(this, E, 2);  
+        op::RES(E, 2);  
         break;
     case 0x94:
-        op::RES(this, H, 2);  
+        op::RES(H, 2);  
         break;
     case 0x95:
-        op::RES(this, L, 2);  
+        op::RES(L, 2);  
         break;
     case 0x96:
         op::RES(this, HL, 2); 
         break;
     case 0x97:
-        op::RES(this, A, 2);  
+        op::RES(A, 2);  
         break;
     case 0x98:
-        op::RES(this, B, 3);  
+        op::RES(B, 3);  
         break;
     case 0x99:
-        op::RES(this, C, 3);  
+        op::RES(C, 3);  
         break;
     case 0x9a:
-        op::RES(this, D, 3);  
+        op::RES(D, 3);  
         break;
     case 0x9b:
-        op::RES(this, E, 3);  
+        op::RES(E, 3);  
         break;
     case 0x9c:
-        op::RES(this, H, 3);  
+        op::RES(H, 3);  
         break;
     case 0x9d:
-        op::RES(this, L, 3);  
+        op::RES(L, 3);  
         break;
     case 0x9e:
         op::RES(this, HL, 3); 
         break;
     case 0x9f:
-        op::RES(this, A, 3);  
+        op::RES(A, 3);  
         break;
     case 0xa0:
-        op::RES(this, B, 4);  
+        op::RES(B, 4);  
         break;
     case 0xa1:
-        op::RES(this, C, 4);  
+        op::RES(C, 4);  
         break;
     case 0xa2:
-        op::RES(this, D, 4);  
+        op::RES(D, 4);  
         break;
     case 0xa3:
-        op::RES(this, E, 4);  
+        op::RES(E, 4);  
         break;
     case 0xa4:
-        op::RES(this, H, 4);  
+        op::RES(H, 4);  
         break;
     case 0xa5:
-        op::RES(this, L, 4);  
+        op::RES(L, 4);  
         break;
     case 0xa6:
         op::RES(this, HL, 4); 
         break;
     case 0xa7:
-        op::RES(this, A, 4);  
+        op::RES(A, 4);  
         break;
     case 0xa8:
-        op::RES(this, B, 5);  
+        op::RES(B, 5);  
         break;
     case 0xa9:
-        op::RES(this, C, 5);  
+        op::RES(C, 5);  
         break;
     case 0xaa:
-        op::RES(this, D, 5);  
+        op::RES(D, 5);  
         break;
     case 0xab:
-        op::RES(this, E, 5);  
+        op::RES(E, 5);  
         break;
     case 0xac:
-        op::RES(this, H, 5);  
+        op::RES(H, 5);  
         break;
     case 0xad:
-        op::RES(this, L, 5);  
+        op::RES(L, 5);  
         break;
     case 0xae:
         op::RES(this, HL, 5); 
         break;
     case 0xaf:
-        op::RES(this, A, 5);  
+        op::RES(A, 5);  
         break;
     case 0xb0:
-        op::RES(this, B, 6);  
+        op::RES(B, 6);  
         break;
     case 0xb1:
-        op::RES(this, C, 6);  
+        op::RES(C, 6);  
         break;
     case 0xb2:
-        op::RES(this, D, 6);  
+        op::RES(D, 6);  
         break;
     case 0xb3:
-        op::RES(this, E, 6);  
+        op::RES(E, 6);  
         break;
     case 0xb4:
-        op::RES(this, H, 6);  
+        op::RES(H, 6);  
         break;
     case 0xb5:
-        op::RES(this, L, 6);  
+        op::RES(L, 6);  
         break;
     case 0xb6:
         op::RES(this, HL, 6); 
         break;
     case 0xb7:
-        op::RES(this, A, 6);  
+        op::RES(A, 6);  
         break;
     case 0xb8:
-        op::RES(this, B, 7);  
+        op::RES(B, 7);  
         break;
     case 0xb9:
-        op::RES(this, C, 7);  
+        op::RES(C, 7);  
         break;
     case 0xba:
-        op::RES(this, D, 7);  
+        op::RES(D, 7);  
         break;
     case 0xbb:
-        op::RES(this, E, 7);  
+        op::RES(E, 7);  
         break;
     case 0xbc:
-        op::RES(this, H, 7);  
+        op::RES(H, 7);  
         break;
     case 0xbd:
-        op::RES(this, L, 7);  
+        op::RES(L, 7);  
         break;
     case 0xbe:
         op::RES(this, HL, 7); 
         break;
     case 0xbf:
-        op::RES(this, A, 7);  
+        op::RES(A, 7);  
         break;
     case 0xc0:
-        op::SET(this, B, 0);  
+        op::SET(B, 0);  
         break;
     case 0xc1:
-        op::SET(this, C, 0);  
+        op::SET(C, 0);  
         break;
     case 0xc2:
-        op::SET(this, D, 0);  
+        op::SET(D, 0);  
         break;
     case 0xc3:
-        op::SET(this, E, 0);  
+        op::SET(E, 0);  
         break;
     case 0xc4:
-        op::SET(this, H, 0);  
+        op::SET(H, 0);  
         break;
     case 0xc5:
-        op::SET(this, L, 0);  
+        op::SET(L, 0);  
         break;
     case 0xc6:
         op::SET(this, HL, 0); 
         break;
     case 0xc7:
-        op::SET(this, A, 0);  
+        op::SET(A, 0);  
         break;
     case 0xc8:
-        op::SET(this, B, 1);  
+        op::SET(B, 1);  
         break;
     case 0xc9:
-        op::SET(this, C, 1);  
+        op::SET(C, 1);  
         break;
     case 0xca:
-        op::SET(this, D, 1);  
+        op::SET(D, 1);  
         break;
     case 0xcb:
-        op::SET(this, E, 1);  
+        op::SET(E, 1);  
         break;
     case 0xcc:
-        op::SET(this, H, 1);  
+        op::SET(H, 1);  
         break;
     case 0xcd:
-        op::SET(this, L, 1);  
+        op::SET(L, 1);  
         break;
     case 0xce:
         op::SET(this, HL, 1); 
         break;
     case 0xcf:
-        op::SET(this, A, 1);  
+        op::SET(A, 1);  
         break;
     case 0xd0:
-        op::SET(this, B, 2);  
+        op::SET(B, 2);  
         break;
     case 0xd1:
-        op::SET(this, C, 2);  
+        op::SET(C, 2);  
         break;
     case 0xd2:
-        op::SET(this, D, 2);  
+        op::SET(D, 2);  
         break;
     case 0xd3:
-        op::SET(this, E, 2);  
+        op::SET(E, 2);  
         break;
     case 0xd4:
-        op::SET(this, H, 2);  
+        op::SET(H, 2);  
         break;
     case 0xd5:
-        op::SET(this, L, 2);  
+        op::SET(L, 2);  
         break;
     case 0xd6:
         op::SET(this, HL, 2); 
         break;
     case 0xd7:
-        op::SET(this, A, 2);  
+        op::SET(A, 2);  
         break;
     case 0xd8:
-        op::SET(this, B, 3);  
+        op::SET(B, 3);  
         break;
     case 0xd9:
-        op::SET(this, C, 3);  
+        op::SET(C, 3);  
         break;
     case 0xda:
-        op::SET(this, D, 3);  
+        op::SET(D, 3);  
         break;
     case 0xdb:
-        op::SET(this, E, 3);  
+        op::SET(E, 3);  
         break;
     case 0xdc:
-        op::SET(this, H, 3);  
+        op::SET(H, 3);  
         break;
     case 0xdd:
-        op::SET(this, L, 3);  
+        op::SET(L, 3);  
         break;
     case 0xde:
         op::SET(this, HL, 3); 
         break;
     case 0xdf:
-        op::SET(this, A, 3);  
+        op::SET(A, 3);  
         break;
     case 0xe0:
-        op::SET(this, B, 4);  
+        op::SET(B, 4);  
         break;
     case 0xe1:
-        op::SET(this, C, 4);  
+        op::SET(C, 4);  
         break;
     case 0xe2:
-        op::SET(this, D, 4);  
+        op::SET(D, 4);  
         break;
     case 0xe3:
-        op::SET(this, E, 4);  
+        op::SET(E, 4);  
         break;
     case 0xe4:
-        op::SET(this, H, 4);  
+        op::SET(H, 4);  
         break;
     case 0xe5:
-        op::SET(this, L, 4);  
+        op::SET(L, 4);  
         break;
     case 0xe6:
         op::SET(this, HL, 4); 
         break;
     case 0xe7:
-        op::SET(this, A, 4);  
+        op::SET(A, 4);  
         break;
     case 0xe8:
-        op::SET(this, B, 5);  
+        op::SET(B, 5);  
         break;
     case 0xe9:
-        op::SET(this, C, 5);  
+        op::SET(C, 5);  
         break;
     case 0xea:
-        op::SET(this, D, 5);  
+        op::SET(D, 5);  
         break;
     case 0xeb:
-        op::SET(this, E, 5);  
+        op::SET(E, 5);  
         break;
     case 0xec:
-        op::SET(this, H, 5);  
+        op::SET(H, 5);  
         break;
     case 0xed:
-        op::SET(this, L, 5);  
+        op::SET(L, 5);  
         break;
     case 0xee:
         op::SET(this, HL, 5); 
         break;
     case 0xef:
-        op::SET(this, A, 5);  
+        op::SET(A, 5);  
         break;
     case 0xf0:
-        op::SET(this, B, 6);  
+        op::SET(B, 6);  
         break;
     case 0xf1:
-        op::SET(this, C, 6);  
+        op::SET(C, 6);  
         break;
     case 0xf2:
-        op::SET(this, D, 6);  
+        op::SET(D, 6);  
         break;
     case 0xf3:
-        op::SET(this, E, 6);  
+        op::SET(E, 6);  
         break;
     case 0xf4:
-        op::SET(this, H, 6);  
+        op::SET(H, 6);  
         break;
     case 0xf5:
-        op::SET(this, L, 6);  
+        op::SET(L, 6);  
         break;
     case 0xf6:
         op::SET(this, HL, 6); 
         break;
     case 0xf7:
-        op::SET(this, A, 6);  
+        op::SET(A, 6);  
         break;
     case 0xf8:
-        op::SET(this, B, 7);  
+        op::SET(B, 7);  
         break;
     case 0xf9:
-        op::SET(this, C, 7);  
+        op::SET(C, 7);  
         break;
     case 0xfa:
-        op::SET(this, D, 7);  
+        op::SET(D, 7);  
         break;
     case 0xfb:
-        op::SET(this, E, 7);  
+        op::SET(E, 7);  
         break;
     case 0xfc:
-        op::SET(this, H, 7);  
+        op::SET(H, 7);  
         break;
     case 0xfd:
-        op::SET(this, L, 7);  
+        op::SET(L, 7);  
         break;
     case 0xfe:
         op::SET(this, HL, 7); 
         break;
     case 0xff:
-        op::SET(this, A, 7);  
+        op::SET(A, 7);  
         break;
     default:
         // TODO ?
+        break;
     }
 }

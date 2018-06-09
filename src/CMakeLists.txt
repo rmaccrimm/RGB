@@ -1,4 +1,4 @@
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR})
 
 add_library(funcs functions.cpp)
 
@@ -12,10 +12,10 @@ add_executable(main
     debug.cpp
     window.cpp
     processor.cpp
-    opcodes.cpp
     gpu.cpp
     register8bit.cpp
     register16bit.cpp
     operations.cpp
+    memory.cpp
 )
 target_link_libraries(main funcs SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY})

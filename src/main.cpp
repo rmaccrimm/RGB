@@ -16,21 +16,18 @@
 #include "window.h"
 #include "string"
 #include "tests.h"
+#include "include/memory.h"
 
 #undef main
 
 int main(int argc, char *argv[])
 {  
-    Processor gb_cpu;
-    GPU gb_gpu;
+    Memory gb_mem;
+    Processor gb_cpu(&gb_mem);
+    GPU gb_gpu(&gb_mem);
     
-
-    u8 gb_mem[0x10000] = {0};
-    gb_cpu.set_memory(gb_mem);
-    gb_gpu.set_memory(gb_mem);
-
     //load_rom(gb_mem, "DMG_ROM.bin");
-    load_rom(gb_mem, "cpu_instrs.gb");
+    //utils::load_rom(gb_mem, "cpu_instrs.gb");
     //load_rom(gb_mem, "Tetris.gb");
 
     /*load_rom(gb_mem, TEST::ld_immediate_8bit.data(), TEST::ld_immediate_8bit.size());
@@ -63,18 +60,18 @@ int main(int argc, char *argv[])
     gb_cpu.print_register_values();*/
 
     
-    for (int i = 0; i < 0x1000; i++) {
+    /*for (int i = 0; i < 0x1000; i++) {
         if (i != 0 && (i % 16 == 0)) {
             std::cout << std::endl;
         }
-        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem[i] << ' ';
+        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem.read(i) << ' ';
     }
     std::cout << std::endl;
     while (gb_cpu.step(0x1000)) {
         //std::string s;
         //std::getline(std::cin, s);
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     
 

@@ -8,8 +8,8 @@ class Processor;
 
 namespace op
 {
-    /*  imm - immediate, second argument taken from byte in memory following instruction
-        mem - memory, address of second argument stored in 16 bit register  
+    /*  imm - second argument taken from byte in memory following instruction
+        mem - address of second argument stored in 16 bit register  
     */
 
     typedef Register8bit r8;
@@ -18,7 +18,7 @@ namespace op
     void set_nhc_flags_add(Processor *proc, int a, int b);
     void set_nhc_flags_sub(Processor *proc, int a, int b);
 
-    void NOP() {}
+    void NOP();
     void INVALID();
     void HALT();
     void STOP();
@@ -84,17 +84,17 @@ namespace op
     void RRC(Processor *proc, r16 const &reg);
 
     void SLA(Processor *proc, r8 &reg);
-    void SRA(Processor *proc, r8 &reg);
-    void SRL(Processor *proc, r8 &reg);
     void SLA(Processor *proc, r16 const &reg);
+    void SRA(Processor *proc, r8 &reg);
     void SRA(Processor *proc, r16 const &reg);
+    void SRL(Processor *proc, r8 &reg);
     void SRL(Processor *proc, r16 const &reg);
 
     void BIT(Processor *proc, r8 &reg, u8 bit);
     void BIT(Processor *proc, r16 const &reg, u8 bit);
-    void SET(Processor *proc, r8 &reg, u8 bit);
+    void SET(r8 &reg, u8 bit);
     void SET(Processor *proc, r16 const &reg, u8 bit);
-    void RES(Processor *proc, r8 &reg, u8 bit);
+    void RES(r8 &reg, u8 bit);
     void RES(Processor *proc, r16 const &reg, u8 bit);
 
     void JP(Processor *proc, bool cond);
@@ -102,7 +102,6 @@ namespace op
     void JR(Processor *proc, bool cond);
     void CALL(Processor *proc, bool cond);
     void RET(Processor *proc, bool cond);
-    void RETI(Processor *proc);
 
     void RST(Processor *proc, u8 addr);
     void DAA(Processor *proc);

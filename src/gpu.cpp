@@ -4,7 +4,7 @@
 #include <cassert>
 #include <algorithm>
 
-GPU::GPU(u8 *mem): memory(mem) 
+GPU::GPU(Memory *mem): memory(mem) 
 {
     framebuffer = new float[3 * constants::screen_h * constants::screen_w];
 }
@@ -13,8 +13,6 @@ GPU::~GPU()
 {
     delete framebuffer;
 }
-
-void GPU::set_memory(u8 *mem) { memory = mem; }
 
 float* GPU::build_framebuffer()
 {
@@ -39,7 +37,7 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
             else {
                 byte_ind = (2 * j) + (i / 4);
             }
-            u8 byte = memory[tile_addr + byte_ind];
+            u8 byte = memory->read(tile_addr + byte_ind);
             // 3 is a mask for first two bits
             int color = (byte >> (2 * (i % 4)) & 3);
             assert(color >= 0 && color <= 3);
@@ -55,7 +53,7 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
 
 void GPU::render_background()
 {
-    u8 lcd_control = memory[LCDC];
+    u8 lcd_control = memory->read(LCDC);
     u16 tile_map;
     u16 tile_data;
     bool signed_map;
@@ -76,8 +74,8 @@ void GPU::render_background()
             signed_map = true;
         }  
 
-        int scroll_x = memory[SCROLLX];
-        int scroll_y = memory[SCROLLY];
+        int scroll_x = memory->read(SCROLLX);
+        int scroll_y = memory->read(SCROLLY);
 
         int bg_h = constants::screen_h / 8;
         int bg_w = constants::screen_w / 8; 
@@ -100,13 +98,13 @@ void GPU::render_background()
                 // read the tile map and determine address of tile
                 u16 tile_addr;
                 if (signed_map) {
-                    i8 tile_num = (i8)memory[tile_map + map_index];
+                    i8 tile_num = (i8)memory->read(tile_map + map_index);
                     assert(tile_num < 128); 
                     assert(tile_num >= -128);
                     tile_addr = tile_data + (16 * tile_num);
                 }
                 else {
-                    u8 tile_num = memory[tile_map + map_index];
+                    u8 tile_num = memory->read(tile_map + map_index);
                     assert(tile_num >= 0); 
                     assert(tile_num < 256);
                     tile_addr = tile_data + (16 * tile_num);
