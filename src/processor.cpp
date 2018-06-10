@@ -157,7 +157,8 @@ void Processor::execute(u8 instr)
         op::LD_imm(this, D);                   
         break;
     case 0x17:
-        op::RL(this, A);                       
+        op::RL(this, A);
+        set_flag(ZERO | SUBTRACT | HALF_CARRY, 0);                    
         break;
     case 0x18:
         op::JR(this, true);

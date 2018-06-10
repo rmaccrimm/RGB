@@ -228,7 +228,7 @@ static const std::string instr_set[256] = {
     "INVALID", 
     "SBC n", 
     "RST $18", 
-    "LD ($FF00 + A8), A"
+    "LD ($FF00 + A8), A",
     "POP HL", 
     "LD ($FF00 + C), A", 
     "INVALID", 
@@ -244,7 +244,7 @@ static const std::string instr_set[256] = {
     "INVALID", 
     "XOR n", 
     "RST $28", 
-    "LD A, ($FF00 + A8)"
+    "LD A, ($FF00 + A8)",
     "POP AF", 
     "LD A, ($FF00 + C)", 
     "DI", 

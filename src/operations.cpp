@@ -342,7 +342,7 @@ void op::SWAP_mem(Processor *proc, r16 const &reg)
 
 void op::RL(Processor *proc, r8 &reg)
 {
-    u8 bit7 = reg.value();
+    u8 bit7 = reg.value() >> 7;
     // rotate through carry
     reg.set((reg.value() << 1) | (u8)proc->carry_flag());
     proc->set_flag(Processor::CARRY, bit7);

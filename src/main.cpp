@@ -17,48 +17,18 @@
 #include "string"
 #include "tests.h"
 #include "include/memory.h"
-
+#include "assembly.h"
 #undef main
 
 int main(int argc, char *argv[])
 {  
+    for (int i = 0; i < 256; i++) 
+        std::cout << i << " " << cb_instr_set[i] << std::endl;
+
+    /*
     Memory gb_mem;
     Processor gb_cpu(&gb_mem);
     //GPU gb_gpu(&gb_mem);
-    
-    //load_rom(gb_mem, "DMG_ROM.bin");
-    //utils::load_rom(gb_mem, "cpu_instrs.gb");
-    //load_rom(gb_mem, "Tetris.gb");
-
-    /*load_rom(gb_mem, TEST::ld_immediate_8bit.data(), TEST::ld_immediate_8bit.size());
-    while (gb_cpu.step(0)) {}
-    gb_cpu.print_register_values();
-
-    std::cout << std::endl;
-
-    load_rom(gb_mem, TEST::ld_immediate_16bit.data(), TEST::ld_immediate_16bit.size());
-    while (gb_cpu.step(0)) {}
-    gb_cpu.print_register_values();
-
-    std::cout << std::endl;
-
-    load_rom(gb_mem, TEST::ld_register_8bit.data(), TEST::ld_register_8bit.size());
-    while (gb_cpu.step(0)) {}
-    gb_cpu.print_register_values();
-
-    std::cout << std::endl;
-
-    load_rom(gb_mem, TEST::ld_address.data(), TEST::ld_address.size());
-    while (gb_cpu.step(0)) {}
-    gb_cpu.print_register_values();
-    std::cout << "(0xffff): " << std::hex << (int)gb_mem[0xffff] << std::endl;
-
-    std::cout << std::endl;
-
-    load_rom(gb_mem, TEST::stack.data(), TEST::stack.size());
-    while (gb_cpu.step(0)) {}
-    gb_cpu.print_registers();*/
-
     
     for (int i = 0; i < 0x100; i++) {
         if (i != 0 && (i % 16 == 0)) {
@@ -71,7 +41,7 @@ int main(int argc, char *argv[])
         //std::string s;
         //std::getline(std::cin, s);
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     
 
