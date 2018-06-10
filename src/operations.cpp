@@ -218,7 +218,7 @@ void op::DEC(Processor *proc, r8 &reg)
     proc->set_flag(Processor::HALF_CARRY, utils::half_carry_sub(reg.value(), 1));
     proc->set_flag(Processor::SUBTRACT, 1);
     reg.decrement();
-    proc->set_flag(Processor::SUBTRACT, reg.value() == 0);
+    proc->set_flag(Processor::ZERO, reg.value() == 0);
 }
 
 void op::DEC(Processor *proc, r16 &reg)

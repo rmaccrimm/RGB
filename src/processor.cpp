@@ -1,5 +1,6 @@
 #include "processor.h"
 #include "debug.h"
+#include "assembly.h"
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -11,18 +12,21 @@ Processor::Processor(Memory *mem) : memory(mem) {}
 bool Processor::step(int break_point)
 {
     u8 instr = fetch_byte();
-    std::string prefix = "";
-    if (instr == 0xcb) {
+    bool cb = instr == 0xcb;
+    if (cb) {
         instr = fetch_byte();
         cb_execute(instr);
-        prefix = "cb ";
     } else {
         execute(instr);
     }
     process_interrupts();
     
     if (DEBUG_MODE) {
-        std::cout << prefix << std::hex << (int)instr << std::endl;
+        if (cb) {
+            std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] << std::endl;
+        } else {
+            std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
+        }
     }
     if (break_point >=0 && PC.value() >= break_point) {
         return false;

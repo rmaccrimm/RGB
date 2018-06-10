@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -12,4 +13,3 @@ namespace constants {
     extern const size_t tile_size;
     extern const size_t mem_size;    
 }
-
