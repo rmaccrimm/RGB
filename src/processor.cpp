@@ -7,7 +7,8 @@
 #include <cstring>
 #include <cassert>
 
-Processor::Processor(Memory *mem) : memory(mem) {}
+Processor::Processor(Memory *mem) : memory(mem), A(), F(), B(), C(), D(), E(), H(), L(),
+    AF(&A, &F), BC(&B, &C),	DE(&D, &F), HL(&H, &L) {}
 
 bool Processor::step(int break_point)
 {
@@ -27,6 +28,7 @@ bool Processor::step(int break_point)
         } else {
             std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
         }
+        //print_registers();
     }
     if (break_point >=0 && PC.value() >= break_point) {
         return false;
@@ -87,6 +89,9 @@ void Processor::execute(u8 instr)
 {
     switch(instr)
     {
+        u8 addr;
+        u8 n;
+
     case 0x00:
         op::NOP();                             
         break;
@@ -113,6 +118,8 @@ void Processor::execute(u8 instr)
         break;
     case 0x08:
         // LD (nn), SP
+        addr = fetch_word();
+        memory->write(addr, SP.value());
         break;
     case 0x09:
         op::ADD(this, HL, BC);                 
@@ -192,6 +199,8 @@ void Processor::execute(u8 instr)
         break;
     case 0x22:
         // LD (HL+), A
+        op::LD_mem(this, HL, A);
+        HL.increment();
         break;
     case 0x23:
         op::INC(HL);
@@ -215,7 +224,9 @@ void Processor::execute(u8 instr)
         op::ADD(this, HL, HL);                 
         break;
     case 0x2a:
-        
+        // LD A, (HL+)
+        op::LD_mem(this, A, HL);
+        HL.increment();
         break;
     case 0x2b:
         op::DEC(this, HL);                     
@@ -239,6 +250,7 @@ void Processor::execute(u8 instr)
         op::LD_imm(this, SP);                  
         break;
     case 0x32:
+        // LD (HL-), A
         op::LD_mem(this, HL, A);
         HL.decrement();
         break;
@@ -252,7 +264,9 @@ void Processor::execute(u8 instr)
         op::DEC_mem(this, HL);
         break;
     case 0x36:
-        
+        // LD (HL), n
+        n = fetch_byte();
+        memory->write(HL.value(), n);
         break;
     case 0x37:
         op::SCF(this);                         
@@ -264,7 +278,9 @@ void Processor::execute(u8 instr)
         op::ADD(this, HL, SP);    
         break;
     case 0x3a:
-        
+        // LD A, (HL-)
+        op::LD_mem(this, A, HL);
+        HL.decrement();
         break;
     case 0x3b:
         op::DEC(this, SP);                     
@@ -764,13 +780,15 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x18);                   
         break;
     case 0xe0:
+        // LD (0xff00 + n), A
         memory->write(0xff00 + fetch_byte(), A.value());
         break;
     case 0xe1:
         op::POP(this, HL);       
         break;
     case 0xe2:
-                    
+        // LD (0xff00 + C), A
+        memory->write(0xff00 + C.value(), A.value());
         break;
     case 0xe3:
         op::INVALID();                         
@@ -794,7 +812,9 @@ void Processor::execute(u8 instr)
         op::JP(this, HL);
         break;
     case 0xea:
-        
+        // LD (nn), A
+         addr = fetch_word();
+        memory->write(addr, A.value());
         break;
     case 0xeb:
         op::INVALID();                         
@@ -812,13 +832,16 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x28);                   
         break;
     case 0xf0:
+        // LD A, (0xff00 + n)
         A.set(memory->read(0xff00 + fetch_byte()));
         break;
     case 0xf1:
         op::POP(this, AF); 
+        // Lower four bits of F masked out
         F.set(F.value() & 0xf0);                    
         break;
     case 0xf2:
+        // LD A, (0xff00 + C)
         A.set(memory->read(0xff00 + C.value()));
         break;
     case 0xf3:
@@ -837,13 +860,16 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x30);        
         break;
     case 0xf8:
-        
+        // LD HL, SP + n
+        HL.set(SP.value() + fetch_byte());
         break;
     case 0xf9:
         op::LD(SP, HL); 
         break;
     case 0xfa:
-        
+        // LD A, (nn)
+        addr = fetch_word();
+        A.set(memory->read(addr));
         break;
     case 0xfb:
         op::EI(this);                              
