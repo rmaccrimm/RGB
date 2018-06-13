@@ -3,7 +3,7 @@
 
 namespace utils
 {
-    void load_rom(u8 memory[], const char *path);
+    void load_rom(u8 memory[], size_t offset, const char *path);
 
     void load_rom(u8 memory[], u8 data[], size_t size);
 

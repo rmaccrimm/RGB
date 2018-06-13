@@ -5,7 +5,7 @@
 #include "gpu.h"
 using namespace std;
 
-void utils::load_rom(u8 memory[], const char *path)
+void utils::load_rom(u8 memory[], size_t offset, const char *path)
 {
     size_t file_size;
     ifstream ifs(path, ios_base::in | ios_base::binary);
@@ -18,7 +18,7 @@ void utils::load_rom(u8 memory[], const char *path)
     char *buff = new char[file_size];
     ifs.read(buff, file_size);
     ifs.close();
-    std::memcpy(memory, buff, file_size);
+    std::memcpy(memory + offset, buff, file_size);
     delete buff;
 }
 

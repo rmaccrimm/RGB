@@ -1,4 +1,5 @@
 #include "include/memory.h"
+#include "functions.h"
 
 Memory::Memory() : 
     mem{0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 
@@ -42,4 +43,9 @@ void Memory::write(u16 addr, u8 data)
 u8 Memory::read(u16 addr) const
 {
     return mem[addr];
+}
+
+void Memory::load_cart(const char *file_path)
+{
+    utils::load_rom(mem, 0x100, file_path);
 }
