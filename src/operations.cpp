@@ -215,7 +215,8 @@ void op::INC_mem(Processor *proc, r16 const &reg)
 void op::DEC(Processor *proc, r8 &reg)
 {
     // carry flag unaffected
-    proc->set_flag(Processor::HALF_CARRY, utils::half_carry_sub(reg.value(), 1));
+    //proc->set_flag(Processor::HALF_CARRY, utils::half_carry_sub(reg.value(), 1));
+    proc->set_flag(Processor::HALF_CARRY, 1 > reg.value());
     proc->set_flag(Processor::SUBTRACT, 1);
     reg.decrement();
     proc->set_flag(Processor::ZERO, reg.value() == 0);
@@ -313,7 +314,7 @@ void op::CP(Processor *proc, r8 &dest, r8 const &src)
 void op::CP_imm(Processor *proc, r8 &reg)
 {
     u8 val = proc->fetch_byte();
-    proc->set_flag(Processor::ZERO, reg.value() == val);
+    proc->set_flag(Processor::ZERO, reg.value() - val == 0);
     set_nhc_flags_sub(proc, reg.value(), val);  
 }
 
