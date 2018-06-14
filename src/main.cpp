@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     //GPU gb_gpu(&gb_mem);
     //GameWindow window(5);    
 
-    /*for (int i = 0; i < 0x150; i++) {
+    for (int i = 0; i < 0x150; i++) {
         if (i != 0 && (i % 16 == 0)) {
             std::cout << std::endl;
         }
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 
     std::cout << std::endl;
     while (gb_cpu.step(0x100)) {}
-    std::cout << std::endl;*/
+    std::cout << std::endl;
 
     /*while(!window.closed()) {
         window.draw_frame(gb_gpu.build_framebuffer());

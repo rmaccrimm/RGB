@@ -10,3 +10,6 @@ blargg/
 .vscode/
 backup/
 scratch*
+*.bin
+*.gb
+*.txt
