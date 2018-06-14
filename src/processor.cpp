@@ -8,7 +8,7 @@
 #include <cassert>
 
 Processor::Processor(Memory *mem) : memory(mem), A(), F(), B(), C(), D(), E(), H(), L(),
-    AF(&A, &F), BC(&B, &C),	DE(&D, &F), HL(&H, &L) {}
+    AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
 bool Processor::step(int break_point)
 {
@@ -30,7 +30,7 @@ bool Processor::step(int break_point)
         }
         //print_registers();
     }
-    if (break_point >=0 && PC.value() >= break_point) {
+    if (break_point >=0 && PC.value() ==  break_point) {
         return false;
     }
 
