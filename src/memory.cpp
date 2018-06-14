@@ -49,3 +49,8 @@ void Memory::load_cart(const char *file_path)
 {
     utils::load_rom(mem, 0x100, file_path);
 }
+
+void Memory::load(u8 data[], size_t offset, size_t size)
+{
+    memcpy(mem + offset, data, size);
+}
