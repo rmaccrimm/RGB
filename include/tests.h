@@ -11,7 +11,7 @@ namespace TEST {
         AF: 1100
         BC: 23f3
         DE: ad99
-        HL: 00ff
+        HL: bbff
         SP: fffe (-2)
         PC: 0000
     */
@@ -21,9 +21,8 @@ namespace TEST {
         0x0e, 0xf3,
         0x16, 0xad,
         0x1e, 0x99,
-        0x26, 0x00,
-        0x2e, 0xff,
-        0xcd, 0x00, 0x00
+        0x26, 0xbb,
+        0x2e, 0xff
     };
 
     /*  Expected output
@@ -31,7 +30,7 @@ namespace TEST {
         BC: 32ff
         DE: 003d
         HL: 3234
-        SP: 1efe (1f00 - 2)
+        SP: 1f00 
         PC: 0000
     */
     std::vector<u8> ld_immediate_16bit = {
@@ -39,7 +38,6 @@ namespace TEST {
         0x11, 0x3d, 0x00,
         0x21, 0x34, 0x32,
         0x31, 0x00, 0x1f,
-        0xcd, 0x00, 0x00
     };
 
     /*  Expected output:
@@ -47,7 +45,7 @@ namespace TEST {
         BC: aeae
         DE: aeae
         HL: aeae
-        SP: 1efc
+        SP: ----
         PC: 0000
     */  
     std::vector<u8> ld_register_8bit = {
@@ -55,7 +53,6 @@ namespace TEST {
         0x47, 0x48,
         0x51, 0x5a,
         0x63, 0x6c,
-        0xcd, 0x00, 0x00
     };
         
     /*  Expected output:
@@ -74,8 +71,7 @@ namespace TEST {
         0x4e,
         0x56,
         0x5e,
-        0x77,
-        0xcd, 0x00, 0x00
+        0x77
     };
 
     /*  Expected output:
@@ -83,7 +79,7 @@ namespace TEST {
         BC: ffee
         DE: ddcc
         HL: bbaa
-        SP: 1ef8
+        SP: ----
         PC: 0000
     */
     std::vector<u8> stack = {
@@ -95,7 +91,6 @@ namespace TEST {
         0xe5,
         0xc1,
         0xd1,
-        0xe1,
-        0xcd, 0x00, 0x00
+        0xe1
     };
 }
