@@ -39,33 +39,35 @@ void run_tests(Processor *cpu)
     run_test_rom(cpu, TEST::stack, "stack");
 }
 
-int main(int argc, char *argv[])
-{  
-    Memory gb_mem;
-    gb_mem.load_cart("Tetris.gb");
-    Processor gb_cpu(&gb_mem);
-
-    run_tests(&gb_cpu);
-
-    //GPU gb_gpu(&gb_mem);
-    //GameWindow window(5);    
-
-    for (int i = 0; i < 0x150; i++) {
+void print_boot_rom(Memory *mem)
+{
+    for (int i = 0; i < 0x100; i++) {
         if (i != 0 && (i % 16 == 0)) {
             std::cout << std::endl;
         }
-        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)gb_mem.read(i) << ' ';
+        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)mem->read(i) << ' ';
     }
     std::cout << std::endl;
+}
+
+int main(int argc, char *argv[])
+{  
+    GameWindow window(5);    
+    Memory gb_mem;
+    Processor gb_cpu(&gb_mem);
+    GPU gb_gpu(&gb_mem, &window);
+    gb_mem.load_cart("Tetris.gb");
+
+    //run_tests(&gb_cpu);
+
+    while (!window.closed()) {
+        int cycles = gb_cpu.step(0x100);
+        if (cycles < 0) {
+            break;
+        }
+        gb_gpu.step(cycles);
+    }
     gb_cpu.print_registers();
-
-    std::cout << std::endl;
-    while (gb_cpu.step(0x100)) {}
-    std::cout << std::endl;
-
-    /*while(!window.closed()) {
-        window.draw_frame(gb_gpu.build_framebuffer());
-    }*/
 
     return 0;
 }

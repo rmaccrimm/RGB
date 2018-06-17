@@ -13,9 +13,9 @@ class Processor
 {
 public:
     Processor(Memory *mem);
-    bool step(int break_point = -1);
+    int step(int break_point = -1);
     void print_registers();
-    void set_flag(u8 mask, bool b);
+    void set_flags(u8 mask, bool b);
     void process_interrupts() {}
     void execute(u8 instr);
     void cb_execute(u8 instr);
@@ -27,11 +27,6 @@ public:
     bool subtract_flag();     // N
     bool half_carry_flag();   // H
     bool carry_flag();        // C
-
-    static const u8 ZERO = 1 << 7;       
-    static const u8 SUBTRACT = 1 << 6;   
-    static const u8 HALF_CARRY = 1 << 5; 
-    static const u8 CARRY = 1 << 4;      
 
     Register8bit A;
     Register8bit F;
@@ -50,7 +45,15 @@ public:
     Register16bit PC;
 
     Memory *memory; 
-    int clock_cycles;
+    int clock;
+
+    static const u8 ZERO = 1 << 7;       
+    static const u8 SUBTRACT = 1 << 6;   
+    static const u8 HALF_CARRY = 1 << 5; 
+    static const u8 CARRY = 1 << 4;      
+
+    static const int instr_cycles[256];
+    static const int cb_instr_cycles[256];
 };    
 
 #endif

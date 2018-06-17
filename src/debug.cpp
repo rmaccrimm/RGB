@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "registers.h"
 #include <iostream>
 #include <string>
 #include "gpu.h"
@@ -41,9 +42,9 @@ void DEBUG::setup_stripe_pattern(u8 *memory)
     // enable bg
     lcdc |= 1;
     
-    memory[GPU::LCDC] = lcdc;
-    memory[GPU::SCROLLX] = 0;
-    memory[GPU::SCROLLY] = 0;
+    memory[reg::LCDC] = lcdc;
+    memory[reg::SCROLLX] = 0;
+    memory[reg::SCROLLY] = 0;
 
     u8 colors[] = {0xff, 0xaa, 0x55, 0};
     for (u8 i = 0; i < 64; i++) {
@@ -62,9 +63,9 @@ void DEBUG::setup_dot_pattern(u8 *memory)
     lcdc |= 1;
     lcdc |= 1 << 7;
     // tile data 0, signed
-    memory[GPU::LCDC] = lcdc;
-    memory[GPU::SCROLLX] = 0;
-    memory[GPU::SCROLLY] = 0;
+    memory[reg::LCDC] = lcdc;
+    memory[reg::SCROLLX] = 0;
+    memory[reg::SCROLLY] = 0;
 
     u8 tile0[] = {0x22, 0x22, 0x88, 0x88, 0x22, 0x22, 0x88, 0x88,
                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};

@@ -3,33 +3,44 @@
 
 #include "definitions.h"
 #include "include/memory.h"
+#include "window.h"
+
+
 
 class GPU 
 {
 public:
-    GPU(Memory *mem);
+
+    enum Mode { HBLANK, VBLANK, OAM, VRAM };
+
+    GPU(Memory *mem, GameWindow *win);
     ~GPU();
     float* build_framebuffer();
-
-    static const u16 LCDC = 0xff40;
-    static const u16 SCROLLX = 0xff43; 
-    static const u16 SCROLLY = 0xff42;
-    static const u16 WX = 0xff4b;
-    static const u16 WY = 0xff4a;
+    void step(unsigned int cpu_clock);
 
     static const u16 TILE_MAP_0 = 0x9800;
     static const u16 TILE_MAP_1 = 0x9c00;
     static const u16 TILE_DATA_0 = 0x9000; // signed tile index
     static const u16 TILE_DATA_1 = 0x8000; // unsigned tile index
 
+    
 private:
-    float* framebuffer;
     Memory *memory;
+    GameWindow *window;
+    float* framebuffer;
+
+
+    int line;
+    int clock;
+    Mode mode;
 
     void read_tile(float *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
     void render_background();
     void render_window();
     void render_sprites();
+
+    void change_mode(Mode m);
+    void increment_line();
 
     const u8 LCD_ENABLE = 1 << 7;
     const u8 WIN_TILE_MAP_SELECT = 1 << 6;

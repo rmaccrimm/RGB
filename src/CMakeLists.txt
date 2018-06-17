@@ -4,6 +4,8 @@ add_library(funcs functions.cpp)
 
 find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
+include_directories(${GLEW_INCLUDE_DIRS})
+link_libraries(${GLEW_LIBRARIES})
 find_package(OpenGL REQUIRED)
 
 add_executable(main 

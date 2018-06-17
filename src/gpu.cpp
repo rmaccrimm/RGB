@@ -1,10 +1,12 @@
 #include "gpu.h"
+#include "registers.h"
+#include "debug.h"
 #include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <algorithm>
 
-GPU::GPU(Memory *mem): memory(mem) 
+GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
 {
     framebuffer = new float[3 * constants::screen_h * constants::screen_w];
 }
@@ -18,6 +20,72 @@ float* GPU::build_framebuffer()
 {
     render_background();
     return framebuffer;
+}
+
+void GPU::step(unsigned int cpu_clock) 
+{
+    clock += cpu_clock;
+    if (DEBUG_MODE) {
+        std::cout << "clock: " << clock << std::endl << "line: " << line << std::endl;
+    }
+
+    switch (mode)
+    {
+    case OAM:
+        if (clock >= 80) {
+            clock -= 80;
+            change_mode(VRAM);
+        }
+        break;
+
+    case VRAM:
+        if (clock >= 172) {
+            clock -= 172;
+            change_mode(HBLANK);
+        }
+        break;
+
+    case HBLANK:
+        if (clock >= 204) {
+            clock -= 204;
+            increment_line();
+            
+            if (line == 143) {
+                change_mode(VBLANK);
+                build_framebuffer();
+                window->draw_frame(framebuffer);
+            } else {
+                change_mode(OAM);
+            }
+        }
+        break;
+
+    case VBLANK:
+        if (clock >= 456) {
+            clock -= 456;
+            increment_line();
+
+            if (line == 154) {
+                line = 0;
+                change_mode(OAM);
+            }
+        }
+        break;    
+    }
+}
+
+void GPU::change_mode(Mode m)
+{
+    mode = m;
+    // Lowest two bits of STAT register contain mode
+    u8 stat = memory->read(reg::STAT);
+    memory->write(reg::STAT, (stat & ~3) | (int)mode);
+}
+
+void GPU::increment_line()
+{
+    line++;
+    memory->write(reg::LY, line);
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
@@ -53,7 +121,7 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
 
 void GPU::render_background()
 {
-    u8 lcd_control = memory->read(LCDC);
+    u8 lcd_control = memory->read(reg::LCDC);
     u16 tile_map;
     u16 tile_data;
     bool signed_map;
@@ -74,8 +142,8 @@ void GPU::render_background()
             signed_map = true;
         }  
 
-        int scroll_x = memory->read(SCROLLX);
-        int scroll_y = memory->read(SCROLLY);
+        int scroll_x = memory->read(reg::SCROLLX);
+        int scroll_y = memory->read(reg::SCROLLY);
 
         int bg_h = constants::screen_h / 8;
         int bg_w = constants::screen_w / 8; 

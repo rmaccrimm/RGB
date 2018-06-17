@@ -7,18 +7,21 @@
 #include <cstring>
 #include <cassert>
 
-Processor::Processor(Memory *mem) : memory(mem), A(), F(), B(), C(), D(), E(), H(), L(),
+Processor::Processor(Memory *mem) : memory(mem), clock(0), A(), F(), B(), C(), D(), E(), H(), L(),
     AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
-bool Processor::step(int break_point)
+int Processor::step(int break_point)
 {
     u8 instr = fetch_byte();
     bool cb = instr == 0xcb;
+    int cycles;
     if (cb) {
         instr = fetch_byte();
         cb_execute(instr);
+        cycles = cb_instr_cycles[instr];
     } else {
         execute(instr);
+        cycles = instr_cycles[instr];
     }
     process_interrupts();
     
@@ -31,10 +34,10 @@ bool Processor::step(int break_point)
         //print_registers();
     }
     if (break_point >=0 && PC.value() ==  break_point) {
-        return false;
+        return -1;
     }
 
-    return true;
+    return cycles;
 }
 
 void Processor::print_registers()
@@ -68,7 +71,7 @@ u16 Processor::fetch_word()
     return word;
 }
 
-void Processor::set_flag(u8 mask, bool b)
+void Processor::set_flags(u8 mask, bool b)
 {
     if (b) {
         F.set(F.value() | mask);
@@ -165,7 +168,7 @@ void Processor::execute(u8 instr)
         break;
     case 0x17:
         op::RL(this, A);
-        set_flag(ZERO | SUBTRACT | HALF_CARRY, 0);                    
+        set_flags(ZERO | SUBTRACT | HALF_CARRY, 0);                    
         break;
     case 0x18:
         op::JR(this, true);
@@ -1669,3 +1672,41 @@ void Processor::cb_execute(u8 instr)
         break;
     }
 }
+
+const int Processor::instr_cycles[256] = {
+     4, 12,  8,  8,  4,  4,  8,  4, 20,  8,  8,  8,  4,  4,  8,  4,
+     4, 12,  8,  8,  4,  4,  8,  4, 12,  8,  8,  8,  4,  4,  8,  4,
+     8, 12,  8,  8,  4,  4,  8,  4,  8,  8,  8,  8,  4,  4,  8,  4,
+     8, 12,  8,  8, 12, 12, 12,  4,  8,  8,  8,  8,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     8,  8,  8,  8,  8,  8,  4,  8,  4,  4,  4,  4,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
+     8, 12, 12, 16, 12, 16,  8, 16,  8, 16, 12,  0, 12, 24,  8, 16,
+     8, 12, 12,  0, 12, 16,  8, 16,  8, 16, 12,  0, 12,  0,  8, 16,
+    12, 12,  8,  0,  0, 16,  8, 16, 16,  4, 16,  0,  0,  0,  8, 16,
+    12, 12,  8,  4,  0, 16,  8, 16, 12,  8, 16,  4,  0,  0,  8, 16
+};
+
+const int Processor::cb_instr_cycles[256] = {
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
+    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 
+};

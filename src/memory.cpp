@@ -45,6 +45,15 @@ u8 Memory::read(u16 addr) const
     return mem[addr];
 }
 
+void Memory::set_flags(u16 addr, u8 mask, bool b)
+{
+    if (b) {
+        mem[addr] |= mask;
+    } else {
+        mem[addr] &= ~mask;
+    }
+}
+
 void Memory::load_cart(const char *file_path)
 {
     utils::load_rom(mem, 0x100, file_path);
