@@ -88,6 +88,11 @@ void GPU::increment_line()
     memory->write(reg::LY, line);
 }
 
+float GPU::read_color(int index)
+{
+    return COLORS[(memory->read(reg::BGP) >> (2 * index)) & 3];
+}
+
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
 void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high)
 {
@@ -113,7 +118,7 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
             for (int k = 0; k < 3; k++) {
-                dest[3 * pixel_ind + k] = COLORS[color];
+                dest[3 * pixel_ind + k] = read_color(color);
             }
         }
     }

@@ -9,6 +9,7 @@
 
 #include "debug.h"
 #include "definitions.h"
+#include "registers.h"
 #include "register16bit.h"
 #include "register8bit.h"
 #include "processor.h"
@@ -68,6 +69,12 @@ int main(int argc, char *argv[])
         gb_gpu.step(cycles);
     }
     gb_cpu.print_registers();
+    for (int i = 0; i < 256; i++) {
+        if (i != 0 && (i % 16) == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << (int)gb_mem.read(GPU::TILE_MAP_0 + i) << " ";
+    }
 
     return 0;
 }

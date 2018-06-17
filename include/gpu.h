@@ -34,11 +34,12 @@ private:
     int clock;
     Mode mode;
 
+
+    float read_color(int index);
     void read_tile(float *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
     void render_background();
     void render_window();
     void render_sprites();
-
     void change_mode(Mode m);
     void increment_line();
 
@@ -52,10 +53,10 @@ private:
     const u8 BG_ENABLE = 1;    
 
     const float COLORS[4] = { 
-        (float)0x00 / 255.0f, // 00 black
-        (float)0x66 / 255.0f, // 01 light gray
-        (float)0xb2 / 255.0f, // 10 dark gray
-        (float)0xff / 255.0f  // 11 white
+        (float)0xff / 255.0f, // 00 white
+        (float)0xb2 / 255.0f, // 01 dark gray
+        (float)0x66 / 255.0f, // 10 light gray
+        (float)0x00 / 255.0f, // 11 black
     };
 
     // opengl expects framebuffer drawn from bottom up
