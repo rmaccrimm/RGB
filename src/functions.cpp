@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <cassert>
 #include "gpu.h"
 using namespace std;
 
@@ -18,6 +19,7 @@ void utils::load_rom(u8 memory[], size_t offset, const char *path)
     char *buff = new char[file_size];
     ifs.read(buff, file_size);
     ifs.close();
+    assert(file_size + offset <= 0x10000);
     std::memcpy(memory + offset, buff, file_size);
     delete buff;
 }

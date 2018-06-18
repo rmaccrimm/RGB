@@ -1,5 +1,6 @@
 #include "operations.h"
 #include "processor.h"
+#include <iostream>
 
 void op::set_nhc_flags_add(Processor *proc, int a, int b)
 {
@@ -451,8 +452,8 @@ void op::SLA(Processor *proc, r16 const &reg)
 void op::SRA(Processor *proc, r8 &reg)
 {
     // shift bit 7 in from right
-    u8 val = reg.value() & (1 << 7);
-    reg.set(reg.value() >> 1 | val);
+    reg.set((reg.value() >> 1) | (reg.value() & (1 << 7)));
+    // carry always set to 0
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
     proc->set_flags(Processor::ZERO, reg.value() == 0);
 }
@@ -462,6 +463,7 @@ void op::SRA(Processor *proc, r16 const &reg)
     u8 val = proc->memory->read(reg.value());
     // shift bit 7 in from right
     proc->memory->write(reg.value(), (val >> 1) | (val & (1 << 7)));
+    // carry always set to 0
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
     val = proc->memory->read(reg.value());
     proc->set_flags(Processor::ZERO, val == 0);
@@ -485,7 +487,7 @@ void op::SRL(Processor *proc, r16 const &reg)
     proc->memory->write(reg.value(), val >> 1);
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
     val = proc->memory->read(reg.value());
-    proc->set_flags(Processor::ZERO, reg.value() == 0);
+    proc->set_flags(Processor::ZERO, val == 0);
 }
 
 void op::BIT(Processor *proc, r8 &reg, u8 bit)

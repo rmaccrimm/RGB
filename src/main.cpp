@@ -16,29 +16,9 @@
 #include "gpu.h"
 #include "window.h"
 #include "string"
-#include "tests.h"
-#include "include/memory.h"
+#include "mmu.h"
 #include "assembly.h"
 #undef main
-
-void run_test_rom(Processor *cpu, std::vector<u8> &rom, std::string name)
-{
-    cpu->memory->load(rom.data(), 0, rom.size());
-    while(cpu->step(rom.size())) {}
-    std::cout << std::endl << "RESULT: " << name << std::endl;
-    cpu->print_registers();
-    std::cout << std::endl;
-    cpu->PC.set(0);
-}
-
-void run_tests(Processor *cpu)
-{
-    run_test_rom(cpu, TEST::ld_immediate_8bit, "ld_immediate_8bit");
-    run_test_rom(cpu, TEST::ld_immediate_16bit, "ld_immediate_16bit");
-    run_test_rom(cpu, TEST::ld_register_8bit, "ld_register_8bit");
-    run_test_rom(cpu, TEST::ld_address, "ld_address");
-    run_test_rom(cpu, TEST::stack, "stack");
-}
 
 void print_boot_rom(Memory *mem)
 {
@@ -51,30 +31,52 @@ void print_boot_rom(Memory *mem)
     std::cout << std::endl;
 }
 
+void print_tile_data(Processor *cpu) 
+{
+    cpu->print_registers();
+    for (int i = 0; i < 1024; i++) {
+        if (i != 0 && (i % 32) == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << std::setw(2) << std::setfill('0') << std::hex 
+                  << (int)cpu->memory->read(reg::TILE_MAP_0 + i) << " ";
+    }
+    std::cout << std::endl;
+    for (int i = 0; i < 16 * 0x18; i++) {
+        if (i != 0 && (i % 16) == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)cpu->memory->read(reg::TILE_DATA_1 + i) << " ";
+    }
+}
+
+
 int main(int argc, char *argv[])
 {  
-    GameWindow window(5);    
+    
     Memory gb_mem;
     Processor gb_cpu(&gb_mem);
+    GameWindow window(5);    
+    
+    // //gb_cpu.init_state();
+    // //gb_cpu.PC.set(0x100);
+
     GPU gb_gpu(&gb_mem, &window);
     gb_mem.load_cart("Tetris.gb");
 
-    //run_tests(&gb_cpu);
-
+    gb_cpu.print_registers();
     while (!window.closed()) {
         int cycles = gb_cpu.step(0x100);
+        if (DEBUG_MODE) {
+            /*gb_cpu.print_registers();
+            std::cout << std::endl;*/
+        }
+        
         if (cycles < 0) {
             break;
         }
         gb_gpu.step(cycles);
     }
-    gb_cpu.print_registers();
-    for (int i = 0; i < 256; i++) {
-        if (i != 0 && (i % 16) == 0) {
-            std::cout << std::endl;
-        }
-        std::cout << (int)gb_mem.read(GPU::TILE_MAP_0 + i) << " ";
-    }
-
     return 0;
 }
+

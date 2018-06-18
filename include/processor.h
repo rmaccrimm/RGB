@@ -6,13 +6,14 @@
 #include "register8bit.h"
 #include "register16bit.h"
 #include "functions.h"
-#include "include/memory.h"
+#include "mmu.h"
 #include "operations.h"
 
 class Processor
 {
 public:
     Processor(Memory *mem);
+    void init_state();
     int step(int break_point = -1);
     void print_registers();
     void set_flags(u8 mask, bool b);

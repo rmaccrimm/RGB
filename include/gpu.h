@@ -2,7 +2,7 @@
 #define GPU_H
 
 #include "definitions.h"
-#include "include/memory.h"
+#include "mmu.h"
 #include "window.h"
 
 

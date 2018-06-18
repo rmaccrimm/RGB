@@ -1,6 +1,7 @@
 #include "processor.h"
 #include "debug.h"
 #include "assembly.h"
+#include "registers.h"
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -9,6 +10,45 @@
 
 Processor::Processor(Memory *mem) : memory(mem), clock(0), A(), F(), B(), C(), D(), E(), H(), L(),
     AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
+
+void Processor::init_state()
+{
+    AF.set(0x01b0);
+    BC.set(0x0013);
+    DE.set(0x00d8);
+    HL.set(0x014d);
+    memory->write(reg::TIMA, 0);
+    memory->write(reg::TMA, 0);
+    memory->write(reg::TAC, 0);
+    memory->write(reg::NR10, 0x80);
+    memory->write(reg::NR11, 0xbf);
+    memory->write(reg::NR12, 0xf3);
+    memory->write(reg::NR14, 0xbf);
+    memory->write(reg::NR21, 0x3f);
+    memory->write(reg::NR22, 0x00);
+    memory->write(reg::NR24, 0xbf);
+    memory->write(reg::NR30, 0x7f);
+    memory->write(reg::NR31, 0xff);
+    memory->write(reg::NR32, 0x9f);
+    memory->write(reg::NR33, 0xbf);
+    memory->write(reg::NR41, 0xff);
+    memory->write(reg::NR42, 0x00);
+    memory->write(reg::NR43, 0x00);
+    memory->write(reg::NR44, 0xbf);
+    memory->write(reg::NR50, 0x77);
+    memory->write(reg::NR51, 0xf3);
+    memory->write(reg::NR52, 0xf1);
+    memory->write(reg::LCDC, 0x91);
+    memory->write(reg::SCROLLX, 0x00);
+    memory->write(reg::SCROLLY, 0x00);
+    memory->write(reg::LYC, 0x00);
+    memory->write(reg::BGP, 0xfc);
+    memory->write(reg::OBP0, 0xff);
+    memory->write(reg::OBP1, 0xff);
+    memory->write(reg::WY, 0x00);
+    memory->write(reg::WX, 0x00);
+    memory->write(reg::IE, 0x00);
+}
 
 int Processor::step(int break_point)
 {

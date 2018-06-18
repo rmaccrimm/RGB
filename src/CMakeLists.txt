@@ -1,23 +1,21 @@
 include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR})
 
-add_library(funcs functions.cpp)
-
 find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 include_directories(${GLEW_INCLUDE_DIRS})
 link_libraries(${GLEW_LIBRARIES})
 find_package(OpenGL REQUIRED)
 
+add_library(funcs functions.cpp)
+add_library(proc processor.cpp register16bit.cpp register8bit.cpp)
+add_library(mem mmu.cpp)
+add_library(ops operations.cpp)
+
 add_executable(main 
     definitions.cpp
     main.cpp 
     debug.cpp
     window.cpp
-    processor.cpp
     gpu.cpp
-    register8bit.cpp
-    register16bit.cpp
-    operations.cpp
-    memory.cpp
 )
-target_link_libraries(main funcs SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY})
+target_link_libraries(main funcs proc mem ops SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY})

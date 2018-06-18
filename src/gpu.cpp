@@ -26,7 +26,7 @@ void GPU::step(unsigned int cpu_clock)
 {
     clock += cpu_clock;
     if (DEBUG_MODE) {
-        std::cout << "clock: " << clock << std::endl << "line: " << line << std::endl;
+        //std::cout << "clock: " << clock << std::endl << "line: " << line << std::endl;
     }
 
     switch (mode)
