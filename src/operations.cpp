@@ -537,16 +537,15 @@ void op::JP(Processor *proc, bool cond)
 
 void op::JP(Processor *proc, r16 &reg)
 {
-    u16 addr = proc->memory->read(reg.value());
-    proc->PC.set(addr);
+    proc->PC.set(reg.value());
 }
 
 void op::JR(Processor *proc, bool cond)
 {
-    std::cout << "COND: " << cond << std::endl;
+    // Since PC is advances after fetching instruction and argument, the jump 
+    // is jp + 2 bytes ahead of instruction address
     i8 jp = (i8)proc->fetch_byte();
     if (cond) {
-        std::cout << "JUMP: " << (int)jp << std::endl;
         proc->PC.add(jp);
     }
 }
