@@ -537,13 +537,16 @@ void op::JP(Processor *proc, bool cond)
 
 void op::JP(Processor *proc, r16 &reg)
 {
-    proc->PC.set(reg.value());
+    u16 addr = proc->memory->read(reg.value());
+    proc->PC.set(addr);
 }
 
 void op::JR(Processor *proc, bool cond)
 {
+    std::cout << "COND: " << cond << std::endl;
     i8 jp = (i8)proc->fetch_byte();
     if (cond) {
+        std::cout << "JUMP: " << (int)jp << std::endl;
         proc->PC.add(jp);
     }
 }

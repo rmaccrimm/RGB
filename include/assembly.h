@@ -237,7 +237,7 @@ static const std::string instr_set[256] = {
     "AND n", 
     "RST $20", 
     "ADD SP, n", 
-    "JP HL", 
+    "JP (HL)", 
     "LD (nn), A", 
     "INVALID", 
     "INVALID", 
