@@ -1,5 +1,5 @@
 #ifndef DEBUG_MODE
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #endif
 
 #include "definitions.h"

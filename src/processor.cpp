@@ -132,7 +132,7 @@ void Processor::execute(u8 instr)
 {
     switch(instr)
     {
-        u8 addr;
+        u16 addr;
         u8 n;
 
     case 0x00:
