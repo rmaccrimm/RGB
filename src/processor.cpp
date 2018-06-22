@@ -71,7 +71,29 @@ int Processor::step(int break_point)
         } else {
             std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
         }
-        //print_registers();
+        print_registers();
+        std::string s;
+        getline(std::cin, s);
+        if (s == "m") {
+            u16 addr, len;
+            std::cout << "address: ";
+            std::cin >> std::hex >> addr;
+            std::cout << "length: ";
+            std::cin >> std::hex >> len;
+
+            for (int i = addr; i < addr + len; i++) {
+                if ((i % 16) == 0) {
+                    std::cout << std::endl << std::hex << i << ": ";
+                }
+                std::cout << std::setw(2) << std::setfill('0') << std::hex 
+                        << (int)memory->read(i) << " ";
+            }       
+            std::cout << std::endl << std::endl;
+        } 
+        else if (s == "q") {
+            return -1;
+        }
+        
     }
     if (break_point >=0 && PC.value() ==  break_point) {
         return -1;
@@ -161,6 +183,7 @@ void Processor::execute(u8 instr)
         break;
     case 0x08:
         // LD (nn), SP
+        // Not sure about u16 -> u8 conversion here
         addr = fetch_word();
         memory->write(addr, SP.value());
         break;
@@ -824,14 +847,14 @@ void Processor::execute(u8 instr)
         break;
     case 0xe0:
         // LD (0xff00 + n), A
-        memory->write(0xff00 + fetch_byte(), A.value());
+        memory->write(0xff00 + (u16)fetch_byte(), A.value());
         break;
     case 0xe1:
         op::POP(this, HL);       
         break;
     case 0xe2:
         // LD (0xff00 + C), A
-        memory->write(0xff00 + C.value(), A.value());
+        memory->write(0xff00 + (u16)C.value(), A.value());
         break;
     case 0xe3:
         op::INVALID();                         
@@ -856,7 +879,7 @@ void Processor::execute(u8 instr)
         break;
     case 0xea:
         // LD (nn), A
-         addr = fetch_word();
+        addr = fetch_word();
         memory->write(addr, A.value());
         break;
     case 0xeb:

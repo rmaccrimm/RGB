@@ -58,15 +58,17 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem);
     GameWindow window(5);    
     
-    // //gb_cpu.init_state();
+    
     // //gb_cpu.PC.set(0x100);
 
     GPU gb_gpu(&gb_mem, &window);
-    gb_mem.load_cart("Tetris.gb");
+    // gb_mem.load_cart("Tetris.gb");
+    gb_mem.load_cart("cpu_instrs.gb", 0);
+    gb_cpu.init_state();
+    gb_cpu.PC.set(0x100);
 
-    gb_cpu.print_registers();
     while (!window.closed()) {
-        int cycles = gb_cpu.step(0x100);
+        int cycles = gb_cpu.step();
         if (DEBUG_MODE) {
             /*gb_cpu.print_registers();
             std::cout << std::endl;*/
