@@ -3,6 +3,8 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <cstring>
+#include <cerrno>
 #include "gpu.h"
 using namespace std;
 
@@ -14,7 +16,8 @@ void utils::load_rom(u8 memory[], size_t offset, const char *path)
     file_size = (size_t)ifs.tellg();
     ifs.seekg(0, ios_base::beg);
     if (!ifs.good()) {
-        cout << "Error reading file: " << path << endl;
+        cout << "Error reading file " << path << ": " << std::strerror(errno) << endl;
+		return;
     }
     char *buff = new char[file_size];
     ifs.read(buff, file_size);
