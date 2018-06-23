@@ -248,8 +248,8 @@ void op::AND(Processor *proc, r8 &dest, r8 const &src)
 
 void op::AND_imm(Processor *proc, r8 &reg)
 {
-    u8 and = proc->fetch_byte();
-    reg.set(reg.value() & and);
+    u8 val = proc->fetch_byte();
+    reg.set(reg.value() & val);
     proc->set_flags(Processor::SUBTRACT | Processor::CARRY, 0);
     proc->set_flags(Processor::HALF_CARRY, 1);
     proc->set_flags(Processor::ZERO, reg.value() == 0);

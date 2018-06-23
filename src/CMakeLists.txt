@@ -18,4 +18,6 @@ add_executable(main
     window.cpp
     gpu.cpp
 )
+target_link_libraries(mem funcs)
+target_link_libraries(ops funcs)
 target_link_libraries(main funcs proc mem ops SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY})

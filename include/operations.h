@@ -1,8 +1,8 @@
 #ifndef OPERATIONS_H
 #define OPERATIONS_H
 
-#include "Register8bit.h"
-#include "Register16bit.h"
+#include "register8bit.h"
+#include "register16bit.h"
 
 class Processor;
 

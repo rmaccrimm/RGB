@@ -95,15 +95,15 @@ namespace test {
 
     };
 
-    std::vector<u8> and = {
+    std::vector<u8> and_op = {
 
     };
 
-    std::vector<u8> or = {
+    std::vector<u8> or_op = {
 
     };
 
-    std::vector<u8> xor = {
+    std::vector<u8> xor_op = {
 
     };
 
