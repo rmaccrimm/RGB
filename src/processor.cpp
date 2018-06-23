@@ -2,10 +2,8 @@
 #include "debug.h"
 #include "assembly.h"
 #include "registers.h"
-#include <iostream>
-#include <iomanip>
 #include <string>
-#include <cstring>
+#include <iostream>
 #include <cassert>
 
 Processor::Processor(Memory *mem) : memory(mem), clock(0), A(), F(), B(), C(), D(), E(), H(), L(),
@@ -50,7 +48,7 @@ void Processor::init_state()
     memory->write(reg::IE, 0x00);
 }
 
-int Processor::step(int break_point, bool print)
+int Processor::step(bool print)
 {
     u8 instr = fetch_byte();
     bool cb = instr == 0xcb;
@@ -63,7 +61,6 @@ int Processor::step(int break_point, bool print)
         execute(instr);
         cycles = instr_cycles[instr];
     }
-    process_interrupts();
     if (print) {
         if (cb) {
             std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
@@ -72,23 +69,8 @@ int Processor::step(int break_point, bool print)
             std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
         }
     }
+    process_interrupts();
     return cycles;
-}
-
-void Processor::print_registers()
-{
-    std::cout << "AF:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)AF.value() << "\n"
-              << "BC:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)BC.value() << "\n"
-              << "DE:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)DE.value() << "\n"
-              << "HL:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)HL.value() << "\n"
-              << "SP:\t"  <<  std::setw(4) << std::setfill('0')
-              << std::hex << (int)SP.value() << "\n"
-              << "PC:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)PC.value() << "\n";
 }
 
 u8 Processor::fetch_byte()

@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstring>
 #include <cerrno>
+#include <algorithm>
 #include "gpu.h"
 using namespace std;
 
@@ -56,3 +57,8 @@ u8 utils::swap(u8 x)
 {
     return 0xff & (x >> 4 | x << 4);
 }
+
+void utils::to_lower(std::string &s) 
+{
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+} 

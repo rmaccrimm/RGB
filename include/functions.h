@@ -1,5 +1,6 @@
 #include "definitions.h"
 #include <vector>
+#include <string>
 
 namespace utils
 {
@@ -21,4 +22,6 @@ namespace utils
 
     // swap high and low 4 bits
     u8 swap(u8 n);
+
+    void to_lower(std::string &s);
 };

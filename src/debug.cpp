@@ -1,38 +1,75 @@
 #include "debug.h"
 #include "registers.h"
 #include <iostream>
-#include <string>
+#include <iomanip>
 #include "gpu.h"
 
-u16 DEBUG::get_break_point()
+bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
 {
-    std::cout << "Enter program break point (inclusive): ";
-    u16 bp;
-    std::cin >> bp;
-    return bp;
+    while (true) {
+        std::string input;
+        std::cout << "> ";
+        getline(std::cin, input);
+        utils::to_lower(input);
+
+        if (input == "b") {
+            break_pt = prompt("Breakpoint: ");
+        }
+        else if (input == "m") {
+            int addr = prompt("Adress: ");
+            int len = prompt("Length: ");
+            for (int i = addr; i < addr + len; i++) {
+                if ((i % 16) == 0) {
+                    if (i != addr) {
+                        std::cout << std::endl;
+                    }
+                    std::cout << "  " << std::hex << i << ": ";
+                }
+                std::cout << std::setw(2) << std::setfill('0') << std::hex 
+                          << (int)cpu->memory->read(i) << " ";
+            }
+            std::cout << std::endl;
+        }
+        else if (input == "r") {
+            print_instr = false;
+            return true;
+        }
+        else if (input == "q") {
+            return false;
+        }
+        else {
+            print_instr = true;
+            return true;
+        }
+    }
 }
 
-char DEBUG::debug_menu()
+int debug::prompt(std::string msg)
 {
-    const std::string prompt =
-        std::string("memory range:\t\tm\n") +
-        "register contents:\tr\n" +
-        "continue:\t\tc\n" +
-        "continue until:\t\tu\n" +
-        "quit:\t\t\tq\n\n";
-    std::cout << prompt; 
-    std::string choice;
-    char c;
-    do {
-        std::cout << "choice: ";
-        getline(std::cin, choice);
-        c = tolower(choice[0]);
-    } while (choice.size() >  1 || (c != 'm' && c != 'r' && c != 'c' &&
-                                    c != 'u' && c != 'q'));
-    return c;
+    int in;
+    std::cout << msg;
+    std::cin >> std::hex >> in;
+    std::cin.ignore();
+    return in;
 }
 
-void DEBUG::setup_stripe_pattern(u8 *memory)
+void debug::print_registers(Processor *cpu)
+{
+    std::cout << "AF:\t"  << std::setw(4) << std::setfill('0')
+              << std::hex << (int)cpu->AF.value() << "\n"
+              << "BC:\t"  << std::setw(4) << std::setfill('0')
+              << std::hex << (int)cpu->BC.value() << "\n"
+              << "DE:\t"  << std::setw(4) << std::setfill('0')
+              << std::hex << (int)cpu->DE.value() << "\n"
+              << "HL:\t"  << std::setw(4) << std::setfill('0')
+              << std::hex << (int)cpu->HL.value() << "\n"
+              << "SP:\t"  <<  std::setw(4) << std::setfill('0')
+              << std::hex << (int)cpu->SP.value() << "\n"
+              << "PC:\t"  << std::setw(4) << std::setfill('0')
+              << std::hex << (int)cpu->PC.value() << "\n";
+}
+
+void debug::setup_stripe_pattern(u8 *memory)
 {
     u8 lcdc = 0;
     // enable lcd
@@ -57,7 +94,7 @@ void DEBUG::setup_stripe_pattern(u8 *memory)
     }
 }
 
-void DEBUG::setup_dot_pattern(u8 *memory)
+void debug::setup_dot_pattern(u8 *memory)
 {
     u8 lcdc = 0;
     lcdc |= 1;
@@ -86,14 +123,14 @@ void DEBUG::setup_dot_pattern(u8 *memory)
     }
 }
 
-void DEBUG::setup_gradient_tile(u8 *memory)
+void debug::setup_gradient_tile(u8 *memory)
 {
     u8 tile[] = {0xaf, 0x05, 0xaf, 0x05, 0xaf, 0x05, 0xaf, 0x05,
                  0xff, 0xff, 0xaa, 0xaa, 0x55, 0x55, 0x00, 0x00};
     memcpy(&memory[GPU::TILE_DATA_0], tile, 16);
 }
 
-void DEBUG::print_tile_map(u8 *memory, bool map)
+void debug::print_tile_map(u8 *memory, bool map)
 {
     u16 tile_map;
     if (map) {
@@ -107,5 +144,36 @@ void DEBUG::print_tile_map(u8 *memory, bool map)
             std::cout << std::dec << (int)(i8)memory[tile_map + 32*i + j] << ' ';
         }
         std::cout << std::endl;
+    }   
+}
+
+void debug::print_boot_rom(Memory *mem)
+{
+    for (int i = 0; i < 0x100; i++) {
+        if (i != 0 && (i % 16 == 0)) {
+            std::cout << std::endl;
+        }
+        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)mem->read(i) << ' ';
+    }
+    std::cout << std::endl;
+}
+
+void debug::print_tile_data(Processor *cpu) 
+{
+    debug::print_registers(cpu);
+    for (int i = 0; i < 1024; i++) {
+        if (i != 0 && (i % 32) == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << std::setw(2) << std::setfill('0') << std::hex 
+                  << (int)cpu->memory->read(reg::TILE_MAP_0 + i) << " ";
+    }
+    std::cout << std::endl;
+    for (int i = 0; i < 16 * 0x18; i++) {
+        if (i != 0 && (i % 16) == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << std::setw(2) << std::setfill('0') << std::hex 
+                  << (int)cpu->memory->read(reg::TILE_DATA_1 + i) << " ";
     }
 }
