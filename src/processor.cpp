@@ -50,7 +50,7 @@ void Processor::init_state()
     memory->write(reg::IE, 0x00);
 }
 
-int Processor::step(int break_point)
+int Processor::step(int break_point, bool print)
 {
     u8 instr = fetch_byte();
     bool cb = instr == 0xcb;
@@ -64,41 +64,14 @@ int Processor::step(int break_point)
         cycles = instr_cycles[instr];
     }
     process_interrupts();
-    
-    if (DEBUG_MODE) {
+    if (print) {
         if (cb) {
-            std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] << std::endl;
+            std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
+                      << std::endl;
         } else {
             std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
         }
-        print_registers();
-        std::string s;
-        getline(std::cin, s);
-        if (s == "m") {
-            u16 addr, len;
-            std::cout << "address: ";
-            std::cin >> std::hex >> addr;
-            std::cout << "length: ";
-            std::cin >> std::hex >> len;
-
-            for (int i = addr; i < addr + len; i++) {
-                if ((i % 16) == 0) {
-                    std::cout << std::endl << std::hex << i << ": ";
-                }
-                std::cout << std::setw(2) << std::setfill('0') << std::hex 
-                        << (int)memory->read(i) << " ";
-            }       
-            std::cout << std::endl << std::endl;
-        } 
-        else if (s == "q") {
-            return -1;
-        }
-        
     }
-    if (break_point >=0 && PC.value() ==  break_point) {
-        return -1;
-    }
-
     return cycles;
 }
 

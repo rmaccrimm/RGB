@@ -14,7 +14,7 @@ class Processor
 public:
     Processor(Memory *mem);
     void init_state();
-    int step(int break_point = -1);
+    int step(int break_point = -1, bool print = false);
     void print_registers();
     void set_flags(u8 mask, bool b);
     void process_interrupts() {}
