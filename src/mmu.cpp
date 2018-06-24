@@ -60,6 +60,11 @@ void Memory::load_cart(const char *file_path, size_t offset)
     utils::load_rom(mem, offset, file_path);
 }
 
+void Memory::load_cart(const char *file_path, size_t start, size_t offset)
+{
+    utils::load_rom(mem, start, offset, file_path);
+}
+
 void Memory::load(u8 data[], size_t offset, size_t size)
 {
     memcpy(mem + offset, data, size);

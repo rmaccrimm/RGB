@@ -28,6 +28,25 @@ void utils::load_rom(u8 memory[], size_t offset, const char *path)
     delete buff;
 }
 
+void utils::load_rom(u8 memory[], size_t start, size_t offset, const char *path)
+{
+    size_t file_size;
+    ifstream ifs(path, ios_base::in | ios_base::binary);
+    ifs.seekg(0, ios_base::end);
+    file_size = (size_t)ifs.tellg() - start;
+    ifs.seekg(start, ios_base::beg);
+    if (!ifs.good()) {
+        cout << "Error reading file " << path << ": " << std::strerror(errno) << endl;
+		return;
+    }
+    char *buff = new char[file_size];
+    ifs.read(buff, file_size);
+    ifs.close();
+    assert(file_size + offset <= 0x10000);
+    std::memcpy(memory + offset, buff, file_size);
+    delete buff;
+}
+
 void utils::load_rom(u8 memory[], u8 data[], size_t size)
 {
     std::memcpy(memory, data, size);

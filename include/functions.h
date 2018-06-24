@@ -6,6 +6,8 @@ namespace utils
 {
     void load_rom(u8 memory[], size_t offset, const char *path);
 
+    void load_rom(u8 memory[], size_t start, size_t offset, const char *path);
+
     void load_rom(u8 memory[], u8 data[], size_t size);
 
     // Check for carry from bit 3 to bit 4 in a + b

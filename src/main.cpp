@@ -44,7 +44,8 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
-    gb_cpu.init_state();
+    gb_mem.load_cart("Tetris.gb", 0x100, 0x100);
+    //gb_cpu.init_state();
     //gb_mem.load_cart("cpu_instrs.gb", 0);
     //gb_cpu.PC.set(0x100);
     
