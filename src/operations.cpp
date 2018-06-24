@@ -573,7 +573,7 @@ void op::RST(Processor *proc, u8 addr)
 void op::DAA(Processor *proc)
 {
     // DAA - retroactively convert binary add/sub to BCD
-    if (proc->subtract_flag()) {
+    if (!proc->subtract_flag()) {
         if (proc->carry_flag() || proc->A.value() > 0x99) {
             proc->A.add(0x60);
             proc->set_flags(Processor::CARRY, 1);
