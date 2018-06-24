@@ -102,18 +102,15 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
 
     for (int i = x_low; i <= x_high; i++) {
         for (int j = y_low; j <= y_high; j++) {
-            // 4 pixels per byte
-            int byte_ind;
-            if (INVERT_TILES) {
-                byte_ind = 2 * (7 - j) + (i/4);
-            }
-            else {
-                byte_ind = (2 * j) + (i / 4);
-            }
-            u8 byte = memory->read(tile_addr + byte_ind);
-            // 3 is a mask for first two bits
-            int color = (byte >> (2 * (i % 4)) & 3);
-            assert(color >= 0 && color <= 3);
+            // two bytes per line, contain lsb and msb of color
+            u16 byte_ind = 2 * (7 - j);
+            u8 l_byte = memory->read(tile_addr + byte_ind);
+            u8 h_byte = memory->read(tile_addr + byte_ind + 1);
+            u8 lsb = (l_byte >> (7 - i)) & 1;
+            u8 msb = (h_byte >> (7 - i)) & 1;
+            int color = (msb << 1) | lsb;
+            assert(color >= 0);
+            assert(color <= 3);
             // shift pixels to bottom left corner
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
