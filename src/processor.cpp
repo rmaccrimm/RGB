@@ -6,8 +6,8 @@
 #include <iostream>
 #include <cassert>
 
-Processor::Processor(Memory *mem) : memory(mem), clock(0), A(), F(), B(), C(), D(), E(), H(), L(),
-    AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
+Processor::Processor(Memory *mem) : memory(mem), clock(0), ei_count(0), di_count(0), ime_flag(0),
+    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
 void Processor::init_state()
 {
@@ -97,6 +97,22 @@ void Processor::set_flags(u8 mask, bool b)
     }
 }
 
+void Processor::process_interrupts()
+{
+    if (ei_count > 0) {
+        ei_count--;
+        if (ei_count == 0) {
+            ime_flag = true;
+        }
+    }
+    if (di_count > 0) {
+        di_count--;
+        if (di_count == 0) {
+            ime_flag = false;
+        }
+    }
+}
+
 bool Processor::zero_flag() { return F.value() & ZERO; }
 
 bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
@@ -104,6 +120,12 @@ bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
 bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
 
 bool Processor::carry_flag() { return F.value() & CARRY; }
+
+void Processor::enable_interrupts() { ei_count = 2; }
+
+void Processor::disable_interrupts() { di_count = 2; }
+
+
 
 void Processor::execute(u8 instr)
 {
@@ -780,7 +802,7 @@ void Processor::execute(u8 instr)
         break;
     case 0xd9:
         op::RET(this, true);
-        op::EI(this);
+        enable_interrupts();
         break;
     case 0xda:
         op::JP(this, carry_flag());
@@ -866,7 +888,7 @@ void Processor::execute(u8 instr)
         A.set(memory->read(0xff00 + C.value()));
         break;
     case 0xf3:
-        op::DI(this);                              
+        disable_interrupts();
         break;
     case 0xf4:
         op::INVALID();                         
@@ -893,7 +915,7 @@ void Processor::execute(u8 instr)
         A.set(memory->read(addr));
         break;
     case 0xfb:
-        op::EI(this);                              
+        enable_interrupts();
         break;
     case 0xfc:
         op::INVALID();                         

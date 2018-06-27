@@ -15,9 +15,6 @@ namespace op
     typedef Register8bit r8;
     typedef Register16bit r16;
 
-    void set_nhc_flags_add(Processor *proc, int a, int b);
-    void set_nhc_flags_sub(Processor *proc, int a, int b);
-
     void NOP();
     void INVALID();
     void HALT();
@@ -108,8 +105,6 @@ namespace op
     void CPL(Processor *proc);
     void SCF(Processor *proc);
     void CCF(Processor *proc);
-    void EI(Processor *proc);
-    void DI(Processor *proc);
 }
 
 #endif

@@ -16,9 +16,11 @@ public:
     void init_state();
     int step(bool print = false);
     void set_flags(u8 mask, bool b);
-    void process_interrupts() {}
+    void process_interrupts();
     void execute(u8 instr);
     void cb_execute(u8 instr);
+    void enable_interrupts();
+    void disable_interrupts();
 
     u8 fetch_byte();
     u16 fetch_word();
@@ -47,13 +49,20 @@ public:
     Memory *memory; 
     int clock;
 
+    bool ime_flag;
+
+    int ei_count;
+    int di_count;
+
+    static const int instr_cycles[256];
+    static const int cb_instr_cycles[256];
+
     static const u8 ZERO = 1 << 7;       
     static const u8 SUBTRACT = 1 << 6;   
     static const u8 HALF_CARRY = 1 << 5; 
     static const u8 CARRY = 1 << 4;      
 
-    static const int instr_cycles[256];
-    static const int cb_instr_cycles[256];
+    
 };    
 
 #endif

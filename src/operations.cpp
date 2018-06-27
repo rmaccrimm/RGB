@@ -2,14 +2,25 @@
 #include "processor.h"
 #include <iostream>
 
-void op::set_nhc_flags_add(Processor *proc, int a, int b)
+void set_nhc_flags_add(Processor *proc, int a, int b)
 {
     proc->set_flags(Processor::SUBTRACT, 0);
     proc->set_flags(Processor::HALF_CARRY, utils::half_carry_add(a, b));
     proc->set_flags(Processor::CARRY, utils::full_carry_add(a, b));
 }
 
-void op::set_nhc_flags_sub(Processor *proc, int a, int b)
+void set_nhc_flags_adc(Processor *proc, int a, int b, int c)
+{
+    // carry flag is an overflow check
+    bool carry = a + b + c > 0xff;
+    // check if half carry in either addition
+    bool hc = utils::half_carry_add(a, b) | utils::half_carry_add(a + b, c);
+    proc->set_flags(Processor::SUBTRACT, 0);
+    proc->set_flags(Processor::HALF_CARRY, hc);
+    proc->set_flags(Processor::CARRY, carry);
+}
+
+void set_nhc_flags_sub(Processor *proc, int a, int b)
 {
     proc->set_flags(Processor::SUBTRACT, 1);
     proc->set_flags(Processor::HALF_CARRY, utils::half_carry_sub(a, b));
@@ -122,26 +133,34 @@ void op::ADD_mem(Processor *proc, r8 &dest, r16 const &src)
 
 void op::ADC(Processor *proc, r8 &dest, r8 const &src)
 {
-    // Not sure about setting flags with carry
-    set_nhc_flags_add(proc, dest.value(), src.value() + proc->carry_flag());
-    dest.add(src.value() + proc->carry_flag());
+    bool c = dest.value() + src.value() + proc->carry_flag() > 0xff;
+    bool hc = utils::half_carry_add(src.value(), dest.value());
+    dest.add(src.value());
+    hc |= utils::half_carry_add(dest.value(), proc->carry_flag());
+    dest.add(proc->carry_flag());
+
+    proc->set_flags(Processor::SUBTRACT, 0);
+    proc->set_flags(Processor::CARRY, c);
+    proc->set_flags(Processor::HALF_CARRY, hc);
     proc->set_flags(Processor::ZERO, dest.value() == 0);
 }
 
 void op::ADC_imm(Processor *proc, r8 &reg)
 {
-    u8 add = proc->fetch_byte() + proc->carry_flag();
+    u8 add = proc->fetch_byte();
     set_nhc_flags_add(proc, reg.value(), add);
     reg.add(add);
     proc->set_flags(Processor::ZERO, reg.value() == 0);
+    reg.add(proc->carry_flag());
 }
 
 void op::ADC_mem(Processor *proc, r8 &dest, r16 const &src)
 {
-    u8 add = proc->memory->read(src.value()) + proc->carry_flag();
+    u8 add = proc->memory->read(src.value());
     set_nhc_flags_add(proc, dest.value(), add);
     dest.add(add);
     proc->set_flags(Processor::ZERO, dest.value() == 0);
+    dest.add(proc->carry_flag());
 }
 
 void op::SUB(Processor *proc, r8 &dest, r8 const &src)
@@ -609,14 +628,4 @@ void op::CCF(Processor *proc)
 {
     proc->set_flags(Processor::CARRY, !proc->carry_flag());
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
-}
-
-void op::EI(Processor *proc)
-{
-
-}
-
-void op::DI(Processor *proc)
-{
-
 }
