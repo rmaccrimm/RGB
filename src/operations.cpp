@@ -92,8 +92,13 @@ void op::ADD(Processor *proc, r8 &dest, r8 const &src)
 
 void op::ADD(Processor *proc, r16 &dest, r16 const &src)
 {
-    // zero flag not affected for 16-bit add
-    set_nhc_flags_add(proc, dest.value(), src.value());
+    // zero flag not affected, carry checks for overflow
+    bool c = dest.value() + src.value() > 0xffff;
+    proc->set_flags(Processor::CARRY, c);
+    // half carry checks for carry from bit 11
+    bool hc = (((dest.value() & 0xfff) + (src.value() & 0xfff)) & 0x1000) == 0x1000;
+    proc->set_flags(Processor::HALF_CARRY, hc);
+    proc->set_flags(Processor::SUBTRACT, 0);
     dest.add(src.value());
 }
 
@@ -107,7 +112,8 @@ void op::ADD_imm(Processor *proc, r8 &reg)
 
 void op::ADD_imm(Processor *proc, r16 &reg)
 {
-    u16 add = proc->fetch_word();
+    // signed 16 bit operand
+    i16 add = (i16)proc->fetch_word();
     set_nhc_flags_add(proc, reg.value(), add);
     // zero flag always 0 for 16-bit immediate add
     proc->set_flags(Processor::ZERO, 0);

@@ -903,8 +903,8 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x30);        
         break;
     case 0xf8:
-        // LD HL, SP + n
-        HL.set(SP.value() + fetch_byte());
+        // LD HL, SP + n - signed operand
+        HL.set((u8)(SP.value() + (i8)fetch_byte()));
         break;
     case 0xf9:
         op::LD(SP, HL); 
