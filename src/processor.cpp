@@ -602,7 +602,7 @@ void Processor::execute(u8 instr)
         op::SUB_mem(this, A, HL);              
         break;
     case 0x97:
-        op::SBC(this, A, A);                   
+        op::SUB(this, A, A);                   
         break;
     case 0x98:
         op::SBC(this, A, B);                   
