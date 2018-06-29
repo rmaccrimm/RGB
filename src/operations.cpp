@@ -9,14 +9,11 @@ void set_nhc_flags_add(Processor *proc, int a, int b)
     proc->set_flags(Processor::CARRY, utils::full_carry_add(a, b));
 }
 
-
-
 void set_nhc_flags_sub(Processor *proc, int a, int b)
 {
     proc->set_flags(Processor::SUBTRACT, 1);
     proc->set_flags(Processor::HALF_CARRY, utils::half_carry_sub(a, b));
-    proc->set_flags(Processor::CARRY, utils::full_carry_sub(a, b));
-
+    proc->set_flags(Processor::CARRY, b > a);
 }
 
 void op::NOP() {}
@@ -364,8 +361,7 @@ void op::XOR_mem(Processor *proc, r8 &dest, r16 const &src)
 void op::CP(Processor *proc, r8 &dest, r8 const &src)
 {
     proc->set_flags(Processor::ZERO, dest.value() == src.value());
-    // dest - src computed internally, so same flags as sub
-    set_nhc_flags_sub(proc, src.value(), dest.value());    
+     set_nhc_flags_sub(proc, dest.value(), src.value());
 }
 
 void op::CP_imm(Processor *proc, r8 &reg)
@@ -423,7 +419,7 @@ void op::RL(Processor *proc, r16 const &reg)
 
 void op::RLC(Processor *proc, r8 &reg)
 {
-    u8 bit7 = (reg.value() >> 7) & 1;
+    bool bit7 = (reg.value() >> 7) & 1;
     // simple rotate
     reg.set((reg.value() << 1) | bit7);
     proc->set_flags(Processor::CARRY, bit7);
@@ -434,12 +430,14 @@ void op::RLC(Processor *proc, r8 &reg)
 void op::RLC(Processor *proc, r16 const &reg)
 {
     u8 val = proc->memory->read(reg.value());
+    bool bit7 = (val >> 7) & 1;
     // simple rotate
-    proc->memory->write(reg.value(), (val << 1) | ((val >> 7) & 1));
+    proc->memory->write(reg.value(), (val << 1) | bit7);
     // old bit 7 to carry
-    proc->set_flags(Processor::CARRY, (val >> 7) & 1);
+    proc->set_flags(Processor::CARRY, bit7);
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
-    proc->set_flags(Processor::ZERO, reg.value() == 0);
+    val = proc->memory->read(reg.value());
+    proc->set_flags(Processor::ZERO, val == 0);
 }
 
 void op::RR(Processor *proc, r8 &reg)
@@ -482,7 +480,8 @@ void op::RRC(Processor *proc, r16 const &reg)
     // old bit 0 to carry
     proc->set_flags(Processor::CARRY, val & 1);
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
-    proc->set_flags(Processor::ZERO, reg.value() == 0);
+    val = proc->memory->read(reg.value());
+    proc->set_flags(Processor::ZERO, val == 0);
 }
 
 void op::SLA(Processor *proc, r8 &reg)
@@ -507,20 +506,23 @@ void op::SLA(Processor *proc, r16 const &reg)
 
 void op::SRA(Processor *proc, r8 &reg)
 {
+    // old bit 0 to carry
+    proc->set_flags(Processor::CARRY, reg.value() & 1);
     // shift bit 7 in from right
     reg.set((reg.value() >> 1) | (reg.value() & (1 << 7)));
-    // carry always set to 0
-    proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
+    proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
     proc->set_flags(Processor::ZERO, reg.value() == 0);
 }
 
 void op::SRA(Processor *proc, r16 const &reg)
 {
     u8 val = proc->memory->read(reg.value());
+    // old bit 0 to carry
+    proc->set_flags(Processor::CARRY, val & 1);
     // shift bit 7 in from right
     proc->memory->write(reg.value(), (val >> 1) | (val & (1 << 7)));
     // carry always set to 0
-    proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY | Processor::CARRY, 0);
+    proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
     val = proc->memory->read(reg.value());
     proc->set_flags(Processor::ZERO, val == 0);
 }

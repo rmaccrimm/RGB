@@ -156,7 +156,9 @@ void Processor::execute(u8 instr)
         op::LD_imm(this, B);                   
         break;
     case 0x07:
-        op::RLC(this, A);                      
+        // Zero Flag for RLCA differs from RLC A
+        op::RLC(this, A);
+        set_flags(ZERO, 0);                   
         break;
     case 0x08:
         // LD (nn), SP
@@ -183,7 +185,9 @@ void Processor::execute(u8 instr)
         op::LD_imm(this, C);                   
         break;
     case 0x0f:
-        op::RRC(this, A);                      
+        // Zero flag for RRCA differs from RRC A
+        op::RRC(this, A);                  
+        set_flags(ZERO, 0);    
         break;
     case 0x10:
         op::STOP();                            
@@ -232,7 +236,9 @@ void Processor::execute(u8 instr)
         op::LD_imm(this, E);                   
         break;
     case 0x1f:
-        op::RR(this, A);                       
+        // Zero flag for RRA differs from RR A
+        op::RR(this, A);
+        set_flags(ZERO, 0);
         break;
     case 0x20:
         op::JR(this, !zero_flag());
