@@ -929,6 +929,7 @@ void Processor::execute(u8 instr)
         A.set(memory->read(addr));
         break;
     case 0xfb:
+        // EI
         enable_interrupts();
         break;
     case 0xfc:

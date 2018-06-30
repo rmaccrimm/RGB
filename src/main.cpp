@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     gb_mem.load_cart("instr_timing.gb", 0);
 
     // gb_mem.load_cart("01-special.gb", 0); // - PASSED
-    // gb_mem.load_cart("02-interrupts.gb", 0);
+    gb_mem.load_cart("02-interrupts.gb", 0);
     // gb_mem.load_cart("03-op sp,hl.gb", 0); // - PASSED
     // gb_mem.load_cart("04-op r,imm.gb", 0); // - PASSED
     // gb_mem.load_cart("05-op rp.gb", 0); // - PASSED
