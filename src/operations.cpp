@@ -619,7 +619,9 @@ void op::CALL(Processor *proc, bool cond)
 
 void op::RET(Processor *proc, bool cond)
 {
-    POP(proc, proc->PC);
+    if (cond) {
+        POP(proc, proc->PC);
+    }
 }
 
 void op::RST(Processor *proc, u8 addr)
