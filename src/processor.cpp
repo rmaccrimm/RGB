@@ -162,9 +162,10 @@ void Processor::execute(u8 instr)
         break;
     case 0x08:
         // LD (nn), SP
-        // Not sure about u16 -> u8 conversion here
+        // low byte -> (nn), high byte -> (nn + 1)
         addr = fetch_word();
-        memory->write(addr, SP.value());
+        memory->write(addr, SP.value_low());
+        memory->write(addr + 1, SP.value_high());
         break;
     case 0x09:
         op::ADD(this, HL, BC);                 
@@ -909,9 +910,16 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x30);        
         break;
     case 0xf8:
+    {
         // LD HL, SP + n - signed operand
-        HL.set((u8)(SP.value() + (i8)fetch_byte()));
+        i8 op = (i8)fetch_byte();
+        // immediate operand must be treated as unsigned for carry checks
+        set_flags(Processor::CARRY, utils::full_carry_add(SP.value(), op));
+        set_flags(Processor::HALF_CARRY, utils::half_carry_add(SP.value(), op));
+        set_flags(ZERO | SUBTRACT, 0);
+        HL.set(SP.value() + op);
         break;
+    }
     case 0xf9:
         op::LD(SP, HL); 
         break;

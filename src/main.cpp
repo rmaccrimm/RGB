@@ -44,15 +44,15 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
-    gb_mem.load_cart("Tetris.gb", 0);
+    // gb_mem.load_cart("cpu_instrs.gb", 0);
 
     // gb_mem.load_cart("01-special.gb", 0); // - PASSED
     // gb_mem.load_cart("02-interrupts.gb", 0);
-    // gb_mem.load_cart("03-op sp,hl.gb", 0); // - Freezes, infinite loop
+    // gb_mem.load_cart("03-op sp,hl.gb", 0); // - PASSED
     // gb_mem.load_cart("04-op r,imm.gb", 0); // - PASSED
     // gb_mem.load_cart("05-op rp.gb", 0); // - PASSED
     // gb_mem.load_cart("06-ld r,r.gb", 0); // - PASSED
-    // gb_mem.load_cart("07-jr,jp,call,ret,rst.gb", 0); // - loops
+    gb_mem.load_cart("07-jr,jp,call,ret,rst.gb", 0); // - loops
     // gb_mem.load_cart("08-misc instrs.gb", 0); // - loops
     // gb_mem.load_cart("09-op r,r.gb", 0); - PASSED
     // gb_mem.load_cart("10-bit ops.gb", 0); // - PASSED
@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
     }
+    debug::print_registers(&gb_cpu);
 
     return 0;
 }

@@ -110,7 +110,7 @@ void op::ADD_imm(Processor *proc, r8 &reg)
 void op::ADD_imm(Processor *proc, r16 &reg)
 {
     // signed 16 bit operand
-    i16 add = (i16)proc->fetch_word();
+    i8 add = (i8)proc->fetch_byte();
     set_nhc_flags_add(proc, reg.value(), add);
     // zero flag always 0 for 16-bit immediate add
     proc->set_flags(Processor::ZERO, 0);
