@@ -54,6 +54,9 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(VBLANK);
                 build_framebuffer();
                 window->draw_frame(framebuffer);
+                // Set bit 0 of interrupt request
+                u8 int_request = memory->read(reg::IF);
+                memory->write(reg::IF, utils::set(int_request, 0));
             } else {
                 change_mode(OAM);
             }
@@ -68,6 +71,9 @@ void GPU::step(unsigned int cpu_clock)
             if (line == 154) {
                 line = 0;
                 change_mode(OAM);
+                // Clear bit 0 of interrupt request
+                u8 int_request = memory->read(reg::IF);
+                memory->write(reg::IF, utils::reset(int_request, 0));
             }
         }
         break;    

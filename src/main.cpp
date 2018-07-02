@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
-    gb_mem.load_cart("instr_timing.gb", 0);
+    // gb_mem.load_cart("cpu_instrs.gb", 0);
 
     // gb_mem.load_cart("01-special.gb", 0); // - PASSED
     gb_mem.load_cart("02-interrupts.gb", 0);

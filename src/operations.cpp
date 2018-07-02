@@ -565,24 +565,24 @@ void op::BIT(Processor *proc, r16 const &reg, u8 bit)
 
 void op::SET(r8 &reg, u8 bit)
 {
-    reg.set(reg.value() | (1 << bit));
+    reg.set(utils::set(reg.value(), bit));
 }
 
 void op::SET(Processor *proc, r16 const &reg, u8 bit)
 {
     u8 val = proc->memory->read(reg.value());
-    proc->memory->write(reg.value(), val | (1 << bit));
+    proc->memory->write(reg.value(), utils::set(val, bit));
 }
 
 void op::RES(r8 &reg, u8 bit)
 {
-    reg.set(reg.value() & (~(1 << bit)));
+    reg.set(utils::reset(reg.value(), bit));
 }
 
 void op::RES(Processor *proc, r16 const &reg, u8 bit)
 {
     u8 val = proc->memory->read(reg.value());
-    proc->memory->write(reg.value(), val & (~(1 << bit)));
+    proc->memory->write(reg.value(), utils::reset(val, bit));
 }
 
 void op::JP(Processor *proc, bool cond)

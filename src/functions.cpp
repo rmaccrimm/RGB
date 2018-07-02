@@ -77,6 +77,18 @@ u8 utils::swap(u8 x)
     return 0xff & (x >> 4 | x << 4);
 }
 
+u8 utils::set(u8 x, int bit) 
+{
+    assert(bit < 8);
+    return x | (1 << bit);
+}
+
+u8 utils::reset(u8 x, int bit)
+{
+    assert(bit < 8);
+    return x & (~(1 << bit));
+}
+
 void utils::to_lower(std::string &s) 
 {
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);

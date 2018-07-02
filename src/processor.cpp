@@ -6,7 +6,7 @@
 #include <iostream>
 #include <cassert>
 
-Processor::Processor(Memory *mem) : memory(mem), clock(0), ei_count(0), di_count(0), ime_flag(0),
+Processor::Processor(Memory *mem) : memory(mem), clock(0), ei_count(0), IME_flag(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
 void Processor::init_state()
@@ -69,6 +69,7 @@ int Processor::step(bool print)
             std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
         }
     }
+    update_timer(cycles);
     process_interrupts();
     return cycles;
 }
@@ -97,18 +98,43 @@ void Processor::set_flags(u8 mask, bool b)
     }
 }
 
+void Processor::update_timer(int cycles)
+{
+    int t = memory->read(reg::TIMA);
+    memory->write(reg::TIMA, t + cycles);
+    memory->write(reg::TIMA, (t + cycles) % 256);
+    // generate overflow interrupt
+    if (t + cycles > 0xff) {
+        u8 int_request = memory->read(reg::IF);
+        memory->write(reg::IF, utils::set(int_request, 2));
+    }
+}
+
+
 void Processor::process_interrupts()
 {
+    // Delay interrupt enabling when set by EI
     if (ei_count > 0) {
         ei_count--;
         if (ei_count == 0) {
-            ime_flag = true;
+            IME_flag = true;
         }
     }
-    if (di_count > 0) {
-        di_count--;
-        if (di_count == 0) {
-            ime_flag = false;
+    if (IME_flag) {
+        u8 int_request = memory->read(reg::IF);
+        u8 int_enable = memory->read(reg::IE);
+        for (int i = 0; i < 5; i++) {
+            if (int_request >> i & 1) {
+                if (int_enable >> i & 1) {
+                    // Reset master enable and reqest bit
+                    IME_flag = false;
+                    memory->write(reg::IF, utils::reset(int_request, i));
+                    // Jump to interrupt routine
+                    op::PUSH(this, PC);
+                    PC.set(interrupt_addr[i]);
+                    break;
+                }
+            }
         }
     }
 }
@@ -120,12 +146,6 @@ bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
 bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
 
 bool Processor::carry_flag() { return F.value() & CARRY; }
-
-void Processor::enable_interrupts() { ei_count = 2; }
-
-void Processor::disable_interrupts() { di_count = 2; }
-
-
 
 void Processor::execute(u8 instr)
 {
@@ -808,8 +828,9 @@ void Processor::execute(u8 instr)
         op::RET(this, carry_flag());
         break;
     case 0xd9:
+        // RETI
         op::RET(this, true);
-        enable_interrupts();
+        IME_flag = true;
         break;
     case 0xda:
         op::JP(this, carry_flag());
@@ -895,7 +916,8 @@ void Processor::execute(u8 instr)
         A.set(memory->read(0xff00 + C.value()));
         break;
     case 0xf3:
-        disable_interrupts();
+        // DI - disable interrupts
+        IME_flag = false;
         break;
     case 0xf4:
         op::INVALID();                         
@@ -929,8 +951,9 @@ void Processor::execute(u8 instr)
         A.set(memory->read(addr));
         break;
     case 0xfb:
-        // EI
-        enable_interrupts();
+        // EI - enable interrupts
+        IME_flag = false;
+        ei_count = 2;
         break;
     case 0xfc:
         op::INVALID();                         
@@ -1764,4 +1787,12 @@ const int Processor::cb_instr_cycles[256] = {
     8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
     8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
     8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 
+};
+
+const u16 Processor::interrupt_addr[5] = {
+    0x40,   // V-blank
+    0x48,   // LCDC STAT
+    0x50,   // Timer 
+    0x58,   // Serial
+    0x60    // Joypad
 };

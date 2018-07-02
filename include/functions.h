@@ -25,5 +25,9 @@ namespace utils
     // swap high and low 4 bits
     u8 swap(u8 n);
 
+    u8 set(u8 x, int bit);
+
+    u8 reset(u8 x, int bit);
+
     void to_lower(std::string &s);
 };

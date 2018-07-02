@@ -5,9 +5,18 @@
 
 namespace reg
 {
+    // VRAM
+    static const u16 TILE_MAP_0 = 0x9800;   // unsigned
+    static const u16 TILE_MAP_1 = 0x9c00;   // signed
+    static const u16 TILE_DATA_0 = 0x9000;  // signed tile index
+    static const u16 TILE_DATA_1 = 0x8000;  // unsigned tile index
+    // Timer
     static const u16 TIMA       = 0xff05;
+    // Timer modulo
     static const u16 TMA        = 0xff06;
     static const u16 TAC        = 0xff07;
+    // Interrupt request
+    static const u16 IF         = 0xff0f;
     static const u16 NR10       = 0xff10;
     static const u16 NR11       = 0xff11;
     static const u16 NR12       = 0xff12;
@@ -43,13 +52,10 @@ namespace reg
     // Window position
     static const u16 WY         = 0xff4a;
     static const u16 WX         = 0xff4b;
+    // Interrupt enable
     static const u16 IE         = 0xffff;
 
-    // VRAM
-    static const u16 TILE_MAP_0 = 0x9800;   // unsigned
-    static const u16 TILE_MAP_1 = 0x9c00;   // signed
-    static const u16 TILE_DATA_0 = 0x9000;  // signed tile index
-    static const u16 TILE_DATA_1 = 0x8000;  // unsigned tile index
+    
 
 
     
