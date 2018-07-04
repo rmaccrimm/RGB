@@ -69,8 +69,15 @@ int Processor::step(bool print)
             std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
         }
     }
+    // Delay interrupt enabling when set by EI
+    if (ei_count > 0) {
+        ei_count--;
+        if (ei_count == 0) {
+            IME_flag = true;
+        }
+    }
     update_timer(cycles);
-    process_interrupts();
+    //process_interrupts();
     return cycles;
 }
 
@@ -103,23 +110,15 @@ void Processor::update_timer(int cycles)
     int t = memory->read(reg::TIMA);
     memory->write(reg::TIMA, t + cycles);
     memory->write(reg::TIMA, (t + cycles) % 256);
-    // generate overflow interrupt
+    // set overflow interrupt request
     if (t + cycles > 0xff) {
         u8 int_request = memory->read(reg::IF);
         memory->write(reg::IF, utils::set(int_request, 2));
     }
 }
 
-
 void Processor::process_interrupts()
 {
-    // Delay interrupt enabling when set by EI
-    if (ei_count > 0) {
-        ei_count--;
-        if (ei_count == 0) {
-            IME_flag = true;
-        }
-    }
     if (IME_flag) {
         u8 int_request = memory->read(reg::IF);
         u8 int_enable = memory->read(reg::IE);

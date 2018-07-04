@@ -25,9 +25,6 @@ float* GPU::build_framebuffer()
 void GPU::step(unsigned int cpu_clock) 
 {
     clock += cpu_clock;
-    if (DEBUG_MODE) {
-        //std::cout << "clock: " << clock << std::endl << "line: " << line << std::endl;
-    }
 
     switch (mode)
     {
@@ -52,6 +49,7 @@ void GPU::step(unsigned int cpu_clock)
             
             if (line == 143) {
                 change_mode(VBLANK);
+                // Draw screen
                 build_framebuffer();
                 window->draw_frame(framebuffer);
                 // Set bit 0 of interrupt request

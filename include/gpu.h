@@ -29,11 +29,9 @@ private:
     GameWindow *window;
     float* framebuffer;
 
-
     int line;
     int clock;
     Mode mode;
-
 
     float read_color(int index);
     void read_tile(float *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
