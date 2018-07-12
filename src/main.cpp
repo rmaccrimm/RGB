@@ -9,6 +9,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <SDL2/SDL.h>
 
 #include "debug.h"
 #include "definitions.h"
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
     gb_mem.load_cart("Dr. Mario.gb", 0);
+    // gb_mem.load_cart("Tetris.gb", 0);
 
     // gb_mem.load_cart("01-special.gb", 0); // - PASSED
     // gb_mem.load_cart("02-interrupts.gb", 0);
@@ -71,7 +73,30 @@ int main(int argc, char *argv[])
 
     while (!window.closed()) {
         if (DEBUG_MODE) {
-            if (gb_cpu.PC.value() == break_pt || step_instr) {
+            bool pause = false;
+            bool quit = false;
+            SDL_Event event;
+            SDL_PollEvent(&event);
+            switch (event.type) 
+            {
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym) 
+                {
+                case SDLK_ESCAPE:
+                    quit = true;
+
+                    break;
+                case SDLK_KP_ENTER:
+                    pause = true;
+                    break;
+                }
+            
+            }
+            if (quit) {
+                std::cout << "HERE\n";  
+                break;
+            }
+            if (gb_cpu.PC.value() == break_pt || step_instr || pause) {
                 debug::print_registers(&gb_cpu);
                 if (!debug::menu(&gb_cpu, break_pt, step_instr)) {
                     break;
