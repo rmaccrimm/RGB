@@ -6,7 +6,8 @@
 #include <iostream>
 #include <cassert>
 
-Processor::Processor(Memory *mem) : memory(mem), clock(0), ei_count(0), IME_flag(0),
+Processor::Processor(Memory *mem, Register16bit *clock) :
+    memory(mem), clock_counter(clock), ei_count(0), IME_flag(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
 void Processor::init_state()
@@ -15,6 +16,7 @@ void Processor::init_state()
     BC.set(0x0013);
     DE.set(0x00d8);
     HL.set(0x014d);
+    clock_counter->set(0xabcc);
     memory->write(reg::TIMA, 0);
     memory->write(reg::TMA, 0);
     memory->write(reg::TAC, 0);
@@ -76,7 +78,7 @@ int Processor::step(bool print)
             IME_flag = true;
         }
     }
-    update_timer(cycles);
+    //update_timer(cycles);
     //process_interrupts();
     return cycles;
 }
@@ -107,18 +109,24 @@ void Processor::set_flags(u8 mask, bool b)
 
 void Processor::update_timer(int cycles)
 {
-    int t = memory->read(reg::TIMA);
-    memory->write(reg::TIMA, t + cycles);
-    memory->write(reg::TIMA, (t + cycles) % 256);
+    clock_counter->add(cycles);
+    //if ()
+    memory->write(reg::TIMA, clock_counter->value());
+    memory->write(reg::TIMA, clock_counter->value() % 256);
+    // DIV contains upper 8 bits of counter
+    memory->write(reg::DIV, clock_counter->value_high());
+    
+    
     // set overflow interrupt request
-    if (t + cycles > 0xff) {
+    /*if (t + cycles > 0xff) {
         u8 int_request = memory->read(reg::IF);
         memory->write(reg::IF, utils::set(int_request, 2));
-    }
+    }*/
 }
 
 void Processor::process_interrupts()
 {
+    // Missing behaviour - if IF is written the same cycle a flag is set, retain written value
     if (IME_flag) {
         u8 int_request = memory->read(reg::IF);
         u8 int_enable = memory->read(reg::IE);

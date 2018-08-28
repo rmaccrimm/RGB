@@ -32,8 +32,9 @@ TEST_CASE("Load to/from address in 16-bit register" "[ld_address]")
 
 TEST_CASE("Stack operations", "[stack]")
 {
-    Memory mem;
-    Processor cpu(&mem);
+    Register16bit r;
+    Memory mem(&r);
+    Processor cpu(&mem, &r);
     
     run_test_rom(&cpu, test::push_pop);
     REQUIRE(cpu.AF.value() == 0x14f0);
@@ -44,8 +45,9 @@ TEST_CASE("Stack operations", "[stack]")
 
 TEST_CASE("Shift operations", "[shift_ops]")
 {
-    Memory mem;
-    Processor cpu(&mem);
+    Register16bit r;
+    Memory mem(&r);
+    Processor cpu(&mem, &r);
     
     run_test_rom(&cpu, test::shift_left);
     REQUIRE(cpu.AF.value() == 0x7c00);
@@ -68,8 +70,9 @@ TEST_CASE("Shift operations", "[shift_ops]")
 
 TEST_CASE("Bit Operations", "[bit_ops]")
 {
-    Memory mem;
-    Processor cpu(&mem);
+    Register16bit r;
+    Memory mem(&r);
+    Processor cpu(&mem, &r);
 
     run_test_rom(&cpu, test::bit_set);
     REQUIRE(cpu.AF.value() == 0x2030);
@@ -86,8 +89,9 @@ TEST_CASE("Bit Operations", "[bit_ops]")
 
 TEST_CASE("Jumps", "[jumps]")
 {
-    Memory mem;
-    Processor cpu(&mem);
+    Register16bit r;
+    Memory mem(&r);
+    Processor cpu(&mem, &r);
 
     cpu.PC.set(0);
     auto rom = test::jp;

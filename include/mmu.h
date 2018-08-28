@@ -2,11 +2,12 @@
 #define MMU_H
 
 #include "definitions.h"
+#include "register16bit.h"
 
 class Memory
 {
 public:
-    Memory();
+    Memory(Register16bit *clock);
     void write(u16 addr, u8 data);
     u8 read(u16 addr) const;
     void set_flags(u16 addr, u8 mask, bool b);
@@ -16,6 +17,7 @@ public:
 
 private:
     u8 mem[0x10000];
+    Register16bit *clock_counter;
 };
 
 #endif

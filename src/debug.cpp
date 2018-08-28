@@ -2,6 +2,7 @@
 #include "registers.h"
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 #include "gpu.h"
 
 bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
@@ -11,6 +12,7 @@ bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
         std::cout << "> ";
         getline(std::cin, input);
         utils::to_lower(input);
+        std::stringstream raw_data;
 
         if (input == "b") {
             break_pt = prompt("Breakpoint: ");
@@ -25,10 +27,13 @@ bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
                     }
                     std::cout << "  " << std::hex << i << ": ";
                 }
-                std::cout << std::setw(2) << std::setfill('0') << std::hex 
-                          << (int)cpu->memory->read(i) << " ";
+                int byte = (int)cpu->memory->read(i);
+                raw_data << std::setw(2) << std::setfill('0') << std::hex << byte;
+                std::cout << std::setw(2) << std::setfill('0') << std::hex << byte << " ";
             }
-            std::cout << std::endl;
+            std::string data = raw_data.str();
+            utils::to_upper(data);
+            std::cout << std::endl << data << std::endl;
         }
         else if (input == "r") {
             print_instr = false;

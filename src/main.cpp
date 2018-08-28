@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
         }
     }
     int DEBUG_MODE = debug;
-
-    Memory gb_mem;
-    Processor gb_cpu(&gb_mem);
+    Register16bit clock_counter;
+    Memory gb_mem(&clock_counter);
+    Processor gb_cpu(&gb_mem, &clock_counter);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
     gb_mem.load_cart("Dr. Mario.gb", 0);
@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
     // gb_mem.load_cart("10-bit ops.gb", 0); // - PASSED
     // gb_mem.load_cart("11-op a,(hl).gb", 0); // - PASSED
 
-    gb_cpu.init_state();
-    gb_cpu.PC.set(0x100);
+    //gb_cpu.init_state();
+    //gb_cpu.PC.set(0x100);
     
     int break_pt = -1;
     bool step_instr = false;
@@ -73,30 +73,7 @@ int main(int argc, char *argv[])
 
     while (!window.closed()) {
         if (DEBUG_MODE) {
-            bool pause = false;
-            bool quit = false;
-            SDL_Event event;
-            SDL_PollEvent(&event);
-            switch (event.type) 
-            {
-            case SDL_KEYDOWN:
-                switch (event.key.keysym.sym) 
-                {
-                case SDLK_ESCAPE:
-                    quit = true;
-
-                    break;
-                case SDLK_KP_ENTER:
-                    pause = true;
-                    break;
-                }
-            
-            }
-            if (quit) {
-                std::cout << "HERE\n";  
-                break;
-            }
-            if (gb_cpu.PC.value() == break_pt || step_instr || pause) {
+            if (gb_cpu.PC.value() == break_pt || step_instr) {
                 debug::print_registers(&gb_cpu);
                 if (!debug::menu(&gb_cpu, break_pt, step_instr)) {
                     break;

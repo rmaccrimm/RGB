@@ -12,7 +12,7 @@
 class Processor
 {
 public:
-    Processor(Memory *mem);
+    Processor(Memory *mem, Register16bit *clock);
     void init_state();
     int step(bool print = false);
     void set_flags(u8 mask, bool b);
@@ -46,7 +46,7 @@ public:
     Register16bit PC;
 
     Memory *memory; 
-    int clock;
+    Register16bit *clock_counter;
     bool IME_flag;
     int ei_count;
 

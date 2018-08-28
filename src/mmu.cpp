@@ -1,8 +1,10 @@
 #include "mmu.h"
 #include "functions.h"
+#include "registers.h"
 #include <cstring>
+#include <iostream>
 
-Memory::Memory() : 
+Memory::Memory(Register16bit *clock) : clock_counter(clock),
     mem{0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 
         0xcb, 0x7c, 0x20, 0xfb, 0x21, 0x26, 0xff, 0x0e, 
         0x11, 0x3e, 0x80, 0x32, 0xe2, 0x0c, 0x3e, 0xf3, 
@@ -38,11 +40,28 @@ Memory::Memory() :
 
 void Memory::write(u16 addr, u8 data)
 {
-    mem[addr] = data;
+    if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
+        return;
+    }
+    else if (addr == reg::DIV) {
+        // writing any value to DIV writes 0 and resets system counter
+        mem[addr] = 0;
+        clock_counter->set(0);
+    }
+    else {
+        mem[addr] = data;
+    }
+    
 }
 
 u8 Memory::read(u16 addr) const
 {
+    if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
+        return 0xff;
+    }
+    else if (addr == reg::IF) {
+
+    }
     return mem[addr];
 }
 

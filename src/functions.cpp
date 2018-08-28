@@ -93,3 +93,8 @@ void utils::to_lower(std::string &s)
 {
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
 } 
+
+void utils::to_upper(std::string &s) 
+{
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+} 

@@ -30,4 +30,6 @@ namespace utils
     u8 reset(u8 x, int bit);
 
     void to_lower(std::string &s);
+
+    void to_upper(std::string &s);
 };
