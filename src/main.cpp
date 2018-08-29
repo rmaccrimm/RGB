@@ -5,6 +5,7 @@
 #include <thread>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <algorithm>
 #include <string>
 #include <thread>
@@ -47,23 +48,15 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem, &clock_counter);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
-    gb_mem.load_cart("Dr. Mario.gb", 0);
-    // gb_mem.load_cart("Tetris.gb", 0);
 
-    // gb_mem.load_cart("01-special.gb", 0); // - PASSED
-    // gb_mem.load_cart("02-interrupts.gb", 0);
-    // gb_mem.load_cart("03-op sp,hl.gb", 0); // - PASSED
-    // gb_mem.load_cart("04-op r,imm.gb", 0); // - PASSED
-    // gb_mem.load_cart("05-op rp.gb", 0); // - PASSED
-    // gb_mem.load_cart("06-ld r,r.gb", 0); // - PASSED
-    // gb_mem.load_cart("07-jr,jp,call,ret,rst.gb", 0); // - PASSED
-    // gb_mem.load_cart("08-misc instrs.gb", 0); // - PASSED
-    // gb_mem.load_cart("09-op r,r.gb", 0); // - PASSED
-    // gb_mem.load_cart("10-bit ops.gb", 0); // - PASSED
-    // gb_mem.load_cart("11-op a,(hl).gb", 0); // - PASSED
-
-    //gb_cpu.init_state();
-    //gb_cpu.PC.set(0x100);
+    std::string rom_name;
+    std::ifstream rom_file("rom_name.txt");
+    std::getline(rom_file, rom_name);
+    if (rom_name != "") {
+        gb_mem.load_cart(rom_name.c_str(), 0);
+        gb_cpu.init_state();
+        gb_cpu.PC.set(0x100);
+    }
     
     int break_pt = -1;
     bool step_instr = false;

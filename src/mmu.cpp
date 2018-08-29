@@ -43,11 +43,11 @@ void Memory::write(u16 addr, u8 data)
     if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
         return;
     }
-    else if (addr == reg::DIV) {
+    /*else if (addr == reg::DIV) {
         // writing any value to DIV writes 0 and resets system counter
         mem[addr] = 0;
         clock_counter->set(0);
-    }
+    }*/
     else {
         mem[addr] = data;
     }

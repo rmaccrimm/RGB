@@ -128,7 +128,7 @@ void op::ADD_mem(Processor *proc, r8 &dest, r16 const &src)
 void op::ADC(Processor *proc, r8 &dest, r8 const &src)
 {
     // carry flag checks for overflow
-    bool c = dest.value() + src.value() + proc->carry_flag() > 0xff;
+    bool c = (u16)dest.value() + src.value() + proc->carry_flag() > 0xff;
     // check for half carry in either addition
     bool hc = utils::half_carry_add(src.value(), dest.value());
     dest.add(src.value());
@@ -144,7 +144,7 @@ void op::ADC(Processor *proc, r8 &dest, r8 const &src)
 void op::ADC_imm(Processor *proc, r8 &reg)
 {
     u8 add = proc->fetch_byte();
-    bool c = reg.value() + add + proc->carry_flag() > 0xff;
+    bool c = (u16)reg.value() + add + proc->carry_flag() > 0xff;
     bool hc = utils::half_carry_add(reg.value(), add);
     reg.add(add);
     hc |= utils::half_carry_add(reg.value(), proc->carry_flag());
@@ -159,7 +159,7 @@ void op::ADC_imm(Processor *proc, r8 &reg)
 void op::ADC_mem(Processor *proc, r8 &dest, r16 const &src)
 {
     u8 add = proc->memory->read(src.value());
-    bool c = dest.value() + add + proc->carry_flag() > 0xff;
+    bool c = (u16)dest.value() + add + proc->carry_flag() > 0xff;
     bool hc = utils::half_carry_add(dest.value(), add);
     dest.add(add);
     hc |= utils::half_carry_add(dest.value(), proc->carry_flag());

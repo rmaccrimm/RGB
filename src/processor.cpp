@@ -50,39 +50,6 @@ void Processor::init_state()
     memory->write(reg::IE, 0x00);
 }
 
-int Processor::step(bool print)
-{
-    u8 instr = fetch_byte();
-    bool cb = instr == 0xcb;
-    int cycles;
-    if (cb) {
-        instr = fetch_byte();
-        cb_execute(instr);
-        cycles = cb_instr_cycles[instr];
-    } else {
-        execute(instr);
-        cycles = instr_cycles[instr];
-    }
-    if (print) {
-        if (cb) {
-            std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
-                      << std::endl;
-        } else {
-            std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
-        }
-    }
-    // Delay interrupt enabling when set by EI
-    if (ei_count > 0) {
-        ei_count--;
-        if (ei_count == 0) {
-            IME_flag = true;
-        }
-    }
-    //update_timer(cycles);
-    //process_interrupts();
-    return cycles;
-}
-
 u8 Processor::fetch_byte()
 {
     u8 data = memory->read(PC.value());
@@ -105,6 +72,39 @@ void Processor::set_flags(u8 mask, bool b)
     } else {
         F.set(F.value() & ~mask);
     }
+}
+
+int Processor::step(bool print)
+{
+    u8 instr = fetch_byte();
+    bool cb = instr == 0xcb;
+    int cycles;
+    if (cb) {
+        instr = fetch_byte();
+        cb_execute(instr);
+        cycles = cb_instr_cycles[instr];
+    } else {
+        execute(instr);
+        cycles = instr_cycles[instr];
+    }
+    if (print) {
+        if (cb) {
+            std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
+                      << std::endl;
+        } else {
+            std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
+        }
+    }
+    // Delay interrupt enabling when set by EI instruction
+    if (ei_count > 0) {
+        ei_count--;
+        if (ei_count == 0) {
+            IME_flag = true;
+        }
+    }
+    // update_timer(cycles);
+    // process_interrupts();
+    return cycles;
 }
 
 void Processor::update_timer(int cycles)
