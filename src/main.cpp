@@ -44,7 +44,9 @@ int main(int argc, char *argv[])
     }
     int DEBUG_MODE = debug;
     Register16bit clock_counter;
-    Memory gb_mem(&clock_counter);
+    Memory gb_mem(&clock_counter, false);
+    gb_mem.load_boot("DMG_ROM.bin");
+
     Processor gb_cpu(&gb_mem, &clock_counter);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
