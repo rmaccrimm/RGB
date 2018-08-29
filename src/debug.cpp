@@ -33,7 +33,8 @@ bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
             }
             std::string data = raw_data.str();
             utils::to_upper(data);
-            std::cout << std::endl << data << std::endl;
+            std::cout << std::endl;
+            // std::cout << std::endl << data << std::endl;
         }
         else if (input == "r") {
             print_instr = false;

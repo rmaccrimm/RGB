@@ -17,7 +17,9 @@ public:
 
 private:
     u8 mem[0x10000];
+    u8 boot_rom[0x100];
     Register16bit *clock_counter;
+    bool enable_boot_rom;
 };
 
 #endif

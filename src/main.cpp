@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
     if (rom_name != "") {
         gb_mem.load_cart(rom_name.c_str(), 0);
         gb_cpu.init_state();
-        gb_cpu.PC.set(0x100);
     }
     
     int break_pt = -1;
