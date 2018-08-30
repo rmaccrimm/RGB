@@ -47,11 +47,13 @@ int main(int argc, char *argv[])
 
     Register16bit clock_counter;
     Memory gb_mem(&clock_counter, enable_boot);
-    gb_mem.load_boot("DMG_ROM.bin");
-
     Processor gb_cpu(&gb_mem, &clock_counter);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
+
+    if (enable_boot) {
+        gb_mem.load_boot("DMG_ROM.bin");
+    }
 
     std::string rom_name;
     std::ifstream rom_file("rom_name.txt");

@@ -46,13 +46,19 @@ public:
     Register16bit PC;
 
     Memory *memory; 
-    Register16bit *clock_counter;
+
     bool IME_flag;
+    bool halted;
     int ei_count;
+    int clock_count;
+    int timer_count;
 
     static const int instr_cycles[256];
     static const int cb_instr_cycles[256];
+    static const int timer_cycles[4];
     static const u16 interrupt_addr[5];
+
+    static const int div_cycles = 256;
 
     // F register flags
     static const u8 ZERO = 1 << 7;       

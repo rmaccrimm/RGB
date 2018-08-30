@@ -421,7 +421,7 @@ void op::RLC(Processor *proc, r8 &reg)
 {
     bool bit7 = (reg.value() >> 7) & 1;
     // simple rotate
-    reg.set((reg.value() << 1) | bit7);
+    reg.set((reg.value() << 1) | (u8)bit7);
     proc->set_flags(Processor::CARRY, bit7);
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);
     proc->set_flags(Processor::ZERO, reg.value() == 0);
@@ -432,7 +432,7 @@ void op::RLC(Processor *proc, r16 const &reg)
     u8 val = proc->memory->read(reg.value());
     bool bit7 = (val >> 7) & 1;
     // simple rotate
-    proc->memory->write(reg.value(), (val << 1) | bit7);
+    proc->memory->write(reg.value(), (val << 1) | (u8)bit7);
     // old bit 7 to carry
     proc->set_flags(Processor::CARRY, bit7);
     proc->set_flags(Processor::SUBTRACT | Processor::HALF_CARRY, 0);

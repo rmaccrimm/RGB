@@ -2,12 +2,13 @@
 #include "debug.h"
 #include "assembly.h"
 #include "registers.h"
+#include "interrupts.h"
 #include <string>
 #include <iostream>
 #include <cassert>
 
 Processor::Processor(Memory *mem, Register16bit *clock) :
-    memory(mem), clock_counter(clock), ei_count(0), IME_flag(0),
+    memory(mem), clock_count(0), timer_count(0), ei_count(0), IME_flag(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
 void Processor::init_state()
@@ -16,7 +17,7 @@ void Processor::init_state()
     BC.set(0x0013);
     DE.set(0x00d8);
     HL.set(0x014d);
-    clock_counter->set(0xabcc);
+    //clock_count = 0xabcc;
     memory->write(reg::TIMA, 0);
     memory->write(reg::TMA, 0);
     memory->write(reg::TAC, 0);
@@ -109,18 +110,33 @@ int Processor::step(bool print)
 
 void Processor::update_timer(int cycles)
 {
-    clock_counter->add(cycles);
-    //if ()
-    memory->write(reg::TIMA, clock_counter->value());
-    memory->write(reg::TIMA, clock_counter->value() % 256);
-    // DIV contains upper 8 bits of counter
-    // memory->write(reg::DIV, clock_counter->value_high());
+    clock_count += cycles;
+    // Div written every 256 cycles, regardless of TAC
+    memory->write(reg::DIV, (clock_count >> 8) & 0xff);
+    
+    u8 timer_ctrl = memory->read(reg::TAC) & 7; // 5 highest bits ignored
+    if (timer_ctrl & 4) {
+        // if bit 2 set, timer started 
+        timer_count += cycles;
+        u8 t_prev = memory->read(reg::TIMA);
+        int cycles_per_clock = timer_cycles[timer_ctrl & 3]; // first 2 bits
+        
+        if (timer_count >= cycles_per_clock) {
 
-    // set overflow interrupt request
-    /*if (t + cycles > 0xff) {
-        u8 int_request = memory->read(reg::IF);
-        memory->write(reg::IF, utils::set(int_request, 2));
-    }*/
+            timer_count -= cycles_per_clock;
+            u8 t = t_prev + 1;
+
+            if (t_prev > t) {
+                // set timer overflow interrupt request
+                u8 int_request = utils::set(memory->read(reg::IF), interrupt::TIMER);
+                memory->write(reg::IF, int_request);
+                memory->write(reg::TIMA, memory->read(reg::TMA));
+            }
+            else {
+                memory->write(reg::TIMA, t);
+            }
+        }
+    }
 }
 
 void Processor::process_interrupts()
@@ -1801,4 +1817,11 @@ const u16 Processor::interrupt_addr[5] = {
     0x50,   // Timer 
     0x58,   // Serial
     0x60    // Joypad
+};
+
+const int Processor::timer_cycles[4] = { 
+    1024,
+    16,
+    64,
+    256
 };
