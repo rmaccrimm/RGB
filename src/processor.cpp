@@ -102,8 +102,8 @@ int Processor::step(bool print)
             IME_flag = true;
         }
     }
-    // update_timer(cycles);
-    // process_interrupts();
+    update_timer(cycles);
+    process_interrupts();
     return cycles;
 }
 
@@ -114,9 +114,8 @@ void Processor::update_timer(int cycles)
     memory->write(reg::TIMA, clock_counter->value());
     memory->write(reg::TIMA, clock_counter->value() % 256);
     // DIV contains upper 8 bits of counter
-    memory->write(reg::DIV, clock_counter->value_high());
-    
-    
+    // memory->write(reg::DIV, clock_counter->value_high());
+
     // set overflow interrupt request
     /*if (t + cycles > 0xff) {
         u8 int_request = memory->read(reg::IF);

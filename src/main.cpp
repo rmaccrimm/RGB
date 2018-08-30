@@ -43,8 +43,10 @@ int main(int argc, char *argv[])
         }
     }
     int DEBUG_MODE = debug;
+    bool enable_boot = false;
+
     Register16bit clock_counter;
-    Memory gb_mem(&clock_counter, false);
+    Memory gb_mem(&clock_counter, enable_boot);
     gb_mem.load_boot("DMG_ROM.bin");
 
     Processor gb_cpu(&gb_mem, &clock_counter);
@@ -57,6 +59,9 @@ int main(int argc, char *argv[])
     if (rom_name != "") {
         gb_mem.load_cart(rom_name.c_str(), 0);
         gb_cpu.init_state();
+        if (!enable_boot) {
+            gb_cpu.PC.set(0x100); // Start of cartridge execution
+        }
     }
     
     int break_pt = -1;
@@ -74,7 +79,6 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        // When stepping through a single instruction, print
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
     }
