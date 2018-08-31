@@ -43,15 +43,15 @@ int main(int argc, char *argv[])
         }
     }
     int DEBUG_MODE = debug;
-    bool enable_boot = false;
+    bool enable_boot_rom = false;
 
     Register16bit clock_counter;
-    Memory gb_mem(&clock_counter, enable_boot);
+    Memory gb_mem(&clock_counter, enable_boot_rom);
     Processor gb_cpu(&gb_mem, &clock_counter);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
 
-    if (enable_boot) {
+    if (enable_boot_rom) {
         gb_mem.load_boot("DMG_ROM.bin");
     }
 
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     if (rom_name != "") {
         gb_mem.load_cart(rom_name.c_str(), 0);
         gb_cpu.init_state();
-        if (!enable_boot) {
+        if (!enable_boot_rom) {
             gb_cpu.PC.set(0x100); // Start of cartridge execution
         }
     }

@@ -1,5 +1,6 @@
 #include "gpu.h"
 #include "registers.h"
+#include "interrupts.h"
 #include "debug.h"
 #include <iostream>
 #include <iomanip>
@@ -54,7 +55,7 @@ void GPU::step(unsigned int cpu_clock)
                 window->draw_frame(framebuffer);
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
-                memory->write(reg::IF, utils::set(int_request, 0));
+                memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK));
             } else {
                 change_mode(OAM);
             }
@@ -71,7 +72,7 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(OAM);
                 // Clear bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
-                memory->write(reg::IF, utils::reset(int_request, 0));
+                memory->write(reg::IF, utils::reset(int_request, interrupt::VBLANK));
             }
         }
         break;    

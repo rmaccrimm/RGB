@@ -18,7 +18,6 @@ void set_nhc_flags_sub(Processor *proc, int a, int b)
 
 void op::NOP() {}
 void op::INVALID() {}
-void op::HALT() {}
 void op::STOP() {}
 
 void op::LD(r8 &dest, r8 const &src)

@@ -17,7 +17,6 @@ namespace op
 
     void NOP();
     void INVALID();
-    void HALT();
     void STOP();
 
     void LD(r8 &dest, r8 const &src);

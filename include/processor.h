@@ -29,6 +29,8 @@ public:
     bool half_carry_flag();   // H
     bool carry_flag();        // C
 
+    bool interrupt_pending();
+
     Register8bit A;
     Register8bit F;
     Register8bit B;

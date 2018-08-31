@@ -8,7 +8,7 @@
 #include <cassert>
 
 Processor::Processor(Memory *mem, Register16bit *clock) :
-    memory(mem), clock_count(0), timer_count(0), ei_count(0), IME_flag(0),
+    memory(mem), clock_count(0), timer_count(0), ei_count(0), IME_flag(0), halted(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 
 void Processor::init_state()
@@ -77,31 +77,37 @@ void Processor::set_flags(u8 mask, bool b)
 
 int Processor::step(bool print)
 {
-    u8 instr = fetch_byte();
-    bool cb = instr == 0xcb;
     int cycles;
-    if (cb) {
-        instr = fetch_byte();
-        cb_execute(instr);
-        cycles = cb_instr_cycles[instr];
-    } else {
-        execute(instr);
-        cycles = instr_cycles[instr];
-    }
-    if (print) {
+    if (!halted) {
+        u8 instr = fetch_byte();
+        bool cb = instr == 0xcb;
         if (cb) {
-            std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
-                      << std::endl;
+            instr = fetch_byte();
+            cb_execute(instr);
+            cycles = cb_instr_cycles[instr];
         } else {
-            std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
+            execute(instr);
+            cycles = instr_cycles[instr];
         }
+        if (print) {
+            if (cb) {
+                std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
+                        << std::endl;
+            } else {
+                std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
+            }
+        }
+        // Delay interrupt enabling when set by EI instruction
+        if (ei_count > 0) {
+            ei_count--;
+            if (ei_count == 0) {
+                IME_flag = true;
+            }
+        }
+        
     }
-    // Delay interrupt enabling when set by EI instruction
-    if (ei_count > 0) {
-        ei_count--;
-        if (ei_count == 0) {
-            IME_flag = true;
-        }
+    else {
+        cycles = 4;
     }
     update_timer(cycles);
     process_interrupts();
@@ -142,19 +148,24 @@ void Processor::update_timer(int cycles)
 void Processor::process_interrupts()
 {
     // Missing behaviour - if IF is written the same cycle a flag is set, retain written value
-    if (IME_flag) {
-        u8 int_request = memory->read(reg::IF);
-        u8 int_enable = memory->read(reg::IE);
-        for (int i = 0; i < 5; i++) {
-            if (int_request >> i & 1) {
-                if (int_enable >> i & 1) {
-                    // Reset master enable and reqest bit
-                    IME_flag = false;
-                    memory->write(reg::IF, utils::reset(int_request, i));
-                    // Jump to interrupt routine
-                    op::PUSH(this, PC);
-                    PC.set(interrupt_addr[i]);
-                    break;
+    if (interrupt_pending()) {
+        if (halted) {
+            halted = false;
+        }
+        if (IME_flag) {
+            u8 int_request = memory->read(reg::IF);
+            u8 int_enable = memory->read(reg::IE);
+            for (int i = 0; i < 5; i++) {
+                if (int_request >> i & 1) {
+                    if (int_enable >> i & 1) {
+                        // Reset master enable and reqest bit
+                        IME_flag = false;
+                        memory->write(reg::IF, utils::reset(int_request, i));
+                        // Jump to interrupt routine
+                        op::PUSH(this, PC);
+                        PC.set(interrupt_addr[i]);
+                        break;
+                    }
                 }
             }
         }
@@ -168,6 +179,8 @@ bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
 bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
 
 bool Processor::carry_flag() { return F.value() & CARRY; }
+
+bool Processor::interrupt_pending() { return (memory->read(reg::IF) & 63); }
 
 void Processor::execute(u8 instr)
 {
@@ -552,7 +565,8 @@ void Processor::execute(u8 instr)
         op::LD_mem(this, HL, L);               
         break;
     case 0x76:
-        op::HALT();                        
+        // HALT
+        halted = true;
         break;
     case 0x77:
         op::LD_mem(this, HL, A);               
