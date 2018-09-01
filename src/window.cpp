@@ -28,7 +28,7 @@ const char *FRAG_SRC =
     "void main() {\n"
         "FragColor = texture(screen_texture, texCoords); }";
 
-GameWindow::GameWindow(int scale): window_scale(scale)
+GameWindow::GameWindow(Joypad *pad, int scale) : joypad(pad), window_scale(scale), key_pressed{0}
 {
     init_window();
     init_glcontext();
@@ -50,6 +50,55 @@ bool GameWindow::closed()
     }
     else {
         return false;
+    }
+}
+
+void GameWindow::process_input()
+{
+    int key;
+    if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+        // TODO - define a map with reconfigurable keys, just do keymap[event.key...]
+        switch (event.key.keysym.sym)
+        {
+        case SDLK_LEFT:
+            key = Joypad::LEFT;
+            break;
+        case SDLK_RIGHT:
+            key = Joypad::RIGHT;
+            break;
+        case SDLK_UP:
+            key = Joypad::UP;
+            break;
+        case SDLK_DOWN:
+            key = Joypad::DOWN;
+            break;
+        case SDLK_a:
+            key = Joypad::A;
+            break;
+        case SDLK_b:
+            key = Joypad::B;
+            break;
+        case SDLK_RETURN:
+            key = Joypad::START;
+            break;
+        case SDLK_BACKSPACE:
+            key = Joypad::SELECT;
+            break;
+        default:
+            break;
+        };
+        if (event.type == SDL_KEYDOWN) {
+            if (!key_pressed[key]) {
+                joypad->press_key(key);
+                key_pressed[key] = !key_pressed[key];
+            }
+        }
+        else {
+            if (key_pressed[key]) {
+                joypad->release_key(key);
+                key_pressed[key] = !key_pressed[key];
+            }
+        }
     }
 }
 

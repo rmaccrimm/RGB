@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     Joypad gb_pad;
     Memory gb_mem(&gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
-    GameWindow window(5);    
+    GameWindow window(&gb_pad, 5);    
     GPU gb_gpu(&gb_mem, &window);
 
     if (enable_boot_rom) {
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
     }
 
     while (!window.closed()) {
+        window.process_input();
         if (DEBUG_MODE) {
             if (gb_cpu.PC.value() == break_pt || step_instr) {
                 debug::print_registers(&gb_cpu);
