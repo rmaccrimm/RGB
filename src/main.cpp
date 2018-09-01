@@ -11,6 +11,7 @@
 #include <thread>
 #include <chrono>
 #include <SDL2/SDL.h>
+#include <boost/program_options.hpp>
 
 #include "debug.h"
 #include "definitions.h"
@@ -24,58 +25,65 @@
 #include "string"
 #include "mmu.h"
 #include "assembly.h"
+
 #undef main
+
+namespace po = boost::program_options;
 
 int main(int argc, char *argv[])
 {  
-    if (argc > 2) {
-        std::cerr << "Usage: " << argv[0] << " [-d]";
-        return -1;
-    }
-    bool debug = false;
-    if (argc == 2) {
-        std::string s(argv[1]);
-        if (s == "-d") {
-            debug = true;
-        }
-        else {
-            std::cerr << "Usage: " << argv[0] << " [-d]";
-            return -1;
-        }
-    }
-    int DEBUG_MODE = debug;
-    bool enable_boot_rom = false;
-
-    Joypad gb_pad;
-    Memory gb_mem(&gb_pad, enable_boot_rom);
-    Processor gb_cpu(&gb_mem);
-    GameWindow window(&gb_pad, 5);    
-    GPU gb_gpu(&gb_mem, &window);
-
-    if (enable_boot_rom) {
-        gb_mem.load_boot("DMG_ROM.bin");
-    }
-
-    std::string rom_name;
-    std::ifstream rom_file("rom_name.txt");
-    std::getline(rom_file, rom_name);
-    if (rom_name != "") {
-        gb_mem.load_cart(rom_name.c_str(), 0);
-        gb_cpu.init_state();
-        if (!enable_boot_rom) {
-            gb_cpu.PC.set(0x100); // Start of cartridge execution
-        }
-    }
+    po::options_description desc("Usage");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("boot-rom,b", po::value<std::string>(), "provide boot rom")
+        ("debug,d", "enable debug mode")
+        ("input-file", po::value<std::string>(), "rom file to load");
+    po::positional_options_description p_desc;
+    p_desc.add("input-file", -1);
     
+    po::variables_map var_map;
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(p_desc).run(), var_map);
+
+    if (var_map.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
+    po::notify(var_map);
+
+    std::string cartridge_filename = var_map["input-file"].as<std::string>();
+    std::string boot_rom_filename;
+    bool enable_boot_rom = false;
+    int enable_debug_mode = false;
     int break_pt = -1;
     bool step_instr = false;
-    if (DEBUG_MODE) {
-        debug::menu(&gb_cpu, break_pt, step_instr);
+
+    if (var_map.count("boot-rom")) {
+        enable_boot_rom = true;
+        boot_rom_filename = var_map["boot-rom"].as<std::string>();
+    }
+    if (var_map.count("debug")) {
+        enable_debug_mode = true;
+        step_instr = true;
+    }    
+
+    Joypad gb_pad;
+    GameWindow window(&gb_pad, 5);    
+    Memory gb_mem(&gb_pad, enable_boot_rom);
+    GPU gb_gpu(&gb_mem, &window);
+    Processor gb_cpu(&gb_mem);
+    
+    gb_mem.load_cart(cartridge_filename.c_str(), 0);
+    if (enable_boot_rom) {
+        gb_mem.load_boot(boot_rom_filename.c_str());
+    } 
+    else {
+        gb_cpu.init_state();
     }
 
     while (!window.closed()) {
         window.process_input();
-        if (DEBUG_MODE) {
+        if (enable_debug_mode) {
             if (gb_cpu.PC.value() == break_pt || step_instr) {
                 debug::print_registers(&gb_cpu);
                 if (!debug::menu(&gb_cpu, break_pt, step_instr)) {
@@ -86,7 +94,9 @@ int main(int argc, char *argv[])
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
     }
-    debug::print_registers(&gb_cpu);
+    if (enable_debug_mode) {
+        debug::print_registers(&gb_cpu);
+    }
 
     return 0;
 }

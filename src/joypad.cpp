@@ -14,14 +14,6 @@ u8 Joypad::get_state(bool select_dpad)
     }
 }
 
-void Joypad::press_key(int key) 
-{     
-    std::cout << "Pressed key " << key << std::endl;
-    state = utils::reset(state, key); 
-}
+void Joypad::press_key(int key) { state = utils::reset(state, key); }
 
-void Joypad::release_key(int key) 
-{ 
-    std::cout << "Released key " << key << std::endl;
-    state = utils::set(state, key); 
-}
+void Joypad::release_key(int key) { state = utils::set(state, key); }

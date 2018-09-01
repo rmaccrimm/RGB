@@ -17,7 +17,7 @@ void Processor::init_state()
     BC.set(0x0013);
     DE.set(0x00d8);
     HL.set(0x014d);
-    //clock_count = 0xabcc;
+    PC.set(0x100);
     memory->write(reg::TIMA, 0);
     memory->write(reg::TMA, 0);
     memory->write(reg::TAC, 0);

@@ -72,13 +72,7 @@ void debug::print_registers(Processor *cpu)
               << "SP:\t"  <<  std::setw(4) << std::setfill('0')
               << std::hex << (int)cpu->SP.value() << "\n"
               << "PC:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->PC.value() << "\n"
-              << "TAC:\t" << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->memory->read(reg::TAC) << "\n"
-              << "DIV:\t" << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->memory->read(reg::DIV) << "\n"
-              << "TIMA:\t" << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->memory->read(reg::TIMA) << "\n";
+              << std::hex << (int)cpu->PC.value() << "\n";            
 }
 
 void debug::setup_stripe_pattern(u8 *memory)
