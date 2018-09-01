@@ -10,6 +10,8 @@ namespace reg
     static const u16 TILE_MAP_1 = 0x9c00;   // signed
     static const u16 TILE_DATA_0 = 0x9000;  // signed tile index
     static const u16 TILE_DATA_1 = 0x8000;  // unsigned tile index
+    // Joypad
+    static const u16 JOYP       = 0xff00;
     // Divider
     static const u16 DIV        = 0xff04;
     // Timer

@@ -20,6 +20,7 @@
 #include "processor.h"
 #include "gpu.h"
 #include "window.h"
+#include "joypad.h"
 #include "string"
 #include "mmu.h"
 #include "assembly.h"
@@ -45,9 +46,9 @@ int main(int argc, char *argv[])
     int DEBUG_MODE = debug;
     bool enable_boot_rom = false;
 
-    Register16bit clock_counter;
-    Memory gb_mem(&clock_counter, enable_boot_rom);
-    Processor gb_cpu(&gb_mem, &clock_counter);
+    Joypad gb_pad;
+    Memory gb_mem(&gb_pad, enable_boot_rom);
+    Processor gb_cpu(&gb_mem);
     GameWindow window(5);    
     GPU gb_gpu(&gb_mem, &window);
 

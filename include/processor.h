@@ -12,7 +12,7 @@
 class Processor
 {
 public:
-    Processor(Memory *mem, Register16bit *clock);
+    Processor(Memory *mem);
     void init_state();
     int step(bool print = false);
     void set_flags(u8 mask, bool b);

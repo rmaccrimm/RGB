@@ -7,7 +7,7 @@
 #include <iostream>
 #include <cassert>
 
-Processor::Processor(Memory *mem, Register16bit *clock) :
+Processor::Processor(Memory *mem) : 
     memory(mem), clock_count(0), timer_count(0), ei_count(0), IME_flag(0), halted(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
 

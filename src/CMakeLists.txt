@@ -8,7 +8,7 @@ find_package(OpenGL REQUIRED)
 
 add_library(funcs functions.cpp)
 add_library(proc processor.cpp register16bit.cpp register8bit.cpp)
-add_library(mem mmu.cpp)
+add_library(mem mmu.cpp joypad.cpp)
 add_library(ops operations.cpp)
 
 add_executable(main 

@@ -3,11 +3,12 @@
 
 #include "definitions.h"
 #include "register16bit.h"
+#include "joypad.h"
 
 class Memory
 {
 public:
-    Memory(Register16bit *clock, bool enable_boot = 0);
+    Memory(Joypad *pad, bool enable_boot = 0);
     void write(u16 addr, u8 data);
     u8 read(u16 addr) const;
     void set_flags(u16 addr, u8 mask, bool b);
@@ -19,7 +20,7 @@ public:
 private:
     u8 mem[0x10000];
     u8 boot_rom[0x100];
-    Register16bit *clock_counter;
+    Joypad *joypad;
     bool enable_boot_rom;
 };
 

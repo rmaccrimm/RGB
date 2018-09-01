@@ -4,8 +4,7 @@
 #include <cstring>
 #include <iostream>
 
-Memory::Memory(Register16bit *clock, bool enable_boot) : clock_counter(clock), 
-    enable_boot_rom(enable_boot) {}
+Memory::Memory(Joypad *pad, bool enable_boot) : joypad(pad), enable_boot_rom(enable_boot) {}
 
 void Memory::write(u16 addr, u8 data)
 {
@@ -37,6 +36,11 @@ u8 Memory::read(u16 addr) const
     }
     else if (addr == reg::IF) {
 
+    }
+    else if (addr == 0xff00) {
+        // if bit 4 is reset select dpad, assume dpad/buttons mutually exclusive
+        bool select_dpad = (mem[addr] & (1 << 4) == 0);
+        return joypad->get_state(select_dpad);
     }
     return mem[addr];
 }
