@@ -4,7 +4,7 @@
 #include <cstring>
 #include <iostream>
 
-Memory::Memory(Joypad *pad, bool enable_boot) : joypad(pad), enable_boot_rom(enable_boot),
+Memory::Memory(Joypad *pad, bool enable_boot) : mem{0}, joypad(pad), enable_boot_rom(enable_boot),
     enable_break_pt(false), paused(false) {}
 
 void Memory::write(u16 addr, u8 data)
@@ -62,11 +62,6 @@ void Memory::set_flags(u16 addr, u8 mask, bool b)
 void Memory::load_cart(const char *file_path, size_t offset)
 {
     utils::load_rom(mem, offset, file_path);
-}
-
-void Memory::load_cart(const char *file_path, size_t start, size_t offset)
-{
-    utils::load_rom(mem, start, offset, file_path);
 }
 
 void Memory::load_boot(const char *file_path)
