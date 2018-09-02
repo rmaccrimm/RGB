@@ -8,7 +8,7 @@
 
 namespace debug
 {
-    bool menu(Processor *cpu, int &break_pt, bool &print_instr);
+    bool menu(Processor *cpu, int &break_pt, int &access_break_pt, bool &print_instr);
     void print_registers(Processor *cpu);
     int prompt(std::string msg);
     

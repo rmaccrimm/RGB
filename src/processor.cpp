@@ -5,6 +5,7 @@
 #include "interrupts.h"
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <cassert>
 
 Processor::Processor(Memory *mem) : 
@@ -79,6 +80,7 @@ int Processor::step(bool print)
 {
     int cycles;
     if (!halted) {
+        u16 prev_pc = PC.value();
         u8 instr = fetch_byte();
         bool cb = instr == 0xcb;
         if (cb) {
@@ -89,12 +91,12 @@ int Processor::step(bool print)
             execute(instr);
             cycles = instr_cycles[instr];
         }
-        if (print) {
+        if (print || memory->pause()) {
+            std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)prev_pc << ":\t";
             if (cb) {
-                std::cout << "cb " << std::hex << (int)instr << ":\t" << cb_instr_set[instr] 
-                        << std::endl;
+                std::cout << cb_instr_set[instr] << "\n";
             } else {
-                std::cout << std::hex << (int)instr << ":\t" << instr_set[instr] << std::endl;
+                std::cout << instr_set[instr] << "\n";
             }
         }
         // Delay interrupt enabling when set by EI instruction
@@ -104,9 +106,9 @@ int Processor::step(bool print)
                 IME_flag = true;
             }
         }
-        
     }
     else {
+        // HALT takes 4 cycles
         cycles = 4;
     }
     update_timer(cycles);
@@ -1004,7 +1006,6 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x38);    
         break;
     default:
-        // TODO ?
         break;
     }
 }

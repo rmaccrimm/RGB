@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
     std::string boot_rom_filename;
     bool enable_boot_rom = false;
     int enable_debug_mode = false;
-    int break_pt = -1;
     bool step_instr = false;
 
     if (var_map.count("boot-rom")) {
@@ -81,13 +80,19 @@ int main(int argc, char *argv[])
         gb_cpu.init_state();
     }
 
+    int break_pt = -1;
+    int access_break_pt = -1;
+    
     while (!window.closed()) {
         window.process_input();
         if (enable_debug_mode) {
-            if (gb_cpu.PC.value() == break_pt || step_instr) {
+            if (gb_cpu.PC.value() == break_pt || step_instr || gb_mem.pause()) {
                 debug::print_registers(&gb_cpu);
-                if (!debug::menu(&gb_cpu, break_pt, step_instr)) {
+                if (!debug::menu(&gb_cpu, break_pt, access_break_pt, step_instr)) {
                     break;
+                }
+                if (access_break_pt >= 0) {
+                    gb_mem.set_access_break_pt(access_break_pt);
                 }
             }
         }

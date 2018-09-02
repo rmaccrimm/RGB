@@ -4,10 +4,15 @@
 #include <cstring>
 #include <iostream>
 
-Memory::Memory(Joypad *pad, bool enable_boot) : joypad(pad), enable_boot_rom(enable_boot) {}
+Memory::Memory(Joypad *pad, bool enable_boot) : joypad(pad), enable_boot_rom(enable_boot),
+    enable_break_pt(false), paused(false) {}
 
 void Memory::write(u16 addr, u8 data)
 {
+    if (enable_break_pt && addr == break_pt) {
+        paused = true;
+    }
+
     if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
         return;
     }
@@ -21,7 +26,7 @@ void Memory::write(u16 addr, u8 data)
     }
 }
 
-u8 Memory::read(u16 addr) const
+u8 Memory::read(u16 addr) 
 {
     if (addr <= 0x100) {
         if (!(mem[0xff50] & 1) && enable_boot_rom) { // not sure about this check
@@ -39,7 +44,7 @@ u8 Memory::read(u16 addr) const
     }
     else if (addr == 0xff00) {
         // if bit 4 is reset select dpad, assume dpad/buttons mutually exclusive
-        bool select_dpad = (mem[addr] & (1 << 4) == 0);
+        bool select_dpad = (mem[addr] & (1 << 4)) == 0;
         return joypad->get_state(select_dpad);
     }
     return mem[addr];
@@ -73,3 +78,13 @@ void Memory::load(u8 data[], size_t offset, size_t size)
 {
     memcpy(mem + offset, data, size);
 }
+
+void Memory::set_access_break_pt(u16 addr) 
+{ 
+    enable_break_pt = true;
+    break_pt = addr; 
+}
+
+void Memory::clear_access_break_pt() { enable_break_pt = false; }
+
+bool Memory::pause() { return paused; }

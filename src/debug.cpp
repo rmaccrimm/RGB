@@ -5,7 +5,8 @@
 #include <sstream>
 #include "gpu.h"
 
-bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
+// return false to quit program
+bool debug::menu(Processor *cpu, int &break_pt, int &access_break_pt, bool &print_instr)
 {
     while (true) {
         std::string input;
@@ -18,7 +19,7 @@ bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
             break_pt = prompt("Breakpoint: ");
         }
         else if (input == "m") {
-            int addr = prompt("Adress: ");
+            int addr = prompt("Address: ");
             int len = prompt("Length: ");
             for (int i = addr; i < addr + len; i++) {
                 if ((i % 16) == 0) {
@@ -35,6 +36,9 @@ bool debug::menu(Processor *cpu, int &break_pt, bool &print_instr)
             utils::to_upper(data);
             std::cout << std::endl;
             // std::cout << std::endl << data << std::endl;
+        }
+        else if (input == "a") {
+            access_break_pt = prompt("Access break point: ");
         }
         else if (input == "r") {
             print_instr = false;
