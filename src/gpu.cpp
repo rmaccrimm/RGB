@@ -9,7 +9,7 @@
 
 GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
 {
-    framebuffer = new float[3 * constants::screen_h * constants::screen_w];
+    framebuffer = new u8[4 * constants::screen_h * constants::screen_w];
 }
 
 GPU::~GPU()
@@ -17,7 +17,7 @@ GPU::~GPU()
     delete framebuffer;
 }
 
-float* GPU::build_framebuffer()
+u8* GPU::build_framebuffer()
 {
     render_background();
     return framebuffer;
@@ -93,13 +93,14 @@ void GPU::increment_line()
     memory->write(reg::LY, line);
 }
 
-float GPU::read_color(int index)
+// Get color from palette register
+u8 GPU::read_color(int index)
 {
     return COLORS[(memory->read(reg::BGP) >> (2 * index)) & 3];
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
-void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high)
+void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high)
 {
     assert(dest);
     assert(x_low >= 0 && x_high < constants::tile_size);
@@ -120,8 +121,10 @@ void GPU::read_tile(float *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
             for (int k = 0; k < 3; k++) {
-                dest[3 * pixel_ind + k] = read_color(color);
+                dest[4 * pixel_ind + k] = read_color(color);
             }
+            // alpha value
+            dest[4 * pixel_ind + 3] = 1;
         }
     }
 }
@@ -191,7 +194,7 @@ void GPU::render_background()
                 int pixel_x = std::max(8 * screen_j - (scroll_x % 8), 0);
                 int pixel_index = constants::screen_w * pixel_y + pixel_x;
 
-                int framebuf_index = 3 * pixel_index;
+                int framebuf_index = 4 * pixel_index;
 
                 int xl = 0;
                 int yl = 0;
@@ -223,4 +226,14 @@ void GPU::render_background()
             screen_i++;
         }        
     }
+}
+
+void GPU::render_window()
+{
+
+}
+
+void GPU::render_sprites()
+{
+    
 }

@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     int break_pt = -1;
     int access_break_pt = -1;
     
-    while (!window.closed()) {
+    while (true) {
         window.process_input();
         if (enable_debug_mode) {
             if (gb_cpu.PC.value() == break_pt || step_instr || gb_mem.pause()) {
@@ -98,6 +98,12 @@ int main(int argc, char *argv[])
         }
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
+		if (window.frame_drawn()) {
+			if (window.closed()) {
+				break;
+			}
+			window.process_input();
+		}
     }
     if (enable_debug_mode) {
         debug::print_registers(&gb_cpu);

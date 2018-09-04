@@ -14,8 +14,9 @@ public:
     GameWindow(Joypad *pad, int scale = 4);
     ~GameWindow();
     bool closed();
+    bool frame_drawn();
     void process_input();
-    void draw_frame(float framebuffer[]);
+    void draw_frame(u8 framebuffer[]);
 
 private:
     Joypad *joypad;
@@ -23,8 +24,11 @@ private:
     SDL_GLContext *gl_context;
     SDL_Event event;
     GLuint shader_id;
+    GLuint screen_tex;
+    GLuint pbo;
     const int window_scale;
     int key_pressed[8];
+    bool draw;
 
     void compile_shader();
     void init_window();

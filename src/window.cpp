@@ -28,7 +28,8 @@ const char *FRAG_SRC =
     "void main() {\n"
         "FragColor = texture(screen_texture, texCoords); }";
 
-GameWindow::GameWindow(Joypad *pad, int scale) : joypad(pad), window_scale(scale), key_pressed{0}
+GameWindow::GameWindow(Joypad *pad, int scale) : 
+    joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
 {
     init_window();
     init_glcontext();
@@ -51,7 +52,10 @@ bool GameWindow::closed()
     else {
         return false;
     }
+    draw = false;
 }
+
+bool GameWindow::frame_drawn() { return draw; }
 
 void GameWindow::process_input()
 {
@@ -100,25 +104,30 @@ void GameWindow::process_input()
             }
         }
     }
+    draw = false;
 }
 
-void GameWindow::draw_frame(float framebuffer[])
+void GameWindow::draw_frame(u8 framebuffer[])
 {
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // :glClearColor(0.0, 0.0, 0.0, 1.0);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    
+    GLsizeiptr buffer_size = constants::screen_w * constants::screen_h * sizeof(float);
+    // glBufferData(GL_PIXEL_UNPACK_BUFFER, buffer_size, &framebuffer[0], GL_STREAM_DRAW);
     glTexImage2D(
         GL_TEXTURE_2D, 
         0, 
-        GL_RGB, 
+        GL_RGBA, 
         constants::screen_w,
         constants::screen_h, 
         0, 
-        GL_RGB, 
-        GL_FLOAT, 
+        GL_BGRA, 
+        GL_UNSIGNED_BYTE, 
         &framebuffer[0]
     );
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
+    draw = true;
 }
 
 void GameWindow::init_window() 
@@ -200,10 +209,12 @@ void GameWindow::init_screen_texture()
     // No texture smoothing
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // Set active texture unit
     glActiveTexture(GL_TEXTURE0);
+
+    glGenBuffers(1, &pbo);
     
     GLuint screen_vao;
     GLuint screen_vbo;
