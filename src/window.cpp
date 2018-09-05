@@ -29,7 +29,7 @@ const char *FRAG_SRC =
         "FragColor = texture(screen_texture, texCoords); }";
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
-    joypad(pad), window_scale(scale), key_pressed{0}, draw(0), frame_count(0)
+    joypad(pad), window_scale(scale), key_pressed{0}, draw(0), frame_count(0), pbo_memory(0)
 {
     init_window();
     init_glcontext();
@@ -107,7 +107,7 @@ void GameWindow::process_input()
     draw = false;
 }
 
-void GameWindow::draw_frame(GLubyte framebuffer[])
+void GameWindow::draw_frame()
 {  
     int buffer_size = 4 * constants::screen_w * constants::screen_h;
     
@@ -129,9 +129,7 @@ void GameWindow::draw_frame(GLubyte framebuffer[])
     glBufferData(GL_PIXEL_UNPACK_BUFFER, buffer_size, 0, GL_STREAM_DRAW);
     pbo_memory = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
 
-    if (pbo_memory) {
-        std::memcpy(pbo_memory, framebuffer, buffer_size);
-    } else {
+    if (!pbo_memory) {
         std::cout << glGetError() << std::endl;
     }
    
@@ -245,9 +243,11 @@ void GameWindow::init_screen_texture()
     glGenBuffers(1, &pbo[0]);
     glGenBuffers(1, &pbo[1]);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, 160 * 144 * 4, blank_tex, GL_STREAM_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, 160 * 144 * 4, 0, GL_STREAM_DRAW);
+    pbo_memory = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, 160 * 144 * 4, blank_tex, GL_STREAM_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, 160 * 144 * 4, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     
     GLuint screen_vao;

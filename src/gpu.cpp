@@ -7,20 +7,13 @@
 #include <cassert>
 #include <algorithm>
 
-GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
-{
-    framebuffer = new u8[4 * constants::screen_h * constants::screen_w];
-}
+GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM) {}
 
-GPU::~GPU()
-{
-    delete framebuffer;
-}
+GPU::~GPU() {}
 
-u8* GPU::build_framebuffer()
+void GPU::build_framebuffer()
 {
-    render_background();
-    return framebuffer;
+    render_background(window->pbo_memory);
 }
 
 void GPU::step(unsigned int cpu_clock) 
@@ -52,7 +45,7 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(VBLANK);
                 // Draw screen
                 build_framebuffer();
-                window->draw_frame(framebuffer);
+                window->draw_frame();
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
                 memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK));
@@ -129,7 +122,7 @@ void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y
     }
 }
 
-void GPU::render_background()
+void GPU::render_background(u8 framebuffer[])
 {
     u8 lcd_control = memory->read(reg::LCDC);
     u16 tile_map;
