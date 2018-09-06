@@ -123,7 +123,7 @@ void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y
             // shift pixels to bottom left corner
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
-            dest[pixel_ind] = color_palette[color];
+			dest[pixel_ind] = color; // color_palette[color];
         }
     }
 }

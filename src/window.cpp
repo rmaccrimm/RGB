@@ -24,10 +24,11 @@ const char *FRAG_SRC =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
     "in vec2 texCoords;\n"
-    "uniform sampler2D screen_texture;\n"
+    "uniform usampler2D screen_texture;\n"
+	"uniform sampler1D color_palette;\n"
     "void main() {\n"
-		"vec4 sampled_tex = texture(screen_texture, texCoords);"
-        "FragColor = vec4(sampled_tex.rrr, 1); }";
+		"uint val = texture(screen_texture, texCoords).r;"
+        "FragColor = texelFetch(color_palette, int(val), 0); }";
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
@@ -118,6 +119,7 @@ void check_glError(std::string msg)
 
 void GameWindow::draw_frame(u8 framebuffer[])
 {  
+	glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, screen_tex);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
@@ -208,8 +210,9 @@ void GameWindow::compile_shader()
 
 void GameWindow::init_screen_texture()
 {
-    // Create new texture object
+    // Create new texture for screen quad
     glGenTextures(1, &screen_tex);
+	glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, screen_tex);
     // No texture smoothing
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -217,9 +220,6 @@ void GameWindow::init_screen_texture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	check_glError("Tex Params:");
-    // Set active texture unit
-    glActiveTexture(GL_TEXTURE0);
-	check_glError("Tex Bind:");
     glTexImage2D(
         GL_TEXTURE_2D, 
         0, 
@@ -231,8 +231,33 @@ void GameWindow::init_screen_texture()
         GL_UNSIGNED_BYTE, 
         0
     );
-	check_glError("Tex Image 2D:");
     glBindTexture(GL_TEXTURE_2D, 0);
+	check_glError("Screen Texture:");
+
+	glGenTextures(1, &color_palette);
+	bgp[0] = 0;
+	bgp[1] = 100;
+	bgp[2] = 180;
+	bgp[3] = 255;
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_1D, color_palette);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage1D(
+		GL_TEXTURE_1D,
+		0,
+		GL_RED,
+		4,
+		0,
+		GL_RED,
+		GL_UNSIGNED_BYTE,
+		&bgp[0]
+	);
+	glBindTexture(GL_TEXTURE_1D, 0);
+	check_glError("Color Palette:");
     
     GLuint screen_vao;
     GLuint screen_vbo;
@@ -249,11 +274,21 @@ void GameWindow::init_screen_texture()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glUseProgram(shader_id);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, screen_tex);
     int uniformloc = glGetUniformLocation(shader_id, "screen_texture");
     if (uniformloc == -1) {
         std::cout << "Error: Uniform \"screen_texture\" not found" << std::endl;
     }
     glUniform1i(uniformloc, 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_1D, color_palette);
+	uniformloc = glGetUniformLocation(shader_id, "color_palette");
+	if (uniformloc == -1) {
+		std::cout << "Error: Uniform \"color_palette\" not found" << std::endl;
+	}
+	glUniform1i(uniformloc, 1);
 
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR) {
