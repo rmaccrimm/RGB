@@ -16,8 +16,7 @@ public:
     bool closed();
     bool frame_drawn();
     void process_input();
-    void draw_frame(GLubyte framebuffer[]);
-    GLubyte *pbo_memory;
+    void draw_frame(u8 framebuffer[]);
 
 private:
     Joypad *joypad;
@@ -26,11 +25,10 @@ private:
     SDL_Event event;
     GLuint shader_id;
     GLuint screen_tex;
-    GLuint pbo[2];
+    GLuint pbo;
     const int window_scale;
     int key_pressed[8];
     bool draw;
-    int frame_count;
 
     void compile_shader();
     void init_window();
