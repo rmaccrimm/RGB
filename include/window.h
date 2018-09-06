@@ -16,7 +16,7 @@ public:
     bool closed();
     bool frame_drawn();
     void process_input();
-    void draw_frame();
+    void draw_frame(GLubyte framebuffer[]);
     GLubyte *pbo_memory;
 
 private:

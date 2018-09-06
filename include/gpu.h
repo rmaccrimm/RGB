@@ -15,6 +15,7 @@ public:
 
     GPU(Memory *mem, GameWindow *win);
     ~GPU();
+    u8* build_framebuffer();
     void step(unsigned int cpu_clock);
 
     static const u16 TILE_MAP_0 = 0x9800;
@@ -26,15 +27,15 @@ public:
 private:
     Memory *memory;
     GameWindow *window;
+    u8* framebuffer;
 
     int line;
     int clock;
     Mode mode;
 
     u8 read_color(int index);
-    void build_framebuffer();
     void read_tile(u8 *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
-    void render_background(u8 framebuffer[]);
+    void render_background();
     void render_window();
     void render_sprites();
     void change_mode(Mode m);
