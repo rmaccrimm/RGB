@@ -5,8 +5,6 @@
 #include "mmu.h"
 #include "window.h"
 
-
-
 class GPU 
 {
 public:
@@ -33,13 +31,15 @@ private:
     int clock;
     Mode mode;
 
-    u8 read_color(int index);
     void read_tile(u8 *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
     void render_background();
     void render_window();
     void render_sprites();
     void change_mode(Mode m);
     void increment_line();
+    void read_color_palette();
+
+    u8 color_palette[4];
 
     const u8 LCD_ENABLE = 1 << 7;
     const u8 WIN_TILE_MAP_SELECT = 1 << 6;

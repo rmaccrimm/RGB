@@ -17,12 +17,6 @@ GPU::~GPU()
     delete framebuffer;
 }
 
-u8* GPU::build_framebuffer()
-{
-    render_background();
-    return framebuffer;
-}
-
 void GPU::step(unsigned int cpu_clock) 
 {
     clock += cpu_clock;
@@ -93,10 +87,21 @@ void GPU::increment_line()
     memory->write(reg::LY, line);
 }
 
-// Get color from palette register
-u8 GPU::read_color(int index)
+
+u8* GPU::build_framebuffer()
 {
-    return COLORS[(memory->read(reg::BGP) >> (2 * index)) & 3];
+    read_color_palette();
+    render_background();
+    return framebuffer;
+}
+
+void GPU::read_color_palette()
+{
+    u8 bgp = memory->read(reg::BGP);
+    color_palette[0] = COLORS[bgp & 3];
+    color_palette[1] = COLORS[(bgp >> 2) & 3];
+    color_palette[2] = COLORS[(bgp >> 4) & 3];
+    color_palette[3] = COLORS[(bgp >> 6) & 3];
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
@@ -121,7 +126,7 @@ void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
             for (int k = 0; k < 3; k++) {
-                dest[4 * pixel_ind + k] = read_color(color);
+                dest[4 * pixel_ind + k] = color_palette[color];
             }
             // alpha value
             dest[4 * pixel_ind + 3] = 1;
