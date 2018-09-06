@@ -26,7 +26,8 @@ const char *FRAG_SRC =
     "in vec2 texCoords;\n"
     "uniform sampler2D screen_texture;\n"
     "void main() {\n"
-        "FragColor = texture(screen_texture, texCoords); }";
+		"vec4 sampled_tex = texture(screen_texture, texCoords);"
+        "FragColor = vec4(sampled_tex.rrr, 1); }";
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
@@ -107,6 +108,14 @@ void GameWindow::process_input()
     draw = false;
 }
 
+void check_glError(std::string msg)
+{
+	GLenum err;
+	while ((err = glGetError()) != GL_NO_ERROR) {
+		std::cout << msg << " " << std::hex << err << std::endl;
+	}
+}
+
 void GameWindow::draw_frame(u8 framebuffer[])
 {  
     glBindTexture(GL_TEXTURE_2D, screen_tex);
@@ -117,7 +126,7 @@ void GameWindow::draw_frame(u8 framebuffer[])
         0, 
         constants::screen_w,
         constants::screen_h, 
-        GL_RGBA, 
+        GL_RED, 
         GL_UNSIGNED_BYTE, 
         &framebuffer[0]
     );
@@ -207,19 +216,22 @@ void GameWindow::init_screen_texture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	check_glError("Tex Params:");
     // Set active texture unit
     glActiveTexture(GL_TEXTURE0);
+	check_glError("Tex Bind:");
     glTexImage2D(
         GL_TEXTURE_2D, 
         0, 
-        GL_RGBA, 
+        GL_RED, 
         constants::screen_w,
         constants::screen_h, 
         0, 
-        GL_BGRA, 
+        GL_RED, 
         GL_UNSIGNED_BYTE, 
         0
     );
+	check_glError("Tex Image 2D:");
     glBindTexture(GL_TEXTURE_2D, 0);
     
     GLuint screen_vao;

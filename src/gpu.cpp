@@ -9,7 +9,7 @@
 
 GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
 {
-    framebuffer = new u8[4 * constants::screen_h * constants::screen_w];
+    framebuffer = new u8[constants::screen_h * constants::screen_w];
 }
 
 GPU::~GPU()
@@ -123,11 +123,7 @@ void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y
             // shift pixels to bottom left corner
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
-            for (int k = 0; k < 3; k++) {
-                dest[4 * pixel_ind + k] = color_palette[color];
-            }
-            // alpha value
-            dest[4 * pixel_ind + 3] = 1;
+            dest[pixel_ind] = color_palette[color];
         }
     }
 }
@@ -189,7 +185,7 @@ void GPU::render_background()
                     (int)constants::screen_h - 8 * (screen_i + 1) + (scroll_y % 8), 0);
                 int pixel_x = std::max(8 * screen_j - (scroll_x % 8), 0);
                 int pixel_index = constants::screen_w * pixel_y + pixel_x;
-                int framebuf_index = 4 * pixel_index;
+                int framebuf_index = pixel_index;
                 int xl = 0;
                 int yl = 0;
                 int xh = 7;
