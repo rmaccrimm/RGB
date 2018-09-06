@@ -83,3 +83,5 @@ void Memory::set_access_break_pt(u16 addr)
 void Memory::clear_access_break_pt() { enable_break_pt = false; }
 
 bool Memory::pause() { return paused; }
+
+u8* Memory::get_mem_ptr(u16 addr) { return &mem[addr]; }
