@@ -29,7 +29,7 @@ const char *FRAG_SRC =
         "FragColor = texture(screen_texture, texCoords); }";
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
-    joypad(pad), window_scale(scale), key_pressed{0}, draw(0), frame_count(0), pbo_memory(0)
+    joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
 {
     init_window();
     init_glcontext();
@@ -107,12 +107,9 @@ void GameWindow::process_input()
     draw = false;
 }
 
-void GameWindow::draw_frame()
+void GameWindow::draw_frame(u8 framebuffer[])
 {  
-    int buffer_size = 4 * constants::screen_w * constants::screen_h;
-    
     glBindTexture(GL_TEXTURE_2D, screen_tex);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo[frame_count % 2]);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
         0,
@@ -122,27 +119,12 @@ void GameWindow::draw_frame()
         constants::screen_h, 
         GL_RGBA, 
         GL_UNSIGNED_BYTE, 
-        0
+        &framebuffer[0]
     );
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo[(frame_count + 1) % 2]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, buffer_size, 0, GL_STREAM_DRAW);
-    pbo_memory = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, buffer_size, GL_WRITE_ONLY);
-
-    if (!pbo_memory) {
-        std::cout << glGetError() << std::endl;
-    }
-   
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
-
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
-
     draw = true;
-    frame_count++;
 }
 
 void GameWindow::init_window() 
@@ -227,7 +209,6 @@ void GameWindow::init_screen_texture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // Set active texture unit
     glActiveTexture(GL_TEXTURE0);
-    GLubyte blank_tex[160 * 144 * 4] = {0};
     glTexImage2D(
         GL_TEXTURE_2D, 
         0, 
@@ -237,19 +218,9 @@ void GameWindow::init_screen_texture()
         0, 
         GL_BGRA, 
         GL_UNSIGNED_BYTE, 
-        &blank_tex
+        0
     );
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    glGenBuffers(1, &pbo[0]);
-    glGenBuffers(1, &pbo[1]);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, 160 * 144 * 4, 0, GL_STREAM_DRAW);
-    pbo_memory = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, 160 * 144 * 4, GL_WRITE_ONLY);
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, 160 * 144 * 4, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     
     GLuint screen_vao;
     GLuint screen_vbo;
