@@ -28,7 +28,7 @@ const char *FRAG_SRC =
 	"uniform sampler1D color_palette;\n"
     "void main() {\n"
 		"uint val = texture(screen_texture, texCoords).r;"
-        "FragColor = texelFetch(color_palette, int(val), 0); }";
+        "FragColor = vec4(texture(color_palette, val).rrr, 1); }";
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
@@ -212,9 +212,14 @@ void GameWindow::init_screen_texture()
 {
     // Create new texture for screen quad
     glGenTextures(1, &screen_tex);
-	glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &color_palette);
+    float bgp[4] = {0, .25, .6, 1.0};
+
+
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, screen_tex);
     // No texture smoothing
+    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -234,13 +239,7 @@ void GameWindow::init_screen_texture()
     glBindTexture(GL_TEXTURE_2D, 0);
 	check_glError("Screen Texture:");
 
-	glGenTextures(1, &color_palette);
-	bgp[0] = 0;
-	bgp[1] = 100;
-	bgp[2] = 180;
-	bgp[3] = 255;
-	
-	glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_1D, color_palette);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -253,7 +252,7 @@ void GameWindow::init_screen_texture()
 		4,
 		0,
 		GL_RED,
-		GL_UNSIGNED_BYTE,
+		GL_FLOAT,
 		&bgp[0]
 	);
 	glBindTexture(GL_TEXTURE_1D, 0);
@@ -274,7 +273,6 @@ void GameWindow::init_screen_texture()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glUseProgram(shader_id);
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, screen_tex);
     int uniformloc = glGetUniformLocation(shader_id, "screen_texture");
     if (uniformloc == -1) {
@@ -282,7 +280,6 @@ void GameWindow::init_screen_texture()
     }
     glUniform1i(uniformloc, 0);
 
-	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_1D, color_palette);
 	uniformloc = glGetUniformLocation(shader_id, "color_palette");
 	if (uniformloc == -1) {

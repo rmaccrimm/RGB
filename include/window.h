@@ -27,7 +27,6 @@ private:
     GLuint shader_id;
     GLuint screen_tex;
 	GLuint color_palette;
-	u8 bgp[4];
     const int window_scale;
     int key_pressed[8];
     bool draw;
