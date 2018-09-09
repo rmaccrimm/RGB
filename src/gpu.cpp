@@ -102,6 +102,7 @@ void GPU::read_color_palette()
     color_palette[1] = COLORS[(bgp >> 2) & 3];
     color_palette[2] = COLORS[(bgp >> 4) & 3];
     color_palette[3] = COLORS[(bgp >> 6) & 3];
+    window->set_palette(color_palette);
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
@@ -120,10 +121,12 @@ void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y
             u8 lsb = (l_byte >> (7 - i)) & 1;
             u8 msb = (h_byte >> (7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;
+            assert (color < 4);
             // shift pixels to bottom left corner
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
-            dest[pixel_ind] = color_palette[color];
+            // dest[pixel_ind] = color_palette[color];
+            dest[pixel_ind] = color;
         }
     }
 }

@@ -1,5 +1,15 @@
 #include "window.h"
 #include <iostream>
+#include <fstream>
+#include <streambuf>
+
+void check_glError(std::string msg)
+{
+	GLenum err;
+	while ((err = glGetError()) != GL_NO_ERROR) {
+		std::cout << msg << " " << std::hex << err << std::endl;
+	}
+}
 
 const float SCREEN_QUAD[] = {  
 //  position       texture coords      
@@ -10,25 +20,6 @@ const float SCREEN_QUAD[] = {
      1, -1,  0,    1, 0,
      1,  1,  0,    1, 1
 };
-
-const char *VERT_SRC = 
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 inPos;\n"
-    "layout (location = 1) in vec2 inTexCoords;\n"
-    "out vec2 texCoords;\n"
-    "void main() {\n"
-        "gl_Position = vec4(inPos, 1.0);\n"
-        "texCoords = inTexCoords; }";
-
-const char *FRAG_SRC = 
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "in vec2 texCoords;\n"
-    "uniform usampler2D screen_texture;\n"
-	"uniform sampler1D color_palette;\n"
-    "void main() {\n"
-		"uint val = texture(screen_texture, texCoords).r;"
-        "FragColor = vec4(texture(color_palette, val).rrr, 1); }";
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
@@ -43,6 +34,131 @@ GameWindow::~GameWindow()
 {
     SDL_GL_DeleteContext(gl_context);
     SDL_Quit();
+}
+
+void GameWindow::draw_frame(u8 framebuffer[])
+{  
+    glActiveTexture(GL_TEXTURE0);
+    glTexSubImage2D(
+        GL_TEXTURE_2D, 
+        0,
+        0,
+        0, 
+        constants::screen_w,
+        constants::screen_h, 
+        GL_RED_INTEGER,
+        GL_UNSIGNED_BYTE, 
+        &framebuffer[0]
+    );
+    glDrawArrays(GL_TRIANGLES, 0, 6); 
+    SDL_GL_SwapWindow(sdl_window);
+    draw = true;
+}
+
+void GameWindow::set_palette(u8 palette[])
+{
+    glActiveTexture(GL_TEXTURE1);
+    for (int i = 0; i < 4; i++) {
+        bgp[i] = palette[i];
+        std::cout << (int)palette[i] << ' ';
+    }
+    std::cout << std::endl;
+    glTextureSubImage1D(
+        GL_TEXTURE_1D,
+        0,
+        0,
+        4,
+        GL_RED_INTEGER,
+        GL_UNSIGNED_BYTE,
+        &bgp[0]
+    );
+}
+
+void GameWindow::init_screen_texture()
+{
+    // Create new texture for screen quad
+    glGenTextures(1, &screen_tex);
+    glGenTextures(1, &color_palette);
+    
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, screen_tex);
+    // No texture smoothing
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(
+        GL_TEXTURE_2D, 
+        0, 
+        GL_R8UI, 
+        constants::screen_w,
+        constants::screen_h, 
+        0, 
+        GL_RED_INTEGER,
+        GL_UNSIGNED_BYTE, 
+        0
+    );
+
+	check_glError("Screen Texture:");
+
+    glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_1D, color_palette);
+    check_glError("Bind Texture:");
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, 0);
+    check_glError("Color Palette Params:");
+    bgp[0] = 0xff;
+    bgp[1] = 0xb6;
+    bgp[2] = 0x1d;
+    bgp[3] = 0x00;
+	glTexImage1D(
+		GL_TEXTURE_1D,
+		0,
+		GL_R8UI,
+		4,
+		0,
+		GL_RED_INTEGER,
+		GL_UNSIGNED_BYTE,
+		&bgp[0]
+	);
+	// glBindTexture(GL_TEXTURE_1D, 0);
+	check_glError("TexImage1D:");
+    
+    GLuint screen_vao;
+    GLuint screen_vbo;
+    glGenVertexArrays(1, &screen_vao);
+    glGenBuffers(1, &screen_vbo);
+    glBindVertexArray(screen_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, screen_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(SCREEN_QUAD), SCREEN_QUAD, GL_STATIC_DRAW);
+    // vertex positions
+    glEnableVertexAttribArray(0);    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    // vertex texture coordinates
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    glUseProgram(shader_id);
+    int uniformloc = glGetUniformLocation(shader_id, "screen_texture");
+    if (uniformloc == -1) {
+        std::cout << "Error: Uniform \"screen_texture\" not found" << std::endl;
+    }
+    glUniform1i(uniformloc, 0);
+	
+	uniformloc = glGetUniformLocation(shader_id, "color_palette");
+	if (uniformloc == -1) {
+		std::cout << "Error: Uniform \"color_palette\" not found" << std::endl;
+	}
+	glUniform1i(uniformloc, 1);
+
+    GLenum err;
+    while((err = glGetError()) != GL_NO_ERROR) {
+        std::cout << "End init: 0x" << std::hex << err << std::endl;
+    }
 }
 
 bool GameWindow::closed() 
@@ -109,34 +225,6 @@ void GameWindow::process_input()
     draw = false;
 }
 
-void check_glError(std::string msg)
-{
-	GLenum err;
-	while ((err = glGetError()) != GL_NO_ERROR) {
-		std::cout << msg << " " << std::hex << err << std::endl;
-	}
-}
-
-void GameWindow::draw_frame(u8 framebuffer[])
-{  
-	glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, screen_tex);
-    glTexSubImage2D(
-        GL_TEXTURE_2D, 
-        0,
-        0,
-        0, 
-        constants::screen_w,
-        constants::screen_h, 
-        GL_RED, 
-        GL_UNSIGNED_BYTE, 
-        &framebuffer[0]
-    );
-    glDrawArrays(GL_TRIANGLES, 0, 6); 
-    SDL_GL_SwapWindow(sdl_window);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    draw = true;
-}
 
 void GameWindow::init_window() 
 {
@@ -161,7 +249,7 @@ void GameWindow::init_window()
 void GameWindow::init_glcontext()
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
     if (gl_context == nullptr) {
@@ -181,7 +269,24 @@ void GameWindow::compile_shader()
     int success;
     char err_log[512];
 
-    glShaderSource(vertex, 1, &VERT_SRC, nullptr);
+    std::ifstream vert_file("../../../src/vertex.glsl");
+    if (!vert_file.good()) {
+        // TODO - error code
+        std::cout << "Error reading vertex shader: " << std::endl;
+    }
+    std::string vert_src_str((std::istreambuf_iterator<char>(vert_file)), 
+                              std::istreambuf_iterator<char>());
+    const char *vert_src = vert_src_str.c_str();                             
+
+    std::ifstream frag_file("../../../src/fragment.glsl");
+    if (!frag_file.good()) {
+        std::cout << "Error reading fragment shader: " << std::endl;
+    }
+    std::string frag_src_str((std::istreambuf_iterator<char>(frag_file)), 
+                             std::istreambuf_iterator<char>());
+    const char *frag_src = frag_src_str.c_str();
+    
+    glShaderSource(vertex, 1, &vert_src, nullptr);
     glCompileShader(vertex);
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -189,7 +294,7 @@ void GameWindow::compile_shader()
         std::cout << "Vertex shader compilation failed: " << err_log << std::endl;
     }
 
-    glShaderSource(fragment, 1, &FRAG_SRC, nullptr);
+    glShaderSource(fragment, 1, &frag_src, nullptr);
     glCompileShader(fragment);
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -208,87 +313,3 @@ void GameWindow::compile_shader()
     }
 }
 
-void GameWindow::init_screen_texture()
-{
-    // Create new texture for screen quad
-    glGenTextures(1, &screen_tex);
-    glGenTextures(1, &color_palette);
-    float bgp[4] = {0, .25, .6, 1.0};
-
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, screen_tex);
-    // No texture smoothing
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	check_glError("Tex Params:");
-    glTexImage2D(
-        GL_TEXTURE_2D, 
-        0, 
-        GL_RED, 
-        constants::screen_w,
-        constants::screen_h, 
-        0, 
-        GL_RED, 
-        GL_UNSIGNED_BYTE, 
-        0
-    );
-    glBindTexture(GL_TEXTURE_2D, 0);
-	check_glError("Screen Texture:");
-
-    glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_1D, color_palette);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage1D(
-		GL_TEXTURE_1D,
-		0,
-		GL_RED,
-		4,
-		0,
-		GL_RED,
-		GL_FLOAT,
-		&bgp[0]
-	);
-	glBindTexture(GL_TEXTURE_1D, 0);
-	check_glError("Color Palette:");
-    
-    GLuint screen_vao;
-    GLuint screen_vbo;
-    glGenVertexArrays(1, &screen_vao);
-    glGenBuffers(1, &screen_vbo);
-    glBindVertexArray(screen_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, screen_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(SCREEN_QUAD), SCREEN_QUAD, GL_STATIC_DRAW);
-    // vertex positions
-    glEnableVertexAttribArray(0);    
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    // vertex texture coordinates
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-    glUseProgram(shader_id);
-	glBindTexture(GL_TEXTURE_2D, screen_tex);
-    int uniformloc = glGetUniformLocation(shader_id, "screen_texture");
-    if (uniformloc == -1) {
-        std::cout << "Error: Uniform \"screen_texture\" not found" << std::endl;
-    }
-    glUniform1i(uniformloc, 0);
-
-	glBindTexture(GL_TEXTURE_1D, color_palette);
-	uniformloc = glGetUniformLocation(shader_id, "color_palette");
-	if (uniformloc == -1) {
-		std::cout << "Error: Uniform \"color_palette\" not found" << std::endl;
-	}
-	glUniform1i(uniformloc, 1);
-
-    GLenum err;
-    while((err = glGetError()) != GL_NO_ERROR) {
-        std::cout << "0x" << std::hex << err << std::endl;
-    }
-}
