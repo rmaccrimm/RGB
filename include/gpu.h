@@ -26,18 +26,19 @@ private:
     Memory *memory;
     GameWindow *window;
     u8* framebuffer;
-
+    u16 tiles[256];
+    u8 tile_map[256];
     int line;
     int clock;
     Mode mode;
-
+    
     void read_tile(u8 *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
     void render_background();
     void render_window();
     void render_sprites();
     void change_mode(Mode m);
     void increment_line();
-    void read_color_palette();
+    void set_bg_palette();
 
     u8 color_palette[4];
 

@@ -90,19 +90,19 @@ void GPU::increment_line()
 
 u8* GPU::build_framebuffer()
 {
-    read_color_palette();
+    set_bg_palette();
     render_background();
     return framebuffer;
 }
 
-void GPU::read_color_palette()
+void GPU::set_bg_palette()
 {
     u8 bgp = memory->read(reg::BGP);
     color_palette[0] = COLORS[bgp & 3];
     color_palette[1] = COLORS[(bgp >> 2) & 3];
     color_palette[2] = COLORS[(bgp >> 4) & 3];
     color_palette[3] = COLORS[(bgp >> 6) & 3];
-    window->set_palette(color_palette);
+    window->set_bg_palette(color_palette);
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded

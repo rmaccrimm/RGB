@@ -48,21 +48,15 @@ void GameWindow::draw_frame(u8 framebuffer[])
         constants::screen_h, 
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE, 
-        &framebuffer[0]
+        framebuffer
     );
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
     draw = true;
 }
 
-void GameWindow::set_palette(u8 palette[])
+void GameWindow::set_bg_palette(u8 palette[])
 {
-    glActiveTexture(GL_TEXTURE1);
-    for (int i = 0; i < 4; i++) {
-        bgp[i] = palette[i];
-        std::cout << (int)palette[i] << ' ';
-    }
-    std::cout << std::endl;
     glBindTexture(GL_TEXTURE_RECTANGLE, color_palette);
     glTexSubImage2D(
         GL_TEXTURE_RECTANGLE,
@@ -73,7 +67,7 @@ void GameWindow::set_palette(u8 palette[])
         1,
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE,
-        &bgp[0]
+        palette
     );
 }
 
@@ -111,10 +105,6 @@ void GameWindow::init_screen_texture()
 	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     check_glError("Color Palette Params:");
-    bgp[0] = 0xff;
-    bgp[1] = 0xb6;
-    bgp[2] = 0x1d;
-    bgp[3] = 0x00;
 	glTexImage2D(
 		GL_TEXTURE_RECTANGLE,
 		0,
@@ -124,9 +114,8 @@ void GameWindow::init_screen_texture()
 		0,
 		GL_RED_INTEGER,
 		GL_UNSIGNED_BYTE,
-		&bgp[0]
-	);
-	// glBindTexture(GL_TEXTURE_1D, 0);
+		0
+    );
 	check_glError("Color Palette Texture:");
     
     GLuint screen_vao;

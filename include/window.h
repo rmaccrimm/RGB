@@ -17,7 +17,7 @@ public:
     bool frame_drawn();
     void process_input();
     void draw_frame(u8 framebuffer[]);
-	void set_palette(u8 palette[]);
+	void set_bg_palette(u8 palette[]);
 
 private:
     Joypad *joypad;
@@ -27,7 +27,6 @@ private:
     GLuint shader_id;
     GLuint screen_tex;
 	GLuint color_palette;
-    u8 bgp[4];
     const int window_scale;
     int key_pressed[8];
     bool draw;
