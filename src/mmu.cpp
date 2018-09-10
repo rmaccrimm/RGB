@@ -5,7 +5,7 @@
 #include <iostream>
 
 Memory::Memory(Joypad *pad, bool enable_boot) : mem{0}, joypad(pad), enable_boot_rom(enable_boot),
-    enable_break_pt(false), paused(false) {}
+    enable_break_pt(false), paused(false), vram_updated(false) {}
 
 void Memory::write(u16 addr, u8 data)
 {
@@ -16,14 +16,15 @@ void Memory::write(u16 addr, u8 data)
     if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
         return;
     }
+	else if (addr >= 0x8000 && addr <= 0x9fff) { // VRAM
+		vram_updated = true;
+	}
     /*else if (addr == reg::DIV) {
         // writing any value to DIV writes 0 and resets system counter
         mem[addr] = 0;
         clock_counter->set(0);
     }*/
-    else {
-        mem[addr] = data;
-    }
+    mem[addr] = data;
 }
 
 u8 Memory::read(u16 addr) 

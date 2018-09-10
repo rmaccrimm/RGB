@@ -26,8 +26,10 @@ private:
     GameWindow *window;
     u8* framebuffer;
 
-    u16 tiles[2][256];
-    u8 tile_map[2][256];
+    // Direct pointers to vram
+    u8 *tile_data[2];
+    u8 *tile_map[2];
+    u8 *sprite_data;
 
     int line;
     int clock;
@@ -62,6 +64,10 @@ private:
     // opengl expects framebuffer drawn from bottom up
     const bool INVERT_MAP = true;
     const bool INVERT_TILES = true;
+
+    // These will probably be moved to MMU later on  
+    void fill_tile_data_arrays();
+    void fill_tile_maps(); 
 };
 
 #endif

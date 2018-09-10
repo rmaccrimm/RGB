@@ -45,7 +45,11 @@ void GPU::step(unsigned int cpu_clock)
             if (line == 143) {
                 change_mode(VBLANK);
                 // Draw screen
-                build_framebuffer();
+				set_bg_palette();
+				if (memory->vram_updated) {
+					build_framebuffer();
+					memory->vram_updated = false;
+				}
                 window->draw_frame(framebuffer, memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
@@ -87,10 +91,8 @@ void GPU::increment_line()
     memory->write(reg::LY, line);
 }
 
-
 u8* GPU::build_framebuffer()
 {
-    set_bg_palette();
     render_background();
     return framebuffer;
 }
@@ -116,16 +118,14 @@ void GPU::read_tile(u8 *dest, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y
             // two bytes per line, contain lsb and msb of color
             u16 byte_ind = 2 * (7 - j);
             // u8 l_byte = pix_data[byte_ind];
-			u8 l_byte = memory->read(tile_addr + byte_ind);
-			u8 h_byte = memory->read(tile_addr + byte_ind + 1);
+			u8 l_byte = pix_data[byte_ind];
+			u8 h_byte = pix_data[byte_ind + 1];
             u8 lsb = (l_byte >> (7 - i)) & 1;
             u8 msb = (h_byte >> (7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;
-            assert (color < 4);
             // shift pixels to bottom left corner
             int pixel_ind = constants::screen_w * (j - y_low) + (i - x_low);
             // same rgb values for gray scale
-            // dest[pixel_ind] = color_palette[color];
             dest[pixel_ind] = color;
         }
     }
@@ -232,3 +232,4 @@ void GPU::render_sprites()
 {
     
 }
+

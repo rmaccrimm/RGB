@@ -22,6 +22,8 @@ public:
     void clear_access_break_pt();
     bool pause();
 
+	bool vram_updated;
+
 private:
     // For accessing VRAM more quickly
     u8* get_mem_ptr(u16 addr);    

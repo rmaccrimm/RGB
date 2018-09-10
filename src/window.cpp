@@ -223,7 +223,7 @@ void GameWindow::compile_shader()
     int success;
     char err_log[512];
 
-    std::ifstream vert_file("src/vertex.glsl");
+    std::ifstream vert_file("../../../src/vertex.glsl");
     if (!vert_file.good()) {
         // TODO - error code
         std::cout << "Error reading vertex shader: " << std::endl;
@@ -232,7 +232,7 @@ void GameWindow::compile_shader()
                               std::istreambuf_iterator<char>());
     const char *vert_src = vert_src_str.c_str();                             
 
-    std::ifstream frag_file("src/fragment.glsl");
+    std::ifstream frag_file("../../../src/fragment.glsl");
     if (!frag_file.good()) {
         std::cout << "Error reading fragment shader: " << std::endl;
     }
