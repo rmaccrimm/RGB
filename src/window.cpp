@@ -13,12 +13,12 @@ void check_glError(std::string msg)
 
 const float SCREEN_QUAD[] = {  
 //  position       texture coords      
-    -1,  1,  0,    0, 1,
-    -1, -1,  0,    0, 0,
-     1, -1,  0,    1, 0,
-    -1,  1,  0,    0, 1,
-     1, -1,  0,    1, 0,
-     1,  1,  0,    1, 1
+    -1,  1,  0,    0,   144,
+    -1, -1,  0,    0,   0,
+     1, -1,  0,    160, 0,
+    -1,  1,  0,    0,   144,
+     1, -1,  0,    160, 0,
+     1,  1,  0,    160, 144
 };
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
@@ -36,8 +36,24 @@ GameWindow::~GameWindow()
     SDL_Quit();
 }
 
-void GameWindow::draw_frame(u8 framebuffer[])
+bool GameWindow::frame_drawn() { return draw; }
+
+bool GameWindow::closed() 
+{
+    SDL_PollEvent(&event);
+    if (event.type == SDL_QUIT) {
+        return true;
+    }
+    else {
+        return false;
+    }
+    draw = false;
+}
+
+void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
 {  
+    glUniform1i(scrollx, x);
+    glUniform1i(scrolly, y);
     glActiveTexture(GL_TEXTURE0);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
@@ -57,7 +73,7 @@ void GameWindow::draw_frame(u8 framebuffer[])
 
 void GameWindow::set_bg_palette(u8 palette[])
 {
-    glBindTexture(GL_TEXTURE_RECTANGLE, color_palette);
+    glActiveTexture(GL_TEXTURE1);
     glTexSubImage2D(
         GL_TEXTURE_RECTANGLE,
         0,
@@ -69,6 +85,42 @@ void GameWindow::set_bg_palette(u8 palette[])
         GL_UNSIGNED_BYTE,
         palette
     );
+}
+
+void GameWindow::init_window() 
+{
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cout << "Initialization failed. SDL Error: " << SDL_GetError() << std::endl;
+    }
+    else {
+        sdl_window = SDL_CreateWindow(
+            "Gameboy Emulator", 
+            SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED, 
+            160 * window_scale,
+            144 * window_scale, 
+            SDL_WINDOW_OPENGL
+        );
+        if (sdl_window == nullptr) {
+            std::cout << "Creating window failed. SDL ERROR: " << SDL_GetError() << std::endl;
+        }
+    }
+}
+
+void GameWindow::init_glcontext()
+{
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
+    if (gl_context == nullptr) {
+        std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
+    }
+    glewExperimental = GL_TRUE;
+    GLenum glew_err = glewInit();
+    if (glew_err != GLEW_OK) {
+        std::cout << "Error initializing GLEW: " << glewGetErrorString(glew_err) << std::endl;
+    }
 }
 
 void GameWindow::init_screen_texture()
@@ -83,8 +135,8 @@ void GameWindow::init_screen_texture()
     // No texture smoothing
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexImage2D(
         GL_TEXTURE_2D, 
         0, 
@@ -145,25 +197,75 @@ void GameWindow::init_screen_texture()
 	}
 	glUniform1i(uniformloc, 1);
 
+    scrollx = glGetUniformLocation(shader_id, "scrollx");
+    if (scrollx == -1) {
+		std::cout << "Error: Uniform \"scrollx\" not found" << std::endl;
+	}
+    glUniform1i(scrollx, 0);
+
+    scrolly = glGetUniformLocation(shader_id, "scrolly");
+    if (scrollx == -1) {
+		std::cout << "Error: Uniform \"scrolly\" not found" << std::endl;
+	}
+    glUniform1i(scrolly, 0);
+
+
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR) {
         std::cout << "End init: 0x" << std::hex << err << std::endl;
     }
 }
 
-bool GameWindow::closed() 
+void GameWindow::compile_shader()
 {
-    SDL_PollEvent(&event);
-    if (event.type == SDL_QUIT) {
-        return true;
-    }
-    else {
-        return false;
-    }
-    draw = false;
-}
+    GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
+    int success;
+    char err_log[512];
 
-bool GameWindow::frame_drawn() { return draw; }
+    std::ifstream vert_file("src/vertex.glsl");
+    if (!vert_file.good()) {
+        // TODO - error code
+        std::cout << "Error reading vertex shader: " << std::endl;
+    }
+    std::string vert_src_str((std::istreambuf_iterator<char>(vert_file)), 
+                              std::istreambuf_iterator<char>());
+    const char *vert_src = vert_src_str.c_str();                             
+
+    std::ifstream frag_file("src/fragment.glsl");
+    if (!frag_file.good()) {
+        std::cout << "Error reading fragment shader: " << std::endl;
+    }
+    std::string frag_src_str((std::istreambuf_iterator<char>(frag_file)), 
+                             std::istreambuf_iterator<char>());
+    const char *frag_src = frag_src_str.c_str();
+    
+    glShaderSource(vertex, 1, &vert_src, nullptr);
+    glCompileShader(vertex);
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertex, 512, nullptr, err_log);
+        std::cout << "Vertex shader compilation failed: " << err_log << std::endl;
+    }
+
+    glShaderSource(fragment, 1, &frag_src, nullptr);
+    glCompileShader(fragment);
+    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragment, 512, nullptr, err_log);
+        std::cout << "Fragment shader compilation failed: " << err_log << std::endl;
+    }
+
+    shader_id = glCreateProgram();
+    glAttachShader(shader_id, vertex);
+    glAttachShader(shader_id, fragment);
+    glLinkProgram(shader_id);
+    glGetProgramiv(shader_id, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shader_id, 512, NULL, err_log);
+        std::cout << "Shader program compilation failed: " << err_log << std::endl;
+    }
+}
 
 void GameWindow::process_input()
 {
@@ -214,92 +316,3 @@ void GameWindow::process_input()
     }
     draw = false;
 }
-
-
-void GameWindow::init_window() 
-{
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cout << "Initialization failed. SDL Error: " << SDL_GetError() << std::endl;
-    }
-    else {
-        sdl_window = SDL_CreateWindow(
-            "Gameboy Emulator", 
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED, 
-            constants::screen_w * window_scale,
-            constants::screen_h * window_scale, 
-            SDL_WINDOW_OPENGL
-        );
-        if (sdl_window == nullptr) {
-            std::cout << "Creating window failed. SDL ERROR: " << SDL_GetError() << std::endl;
-        }
-    }
-}
-
-void GameWindow::init_glcontext()
-{
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
-    if (gl_context == nullptr) {
-        std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
-    }
-    glewExperimental = GL_TRUE;
-    GLenum glew_err = glewInit();
-    if (glew_err != GLEW_OK) {
-        std::cout << "Error initializing GLEW: " << glewGetErrorString(glew_err) << std::endl;
-    }
-}
-
-void GameWindow::compile_shader()
-{
-    GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    int success;
-    char err_log[512];
-
-    std::ifstream vert_file("../../../src/vertex.glsl");
-    if (!vert_file.good()) {
-        // TODO - error code
-        std::cout << "Error reading vertex shader: " << std::endl;
-    }
-    std::string vert_src_str((std::istreambuf_iterator<char>(vert_file)), 
-                              std::istreambuf_iterator<char>());
-    const char *vert_src = vert_src_str.c_str();                             
-
-    std::ifstream frag_file("../../../src/fragment.glsl");
-    if (!frag_file.good()) {
-        std::cout << "Error reading fragment shader: " << std::endl;
-    }
-    std::string frag_src_str((std::istreambuf_iterator<char>(frag_file)), 
-                             std::istreambuf_iterator<char>());
-    const char *frag_src = frag_src_str.c_str();
-    
-    glShaderSource(vertex, 1, &vert_src, nullptr);
-    glCompileShader(vertex);
-    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertex, 512, nullptr, err_log);
-        std::cout << "Vertex shader compilation failed: " << err_log << std::endl;
-    }
-
-    glShaderSource(fragment, 1, &frag_src, nullptr);
-    glCompileShader(fragment);
-    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragment, 512, nullptr, err_log);
-        std::cout << "Fragment shader compilation failed: " << err_log << std::endl;
-    }
-
-    shader_id = glCreateProgram();
-    glAttachShader(shader_id, vertex);
-    glAttachShader(shader_id, fragment);
-    glLinkProgram(shader_id);
-    glGetProgramiv(shader_id, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shader_id, 512, NULL, err_log);
-        std::cout << "Shader program compilation failed: " << err_log << std::endl;
-    }
-}
-

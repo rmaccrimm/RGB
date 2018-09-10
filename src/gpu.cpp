@@ -9,7 +9,7 @@
 
 GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
 {
-    framebuffer = new u8[constants::screen_h * constants::screen_w];
+    framebuffer = new u8[256 * 256];
 }
 
 GPU::~GPU()
@@ -46,7 +46,7 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(VBLANK);
                 // Draw screen
                 build_framebuffer();
-                window->draw_frame(framebuffer);
+                window->draw_frame(framebuffer, memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
                 memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK));
@@ -154,25 +154,27 @@ void GPU::render_background()
             signed_map = true;
         }  
 
-        int scroll_x = memory->read(reg::SCROLLX);
-        int scroll_y = memory->read(reg::SCROLLY);
+        int scroll_x = 0; // memory->read(reg::SCROLLX);
+        int scroll_y = 0; // memory->read(reg::SCROLLY);
 
         int bg_h = constants::screen_h / 8;
         int bg_w = constants::screen_w / 8; 
 
         // determine which tiles visible on screen
-        int y_start_tile = (scroll_y / 8);
-        int y_end_tile = ((scroll_y + constants::screen_h - 1) / 8);
-        int x_start_tile = scroll_x / 8;
-        int x_end_tile = (scroll_x + constants::screen_w - 1) / 8;
+        int y_start_tile = 0; //(scroll_y / 8);
+        int y_end_tile = 31; //((scroll_y + constants::screen_h - 1) / 8);
+        int x_start_tile = 0; //scroll_x / 8;
+        int x_end_tile = 31; //(scroll_x + constants::screen_w - 1) / 8;
 
         int tile_i, tile_j;
         int screen_i, screen_j;
 
         for (tile_i = y_start_tile, screen_i = 0; tile_i <= y_end_tile; tile_i++) {
             for (tile_j = x_start_tile, screen_j = 0; tile_j <= x_end_tile; tile_j++) {
+
                 // locate the tiles in memory
                 int map_index = 32 * (tile_i % 32) + (tile_j % 32);
+
                 // read the tile map and determine address of tile
                 u16 tile_addr;
                 if (signed_map) {
@@ -183,6 +185,8 @@ void GPU::render_background()
                     u8 tile_num = memory->read(tile_map + map_index);
                     tile_addr = tile_data + (16 * tile_num);
                 }
+
+
                 // Determine where one screen bottom left corner of tile is drawn, this only
                 int pixel_y = std::max(
                     (int)constants::screen_h - 8 * (screen_i + 1) + (scroll_y % 8), 0);

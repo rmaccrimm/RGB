@@ -21,13 +21,14 @@ public:
     static const u16 TILE_DATA_0 = 0x9000; // signed tile index
     static const u16 TILE_DATA_1 = 0x8000; // unsigned tile index
 
-    
 private:
     Memory *memory;
     GameWindow *window;
     u8* framebuffer;
-    u16 tiles[256];
-    u8 tile_map[256];
+
+    u16 tiles[2][256];
+    u8 tile_map[2][256];
+
     int line;
     int clock;
     Mode mode;

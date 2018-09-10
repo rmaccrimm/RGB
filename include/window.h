@@ -16,7 +16,7 @@ public:
     bool closed();
     bool frame_drawn();
     void process_input();
-    void draw_frame(u8 framebuffer[]);
+    void draw_frame(u8 framebuffer[], int x, int y);
 	void set_bg_palette(u8 palette[]);
 
 private:
@@ -30,6 +30,7 @@ private:
     const int window_scale;
     int key_pressed[8];
     bool draw;
+    int scrollx, scrolly;
 
     void compile_shader();
     void init_window();
