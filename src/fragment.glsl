@@ -1,4 +1,4 @@
-#version 430 core
+#version 330 core
 out vec4 frag_color;
 in vec2 texCoords;
 uniform usampler2D screen_texture;
