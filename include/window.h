@@ -34,7 +34,7 @@ private:
 
     void compile_shader();
     void init_window();
-    void init_glcontext();
+    void init_glcontext(bool limit_framerate);
     void init_screen_texture();
 };
 
