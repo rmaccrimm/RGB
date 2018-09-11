@@ -25,7 +25,7 @@ GameWindow::GameWindow(Joypad *pad, int scale) :
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
 {
     init_window();
-    init_glcontext();
+    init_glcontext(false);
     compile_shader();
     init_screen_texture();
 }
@@ -93,6 +93,7 @@ void GameWindow::init_window()
         std::cout << "Initialization failed. SDL Error: " << SDL_GetError() << std::endl;
     }
     else {
+        
         sdl_window = SDL_CreateWindow(
             "Gameboy Emulator", 
             SDL_WINDOWPOS_UNDEFINED,
@@ -104,15 +105,16 @@ void GameWindow::init_window()
         if (sdl_window == nullptr) {
             std::cout << "Creating window failed. SDL ERROR: " << SDL_GetError() << std::endl;
         }
-    }
+    }  
 }
 
-void GameWindow::init_glcontext()
+void GameWindow::init_glcontext(bool limit_framerate)
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
+    SDL_GL_SetSwapInterval(limit_framerate);
     if (gl_context == nullptr) {
         std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
     }
