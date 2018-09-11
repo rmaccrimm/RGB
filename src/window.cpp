@@ -93,6 +93,7 @@ void GameWindow::init_window()
         std::cout << "Initialization failed. SDL Error: " << SDL_GetError() << std::endl;
     }
     else {
+        
         sdl_window = SDL_CreateWindow(
             "Gameboy Emulator", 
             SDL_WINDOWPOS_UNDEFINED,
@@ -101,10 +102,11 @@ void GameWindow::init_window()
             144 * window_scale, 
             SDL_WINDOW_OPENGL
         );
+        SDL_GL_SetSwapInterval(0);
         if (sdl_window == nullptr) {
             std::cout << "Creating window failed. SDL ERROR: " << SDL_GetError() << std::endl;
         }
-    }
+    }  
 }
 
 void GameWindow::init_glcontext()
