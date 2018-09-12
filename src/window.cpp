@@ -26,7 +26,7 @@ GameWindow::GameWindow(Joypad *pad, int scale) :
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
 {
     init_window();
-    init_glcontext(false);
+    init_glcontext(true);
     compile_shader();
     init_screen_texture();
 }
@@ -61,8 +61,8 @@ void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
         0,
         0,
         0, 
-        constants::screen_w,
-        constants::screen_h, 
+        256,
+        256, 
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE, 
         framebuffer
@@ -144,8 +144,8 @@ void GameWindow::init_screen_texture()
         GL_TEXTURE_2D, 
         0, 
         GL_R8UI, 
-        constants::screen_w,
-        constants::screen_h, 
+        256,
+        256,
         0, 
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE, 

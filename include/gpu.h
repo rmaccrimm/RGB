@@ -16,26 +16,16 @@ public:
     u8* build_framebuffer();
     void step(unsigned int cpu_clock);
 
-    static const u16 TILE_MAP_0 = 0x9800;
-    static const u16 TILE_MAP_1 = 0x9c00;
-    static const u16 TILE_DATA_0 = 0x9000; // signed tile index
-    static const u16 TILE_DATA_1 = 0x8000; // unsigned tile index
-
 private:
     Memory *memory;
     GameWindow *window;
     u8* framebuffer;
 
-    // Direct pointers to vram
-    u8 *tile_data[2];
-    u8 *tile_map[2];
-    u8 *sprite_data;
-
     int line;
     int clock;
     Mode mode;
     
-    void read_tile(u8 *pixels, u16 tile_addr, u8 x_low, u8 y_low, u8 x_high, u8 y_high);
+    void read_tile(u8 *pixels, u16 tile_addr);
     void render_background();
     void render_window();
     void render_sprites();
@@ -64,10 +54,6 @@ private:
     // opengl expects framebuffer drawn from bottom up
     const bool INVERT_MAP = true;
     const bool INVERT_TILES = true;
-
-    // These will probably be moved to MMU later on  
-    void fill_tile_data_arrays();
-    void fill_tile_maps(); 
 };
 
 #endif
