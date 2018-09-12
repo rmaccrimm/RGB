@@ -304,7 +304,7 @@ void GameWindow::process_input()
             key = Joypad::SELECT;
             break;
         default:
-            break;
+            return;
         };
         if (event.type == SDL_KEYDOWN) {
             if (!key_pressed[key]) {
