@@ -14,6 +14,15 @@ u8 Joypad::get_state(bool select_dpad)
     }
 }
 
-void Joypad::press_key(int key) { state = utils::reset(state, key); }
+void Joypad::press_key(int key) { 
+    if (key < 8) {
+        state = utils::reset(state, key); 
+    }
+}
 
-void Joypad::release_key(int key) { state = utils::set(state, key); }
+void Joypad::release_key(int key) 
+{ 
+    if (key < 8) {
+        state = utils::set(state, key); 
+    }
+}

@@ -12,14 +12,17 @@ void check_glError(std::string msg)
 	}
 }
 
+const int SCREEN_W = 160;
+const int SCREEN_H = 144;
+
 const float SCREEN_QUAD[] = {  
 //  position       texture coords      
-    -1,  1,  0,    0,   144,
-    -1, -1,  0,    0,   0,
-     1, -1,  0,    160, 0,
-    -1,  1,  0,    0,   144,
-     1, -1,  0,    160, 0,
-     1,  1,  0,    160, 144
+    -1,  1,  0,    0,        SCREEN_H,
+    -1, -1,  0,    0,        0,
+     1, -1,  0,    SCREEN_W, 0,
+    -1,  1,  0,    0,        SCREEN_H,
+     1, -1,  0,    SCREEN_W, 0,
+     1,  1,  0,    SCREEN_W, SCREEN_H
 };
 
 GameWindow::GameWindow(Joypad *pad, int scale) : 
@@ -49,6 +52,17 @@ bool GameWindow::closed()
         return false;
     }
     draw = false;
+}
+
+bool GameWindow::paused() 
+{
+    if (pause) {
+        pause = false;
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
@@ -99,8 +113,8 @@ void GameWindow::init_window()
             "Gameboy Emulator", 
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, 
-            160 * window_scale,
-            144 * window_scale, 
+            SCREEN_W * window_scale,
+            SCREEN_H * window_scale, 
             SDL_WINDOW_OPENGL
         );
         if (sdl_window == nullptr) {
@@ -153,25 +167,6 @@ void GameWindow::init_screen_texture()
     );
 
 	check_glError("Screen Texture:");
-
-    glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_RECTANGLE, color_palette);
-    check_glError("Bind Texture:");
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    check_glError("Color Palette Params:");
-	glTexImage2D(
-		GL_TEXTURE_RECTANGLE,
-		0,
-		GL_R8UI,
-		4,
-        1,
-		0,
-		GL_RED_INTEGER,
-		GL_UNSIGNED_BYTE,
-		0
-    );
-	check_glError("Color Palette Texture:");
     
     GLuint screen_vao;
     GLuint screen_vbo;
@@ -194,11 +189,11 @@ void GameWindow::init_screen_texture()
     }
     glUniform1i(uniformloc, 0);
 	
-	uniformloc = glGetUniformLocation(shader_id, "color_palette");
-	if (uniformloc == -1) {
-		std::cout << "Error: Uniform \"color_palette\" not found" << std::endl;
-	}
-	glUniform1i(uniformloc, 1);
+	// uniformloc = glGetUniformLocation(shader_id, "color_palette");
+	// if (uniformloc == -1) {
+	// 	std::cout << "Error: Uniform \"color_palette\" not found" << std::endl;
+	// }
+	// glUniform1i(uniformloc, 1);
 
     scrollx = glGetUniformLocation(shader_id, "scrollx");
     if (scrollx == -1) {
@@ -296,6 +291,10 @@ void GameWindow::process_input()
             break;
         case SDLK_b:
             key = Joypad::B;
+            break;
+        case SDLK_p:
+            key = Joypad::NONE;
+            pause = true;
             break;
         case SDLK_RETURN:
             key = Joypad::START;

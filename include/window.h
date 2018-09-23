@@ -14,6 +14,7 @@ public:
     GameWindow(Joypad *pad, int scale = 4);
     ~GameWindow();
     bool closed();
+    bool paused();
     bool frame_drawn();
     void process_input();
     void draw_frame(u8 framebuffer[], int x, int y);
@@ -30,6 +31,7 @@ private:
     const int window_scale;
     int key_pressed[8];
     bool draw;
+    bool pause;
     int scrollx, scrolly;
 
     void compile_shader();
