@@ -98,3 +98,8 @@ void utils::to_upper(std::string &s)
 {
     std::transform(s.begin(), s.end(), s.begin(), ::toupper);
 } 
+
+bool utils::bit(int x, int bit)
+{
+    return (bool)(x & (1 << bit));
+}

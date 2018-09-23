@@ -50,7 +50,8 @@ void GPU::step(unsigned int cpu_clock)
 					build_framebuffer();
 					memory->vram_updated = false;
 				}
-                window->draw_frame(framebuffer, memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
+                window->draw_frame(
+                    framebuffer, memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
                 memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK));
@@ -94,6 +95,7 @@ void GPU::increment_line()
 u8* GPU::build_framebuffer()
 {
     render_background();
+    render_sprites();
     return framebuffer;
 }
 
@@ -104,7 +106,6 @@ void GPU::set_bg_palette()
     color_palette[1] = COLORS[(bgp >> 2) & 3];
     color_palette[2] = COLORS[(bgp >> 4) & 3];
     color_palette[3] = COLORS[(bgp >> 6) & 3];
-    window->set_bg_palette(color_palette);
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
@@ -120,7 +121,7 @@ void GPU::read_tile(u8 *dest, u16 tile_addr)
             u8 lsb = (pix_data[byte_ind] >> (7 - i)) & 1;
             u8 msb = (pix_data[byte_ind + 1] >> (7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;
-            dest[256 * j + i] = color;
+            dest[256 * j + i] = color_palette[color];
         }
     }
 }
@@ -148,11 +149,8 @@ void GPU::render_background()
             signed_map = true;
         }  
 
-        int tile_i, tile_j;
-        int screen_i, screen_j;
-
-        for (tile_i = 0, screen_i = 0; tile_i < 32; tile_i++) {
-            for (tile_j = 0, screen_j = 0; tile_j < 32; tile_j++) {
+        for (int tile_i = 0; tile_i < 32; tile_i++) {
+            for (int tile_j = 0; tile_j < 32; tile_j++) {
 
                 // locate the tiles in memory
                 int map_index = 32 * (tile_i % 32) + (tile_j % 32);
@@ -168,14 +166,12 @@ void GPU::render_background()
                     tile_addr = tile_data + (16 * tile_num);
                 }
 
-                int pixel_y = 256 - 8 * (screen_i + 1);
-                int pixel_x = 8 * screen_j;
+                int pixel_y = 256 - 8 * (tile_i + 1);
+                int pixel_x = 8 * tile_j;
                 int pixel_index = 256 * pixel_y + pixel_x;
                 
                 read_tile(&framebuffer[pixel_index], tile_addr);
-                screen_j++;
             }
-            screen_i++;
         }        
     }
 }
@@ -187,6 +183,45 @@ void GPU::render_window()
 
 void GPU::render_sprites()
 {
+    u8 lcd_control = memory->read(reg::LCDC);
+    u8 scroll_y = memory->read(reg::SCROLLY);
+    u8 scroll_x = memory->read(reg::SCROLLX);
+
+    bool enable_sprites = utils::bit(lcd_control, 1);
+    bool two_tile_sprites = utils::bit(lcd_control, 2);
     
+    u8 *sprite_data = memory->get_mem_ptr(reg::OAM);
+    for (int i = 0; i < 40; i++) {
+        int byte_ind = 4 * i;
+        int ypos = sprite_data[byte_ind];
+        int xpos = sprite_data[byte_ind + 1];
+
+        if (xpos == 0 || xpos >= 168 || ypos == 0 || ypos >= 160) {
+            continue;
+        }
+        ypos += scroll_y + 16;
+        xpos += scroll_x + 8;
+
+        int tile_num = sprite_data[byte_ind + 2];
+        int flags = sprite_data[byte_ind + 3];
+
+        bool behind_bg = utils::bit(flags, 7);
+        bool flip_y = utils::bit(flags, 6);
+        bool flip_x = utils::bit(flags, 5);
+        bool palette_num = utils::bit(flags, 4);
+
+        u16 obp_addr[2] = { reg::OBP0, reg::OBP1 };
+        u8 obp = memory->read(obp_addr[palette_num]);
+        color_palette[0] = COLORS[obp & 3];
+        color_palette[1] = COLORS[(obp >> 2) & 3];
+        color_palette[2] = COLORS[(obp >> 4) & 3];
+        color_palette[3] = COLORS[(obp >> 6) & 3];
+
+        // position of lower left corner in framebuffer
+        int pixel_index = 256 * (256 - ypos) + xpos;
+        u16 tile_addr = reg::TILE_DATA_1 + (16 * tile_num);
+
+        read_tile(&framebuffer[pixel_index], tile_addr);
+    }
 }
 

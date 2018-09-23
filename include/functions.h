@@ -32,4 +32,6 @@ namespace utils
     void to_lower(std::string &s);
 
     void to_upper(std::string &s);
+
+    bool bit(int x, int bit);
 };

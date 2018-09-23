@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     while (true) {
         window.process_input();
         if (enable_debug_mode) {
-            if (gb_cpu.PC.value() == break_pt || step_instr || gb_mem.pause()) {
+            if (gb_cpu.PC.value() == break_pt || step_instr || gb_mem.pause() || window.paused()) {
                 debug::print_registers(&gb_cpu);
                 if (!debug::menu(&gb_cpu, break_pt, access_break_pt, step_instr)) {
                     break;
