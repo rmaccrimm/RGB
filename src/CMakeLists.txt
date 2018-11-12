@@ -7,13 +7,13 @@ include_directories(
 find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(Boost COMPONENTS program_options REQUIRED)
+find_package(Boost 1.68 COMPONENTS program_options REQUIRED)
 include_directories(${GLEW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 link_libraries(${GLEW_LIBRARIES})
 
 add_library(funcs functions.cpp)
 add_library(proc processor.cpp register16bit.cpp register8bit.cpp)
-add_library(mem mmu.cpp joypad.cpp)
+add_library(mem mmu.cpp joypad.cpp cartridge.cpp)
 add_library(ops operations.cpp)
 
 add_executable(main 

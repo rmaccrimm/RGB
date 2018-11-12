@@ -19,6 +19,9 @@ void Memory::write(u16 addr, u8 data)
 	else if (addr >= 0x8000 && addr <= 0x9fff) { // VRAM
 		vram_updated = true;
 	}
+    else if (addr >= 0xe000 && addr < 0xfe00) { // Echo RAM
+        addr -= 0x2000;
+    }
     /*else if (addr == reg::DIV) {
         // writing any value to DIV writes 0 and resets system counter
         mem[addr] = 0;
@@ -29,13 +32,14 @@ void Memory::write(u16 addr, u8 data)
 
 u8 Memory::read(u16 addr) 
 {
-    if (addr <= 0x100) {
-        if (!(mem[0xff50] & 1) && enable_boot_rom) { // not sure about this check
+    if (addr <= 0x100 && (!(mem[0xff50] & 1) && enable_boot_rom)) { 
             return boot_rom[addr];
-        } 
-        else {
-            return mem[addr];
-        }
+    } 
+    else if (addr <= 0x7fff) { // Switchable ROM Banks
+        return cartridge->read(addr);
+    }
+    else if (addr >= 0xe000 && addr < 0xfdff) { // Echo RAM
+        return mem[addr - 0x2000];
     }
     else if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
         return 0xff;

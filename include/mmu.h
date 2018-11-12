@@ -4,6 +4,7 @@
 #include "definitions.h"
 #include "register16bit.h"
 #include "joypad.h"
+#include "cartridge.h"
 
 class Memory
 {
@@ -26,7 +27,8 @@ public:
 
 private:
     // For accessing VRAM more quickly
-    u8* get_mem_ptr(u16 addr);    
+    u8* get_mem_ptr(u16 addr);
+    Cartridge *cartridge;
 
     u8 mem[0x10000];
     u8 boot_rom[0x100];
