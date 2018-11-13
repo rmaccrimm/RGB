@@ -1,5 +1,5 @@
 #include "joypad.h"
-#include "functions.h"
+#include "utils.h"
 #include <iostream>
 
 Joypad::Joypad() : state(0xff) {}

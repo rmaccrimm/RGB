@@ -1,5 +1,5 @@
 #include "catch.hpp"
-#include "functions.h"
+#include "utils.h"
 
 TEST_CASE("Half carries for addition", "[half_carry_add]")
 {

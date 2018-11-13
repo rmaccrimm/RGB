@@ -1,5 +1,5 @@
 #include "mmu.h"
-#include "functions.h"
+#include "utils.h"
 #include "registers.h"
 #include <cstring>
 #include <iostream>

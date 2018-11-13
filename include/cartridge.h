@@ -54,7 +54,7 @@ private:
     std::string game_title;
     bool mode;
     bool gbc; // color cartridge
-    bool sgb; // super gameboy functions
+    bool sgb; // super gameboy utils
     bool enable_ram;
     int cartridge_file_size;
     int rom_size;

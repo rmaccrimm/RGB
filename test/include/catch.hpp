@@ -1346,7 +1346,7 @@ namespace Catch {
         {}
     };
 
-    // Specialised comparison functions to handle equality comparisons between ints and pointers (NULL deduces as an int)
+    // Specialised comparison utils to handle equality comparisons between ints and pointers (NULL deduces as an int)
     template<typename LhsT, typename RhsT>
     auto compareEqual( LhsT const& lhs, RhsT const& rhs ) -> bool { return static_cast<bool>(lhs == rhs); }
     template<typename T>
@@ -2385,7 +2385,7 @@ namespace Matchers {
 
     } // namespace Floating
 
-    // The following functions create the actual matcher objects.
+    // The following utils create the actual matcher objects.
     // This allows the types to be inferred
     Floating::WithinUlpsMatcher WithinULP(double target, int maxUlpDiff);
     Floating::WithinUlpsMatcher WithinULP(float target, int maxUlpDiff);
@@ -2430,7 +2430,7 @@ public:
 
 } // namespace Generic
 
-    // The following functions create the actual matcher objects.
+    // The following utils create the actual matcher objects.
     // The user has to explicitly specify type to the function, because
     // infering std::function<bool(T const&)> is hard (but possible) and
     // requires a lot of TMP.
@@ -2499,7 +2499,7 @@ namespace Matchers {
 
     } // namespace StdString
 
-    // The following functions create the actual matcher objects.
+    // The following utils create the actual matcher objects.
     // This allows the types to be inferred
 
     StdString::EqualsMatcher Equals( std::string const& str, CaseSensitive::Choice caseSensitivity = CaseSensitive::Yes );
@@ -2658,7 +2658,7 @@ namespace Matchers {
 
     } // namespace Vector
 
-    // The following functions create the actual matcher objects.
+    // The following utils create the actual matcher objects.
     // This allows the types to be inferred
 
     template<typename T>
@@ -8250,7 +8250,7 @@ namespace Catch {
     std::vector<TestCase> sortTests( IConfig const& config, std::vector<TestCase> const& unsortedTestCases );
     bool matchTest( TestCase const& testCase, TestSpec const& testSpec, IConfig const& config );
 
-    void enforceNoDuplicateTestCases( std::vector<TestCase> const& functions );
+    void enforceNoDuplicateTestCases( std::vector<TestCase> const& utils );
 
     std::vector<TestCase> filterTests( std::vector<TestCase> const& testCases, TestSpec const& testSpec, IConfig const& config );
     std::vector<TestCase> const& getAllTestCasesSorted( IConfig const& config );
@@ -8265,9 +8265,9 @@ namespace Catch {
         std::vector<TestCase> const& getAllTestsSorted( IConfig const& config ) const override;
 
     private:
-        std::vector<TestCase> m_functions;
+        std::vector<TestCase> m_utils;
         mutable RunTests::InWhatOrder m_currentSortOrder = RunTests::InDeclarationOrder;
-        mutable std::vector<TestCase> m_sortedFunctions;
+        mutable std::vector<TestCase> m_sortedutils;
         std::size_t m_unnamedCount = 0;
         std::ios_base::Init m_ostreamInit; // Forces cout/ cerr to be initialised
     };
@@ -9550,7 +9550,7 @@ namespace Catch {
 
     ///////////////////////////////////////////////////////////////////////////
 
-#ifndef CATCH_CONFIG_NOSTDOUT // If you #define this you must implement these functions
+#ifndef CATCH_CONFIG_NOSTDOUT // If you #define this you must implement these utils
     std::ostream& cout() { return std::cout; }
     std::ostream& cerr() { return std::cerr; }
     std::ostream& clog() { return std::clog; }
@@ -10013,10 +10013,10 @@ namespace Catch {
         return testSpec.matches( testCase ) && ( config.allowThrows() || !testCase.throws() );
     }
 
-    void enforceNoDuplicateTestCases( std::vector<TestCase> const& functions ) {
-        std::set<TestCase> seenFunctions;
-        for( auto const& function : functions ) {
-            auto prev = seenFunctions.insert( function );
+    void enforceNoDuplicateTestCases( std::vector<TestCase> const& utils ) {
+        std::set<TestCase> seenutils;
+        for( auto const& function : utils ) {
+            auto prev = seenutils.insert( function );
             CATCH_ENFORCE( prev.second,
                     "error: TEST_CASE( \"" << function.name << "\" ) already defined.\n"
                     << "\tFirst seen at " << prev.first->getTestCaseInfo().lineInfo << "\n"
@@ -10043,21 +10043,21 @@ namespace Catch {
             rss << "Anonymous test case " << ++m_unnamedCount;
             return registerTest( testCase.withName( rss.str() ) );
         }
-        m_functions.push_back( testCase );
+        m_utils.push_back( testCase );
     }
 
     std::vector<TestCase> const& TestRegistry::getAllTests() const {
-        return m_functions;
+        return m_utils;
     }
     std::vector<TestCase> const& TestRegistry::getAllTestsSorted( IConfig const& config ) const {
-        if( m_sortedFunctions.empty() )
-            enforceNoDuplicateTestCases( m_functions );
+        if( m_sortedutils.empty() )
+            enforceNoDuplicateTestCases( m_utils );
 
-        if(  m_currentSortOrder != config.runOrder() || m_sortedFunctions.empty() ) {
-            m_sortedFunctions = sortTests( config, m_functions );
+        if(  m_currentSortOrder != config.runOrder() || m_sortedutils.empty() ) {
+            m_sortedutils = sortTests( config, m_utils );
             m_currentSortOrder = config.runOrder();
         }
-        return m_sortedFunctions;
+        return m_sortedutils;
     }
 
     ///////////////////////////////////////////////////////////////////////////
