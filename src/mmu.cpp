@@ -20,19 +20,22 @@ void Memory::write(u16 addr, u8 data)
         paused = true; 
     }
 
-    if (addr >= 0xa000 && addr <= 0xbfff) { // Switchable RAM bank
+    if (addr <= 0x7fff) { // select RAM/ROM bank
         cartridge->write(addr, data);
         return;
     }
-    if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
-        return;
-    }
-    
-	if (addr >= 0x8000 && addr <= 0x9fff) { // VRAM
+    else if (addr >= 0x8000 && addr <= 0x9fff) { // VRAM
 		vram_updated = true;
 	}
+    else if (addr >= 0xa000 && addr <= 0xbfff) { // Switchable RAM bank
+        cartridge->write(addr, data);
+        return;
+    }
     else if (addr >= 0xe000 && addr < 0xfe00) { // Echo RAM
         addr -= 0x2000;
+    }
+    else if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
+        return;
     }
     else if (addr == reg::DIV) {
         // writing any value to DIV writes 0 and resets system counter

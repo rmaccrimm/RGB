@@ -44,7 +44,7 @@ u8 Cartridge::read(u16 addr)
         }
         else if ((addr >= 0xa000) && (addr <= 0xbfff)) {
             if (!enable_ram) {
-                return 0;
+                return 0xffff; // Not sure which value to return
             }
             else {
                 return cartridge_data[addr + current_ram_bank * ram_bank_size];
@@ -65,14 +65,14 @@ void Cartridge::write(u16 addr, u8 val)
     case MBC1_RAM:
     case MBC1_RAM_BATTERY:
         if (addr <= 0x1fff) { // enable/disable RAM
-            if ((val & 0xf) == 0xa) {
+            if ((val & 0xff) == 0x0a) {
                 enable_ram = true;
             }
             else {
                 enable_ram = false;
             }
         }
-        if ((addr >= 0x2000) && (addr <= 0x3fff)) { // set 5lsb of ROM bank
+        else if ((addr >= 0x2000) && (addr <= 0x3fff)) { // set 5lsb of ROM bank
             current_rom_bank &= (7 << 5); 
             current_rom_bank |= (0x1f & val); 
             if ((current_rom_bank & 0x1f) == 0) 
