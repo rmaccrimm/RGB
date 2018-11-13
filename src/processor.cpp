@@ -14,11 +14,17 @@ Processor::Processor(Memory *mem) :
 
 void Processor::init_state()
 {
-    AF.set(0x01b0);
-    BC.set(0x0013);
-    DE.set(0x00d8);
-    HL.set(0x014d);
-    PC.set(0x100);
+    // AF.set(0x01b0);
+    // BC.set(0x0013);
+    // DE.set(0x00d8);
+    // HL.set(0x014d);
+    // PC.set(0x100); - Not sure which of these sets is correct
+    AF.set(0x1100);
+    BC.set(0x0100);
+    DE.set(0x0008);
+    HL.set(0x007c);
+    PC.set(0x0100);
+    SP.set(0xfffe);
     memory->write(reg::TIMA, 0);
     memory->write(reg::TMA, 0);
     memory->write(reg::TAC, 0);
