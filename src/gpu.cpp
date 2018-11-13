@@ -9,12 +9,7 @@
 
 GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
 {
-    framebuffer = new u8[256 * 256];
-}
-
-GPU::~GPU()
-{
-    delete framebuffer;
+    framebuffer.reserve(256 * 256); 
 }
 
 void GPU::step(unsigned int cpu_clock) 
@@ -51,7 +46,7 @@ void GPU::step(unsigned int cpu_clock)
 					memory->vram_updated = false;
 				}
                 window->draw_frame(
-                    framebuffer, memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
+                    framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
                 memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK));
@@ -92,11 +87,10 @@ void GPU::increment_line()
     memory->write(reg::LY, line);
 }
 
-u8* GPU::build_framebuffer()
+void GPU::build_framebuffer()
 {
     render_background();
     render_sprites();
-    return framebuffer;
 }
 
 void GPU::set_bg_palette()
@@ -109,9 +103,8 @@ void GPU::set_bg_palette()
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
-void GPU::read_tile(u8 *dest, u16 tile_addr)
+void GPU::read_tile(std::vector<u8>::iterator dest, u16 tile_addr)
 {
-    assert(dest);
     u8 *pix_data = memory->get_mem_ptr(tile_addr);
 
     for (int i = 0; i < 8; i++) {
@@ -130,7 +123,7 @@ void GPU::render_background()
 {
     u8 lcd_control = memory->read(reg::LCDC);
     u16 tile_map;
-    u16 tile_data;
+    u16 tile_data; 
     bool signed_map;
 
     if (lcd_control & BG_ENABLE) {
@@ -170,7 +163,7 @@ void GPU::render_background()
                 int pixel_x = 8 * tile_j;
                 int pixel_index = 256 * pixel_y + pixel_x;
                 
-                read_tile(&framebuffer[pixel_index], tile_addr);
+                read_tile(framebuffer.begin() + pixel_index, tile_addr);
             }
         }        
     }
@@ -221,7 +214,7 @@ void GPU::render_sprites()
         int pixel_index = 256 * (256 - ypos) + xpos;
         u16 tile_addr = reg::TILE_DATA_1 + (16 * tile_num);
 
-        read_tile(&framebuffer[pixel_index], tile_addr);
+        read_tile(framebuffer.begin() + pixel_index, tile_addr);
     }
 }
 

@@ -1,6 +1,7 @@
 #ifndef GPU_H
 #define GPU_H
 
+#include <vector>
 #include "definitions.h"
 #include "mmu.h"
 #include "window.h"
@@ -12,26 +13,28 @@ public:
     enum Mode { HBLANK, VBLANK, OAM, VRAM };
 
     GPU(Memory *mem, GameWindow *win);
-    ~GPU();
-    u8* build_framebuffer();
+    void build_framebuffer();
     void step(unsigned int cpu_clock);
 
 private:
     Memory *memory;
     GameWindow *window;
-    u8* framebuffer;
+    std::vector<u8> framebuffer;
 
     int line;
     int clock;
     Mode mode;
+
+    bool stat_irq_signal; // Used to trigger LCDSTAT
     
-    void read_tile(u8 *pixels, u16 tile_addr);
+    void read_tile(std::vector<u8>::iterator pixels, u16 tile_addr);
     void render_background();
     void render_window();
     void render_sprites();
     void change_mode(Mode m);
     void increment_line();
     void set_bg_palette();
+    void update_stat_register();
 
     u8 color_palette[4];
 
@@ -50,6 +53,8 @@ private:
         0x66,   // 10 light gray
         0x00    // 11 black
     };
+
+    
 
     // opengl expects framebuffer drawn from bottom up
     const bool INVERT_MAP = true;

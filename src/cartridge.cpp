@@ -8,12 +8,12 @@
 #include <cstring>
 #include <algorithm>
 
-Cartridge::Cartridge(std::string file_name) : 
-    mode(ROM), 
-    current_rom_bank(1), 
-    current_ram_bank(0), 
-    rom_bank_size(0x4000), // 16kB 
-    ram_bank_size(0x2000), // 8kB 
+Cartridge::Cartridge(std::string file_name) :
+    mode(ROM),
+    current_rom_bank(1),
+    current_ram_bank(0),
+    rom_bank_size(0x4000), // 16kB
+    ram_bank_size(0x2000), // 8kB
     enable_ram(false)
 {
     utils::load_file(cartridge_data, file_name);
@@ -28,13 +28,20 @@ Cartridge::Cartridge(std::string file_name) :
     auto it = cartridge_data.begin();
     game_title = std::string(it + 0x134, it + 0x143);
 
-    std::vector<CartridgeType> implemented = { ROM_ONLY, MBC1, MBC1_RAM, MBC1_RAM_BATTERY };
-    assert(std::find(implemented.begin(), implemented.end(), cartridge_type) != implemented.end());
+    std::cout << "Cartridge type - " << type() << " - 0x" << std::hex 
+              << (int)cartridge_data[0x147] << std::endl;
+
+    std::vector<CartridgeType> i = { ROM_ONLY, MBC1, MBC1_RAM, MBC1_RAM_BATTERY };
+    bool mbc_type_implemented = std::find(
+        i.begin(), i.end(), cartridge_type) != i.end();
+    assert(mbc_type_implemented);
+
+    std::cout << "Succesfully loaded " << title() << std::endl;
 }
 
-u8 Cartridge::read(u16 addr) 
+u8 Cartridge::read(u16 addr)
 {
-    switch (cartridge_type) 
+    switch (cartridge_type)
     {
     case ROM_ONLY:
         return cartridge_data[addr];
@@ -52,7 +59,7 @@ u8 Cartridge::read(u16 addr)
         }
         else if ((addr >= 0xa000) && (addr <= 0xbfff)) {
             if (!enable_ram) {
-                return 0xff; // Not sure which value to return
+                return 0xff;
             }
             else {
                 return cartridge_data[addr + current_ram_bank * ram_bank_size];
@@ -62,7 +69,7 @@ u8 Cartridge::read(u16 addr)
     }
     std::cout << enable_ram << std::endl;
     std::cout << "Addr " << std::hex << addr << " fell through read" << std::endl;
-    assert(false);        
+    assert(false);
 }
 
 void Cartridge::write(u16 addr, u8 val)
@@ -81,18 +88,18 @@ void Cartridge::write(u16 addr, u8 val)
             }
         }
         else if ((addr >= 0x2000) && (addr <= 0x3fff)) { // set 5lsb of ROM bank
-            current_rom_bank &= (7 << 5); 
-            current_rom_bank |= (0x1f & val); 
-            if ((current_rom_bank & 0x1f) == 0) 
+            current_rom_bank &= (7 << 5);
+            current_rom_bank |= (0x1f & val);
+            if ((current_rom_bank & 0x1f) == 0)
                 current_rom_bank++;
         }
-        else if ((addr >= 0x4000) && (addr <= 0x5fff)) { // set RAM bank/2 msb of ROM bank 
+        else if ((addr >= 0x4000) && (addr <= 0x5fff)) { // set RAM bank/2 msb of ROM bank
             if (mode == RAM) {
                 current_ram_bank = val & 0x3;
             }
             else if (mode == ROM) {
-                current_rom_bank &= (0x1f); 
-                current_rom_bank |= (val & 3) << 5; 
+                current_rom_bank &= (0x1f);
+                current_rom_bank |= (val & 3) << 5;
                 if ((current_rom_bank & 0x1f) == 0)
                     current_rom_bank++;
             }
@@ -114,50 +121,48 @@ void Cartridge::write(u16 addr, u8 val)
         else {
             std::cout << enable_ram << std::endl;
             std::cout << "Addr " << std::hex << addr << " fell through write" << std::endl;
-            assert(false);        
+            assert(false);
         }
         break;
     }
-
-
 }
 
 std::string Cartridge::title() { return game_title; }
 
-std::string Cartridge::type() 
+std::string Cartridge::type()
 {
     switch (cartridge_type) {
         case INVALID: return "INVALID";
-        case ROM_ONLY: return "ROM_ONLY";
-        case MBC1: return "MBC1";       
-        case MBC1_RAM: return "MBC1_RAM";       
-        case MBC1_RAM_BATTERY: return "MBC1_RAM_BATTERY";     
-        case MBC2:                            
-        case MBC2_BATTERY:                    
-        case ROM_RAM:                         
-        case ROM_RAM_BATTERY:                 
-        case MMM01:                           
-        case MMM01_RAM:                       
-        case MMM01_RAM_BATTERY:               
-        case MBC3_TIMER_BATTERY:              
-        case MBC3_RAM_TIMER_BATTERY:          
-        case MBC3:                            
-        case MBC3_RAM:                        
-        case MBC3_RAM_BATTERY:                
-        case MBC5:                            
-        case MBC5_RAM:                        
-        case MBC5_RAM_BATTERY:                
-        case MBC5_RUMBLE:                     
-        case MBC5_RUMBLE_RAM:                 
-        case MBC5_RUMBLE_RAM_BATTERY:         
-        case MBC6:                            
-        case MBC7_SENSOR_RUMBLE_RAM_BATTERY:  
-        case POCKET_CAMERA:                   
-        case BANDAI_TAMA5:                    
-        case HuC3:                            
-        case HuC1_RAM_BATTERY:
+        case ROM_ONLY: return "ROM ONLY";
+        case MBC1: return "MBC1";
+        case MBC1_RAM: return "MBC1+RAM";
+        case MBC1_RAM_BATTERY: return "MBC1+RAM+BATTERY";
+        case MBC2: return "MBC2";
+        case MBC2_BATTERY: return "MBC2+BATTERY";
+        case ROM_RAM: return "ROM+RAM";
+        case ROM_RAM_BATTERY: return "ROM+RAM+BATTERY";
+        case MMM01: return "MMM01";
+        case MMM01_RAM: return "MMM01+RAM";
+        case MMM01_RAM_BATTERY: return "MMM01+RAM+BATTERY";
+        case MBC3_TIMER_BATTERY: return "MBC3+TIMER+BATTERY";
+        case MBC3_RAM_TIMER_BATTERY: return "MBC3+RAM+TIMER+BATTERY";
+        case MBC3: return "MBC3";
+        case MBC3_RAM: return "MBC3+RAM";
+        case MBC3_RAM_BATTERY: return "MBC3+RAM+BATTERY"; return "MBC3+RAM+BATTERY";
+        case MBC5: return "MBC5";
+        case MBC5_RAM: return "MBC5+RAM";
+        case MBC5_RAM_BATTERY: return "MBC5+RAM+BATTERY";
+        case MBC5_RUMBLE: return "MBC5+RUMBLE";
+        case MBC5_RUMBLE_RAM: return "MBC5+RUMBLE+RAM";
+        case MBC5_RUMBLE_RAM_BATTERY: return "MBC5+RUMBLE+RAM+BATTERY";
+        case MBC6: return "MBC6";
+        case MBC7_SENSOR_RUMBLE_RAM_BATTERY: return "MBC7+SENSOR+RUMBLE+RAM+BATTERY";
+        case POCKET_CAMERA: return "POCKET+CAMERA";
+        case BANDAI_TAMA5: return "BANDAI+TAMA5";
+        case HuC3: return "HuC3";
+        case HuC1_RAM_BATTERY: return "HuC1+RAM+BATTERY";
         default:
-            return "UNIMPLEMENTED";
+            return "UNKNOWN";
     }
 }
 
@@ -175,7 +180,7 @@ Cartridge::CartridgeType Cartridge::get_type(u8 val)
         case 0x0b: return Cartridge::MMM01;
         case 0x0c: return Cartridge::MMM01_RAM;
         case 0x0d: return Cartridge::MMM01_RAM_BATTERY;
-        case 0x0f: return Cartridge::MBC3_TIMER_BATTERY;   
+        case 0x0f: return Cartridge::MBC3_TIMER_BATTERY;
         case 0x10: return Cartridge::MBC3_RAM_TIMER_BATTERY;
         case 0x11: return Cartridge::MBC3;
         case 0x12: return Cartridge::MBC3_RAM;

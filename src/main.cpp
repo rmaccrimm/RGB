@@ -67,16 +67,12 @@ int main(int argc, char *argv[])
         step_instr = true;
     }    
 
-    Cartridge game_cart(cartridge_filename);
-    std::cout << "Succesfully loaded " << game_cart.title() << std::endl << "Cartridge type - " 
-              << game_cart.type() << std::endl;
-
     Joypad gb_pad;
     GameWindow window(&gb_pad, 5);    
+    Cartridge game_cart(cartridge_filename);
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
-    GPU gb_gpu(&gb_mem, &window);
     Processor gb_cpu(&gb_mem);
-    
+    GPU gb_gpu(&gb_mem, &window);
 
     if (enable_boot_rom) {
         gb_mem.load_boot(boot_rom_filename.c_str());

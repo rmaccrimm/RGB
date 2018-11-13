@@ -13,6 +13,10 @@ namespace reg
     static const u16 OAM            = 0xfe00; // sprites
     // Joypad
     static const u16 JOYP       = 0xff00;
+    // Serial transfer data
+    static const u16 SB         = 0xff01;
+    // SIO control
+    static const u16 SC         = 0xff02;
     // Divider
     static const u16 DIV        = 0xff04;
     // Timer
