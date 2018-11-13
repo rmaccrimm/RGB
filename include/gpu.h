@@ -1,6 +1,7 @@
 #ifndef GPU_H
 #define GPU_H
 
+#include <vector>
 #include "definitions.h"
 #include "mmu.h"
 #include "window.h"
@@ -12,20 +13,19 @@ public:
     enum Mode { HBLANK, VBLANK, OAM, VRAM };
 
     GPU(Memory *mem, GameWindow *win);
-    ~GPU();
-    u8* build_framebuffer();
+    void build_framebuffer();
     void step(unsigned int cpu_clock);
 
 private:
     Memory *memory;
     GameWindow *window;
-    u8* framebuffer;
+    std::vector<u8> framebuffer;
 
     int line;
     int clock;
     Mode mode;
     
-    void read_tile(u8 *pixels, u16 tile_addr);
+    void read_tile(std::vector<u8>::iterator pixels, u16 tile_addr);
     void render_background();
     void render_window();
     void render_sprites();
