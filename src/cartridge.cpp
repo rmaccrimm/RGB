@@ -17,7 +17,13 @@ Cartridge::Cartridge(std::string file_name) :
     enable_ram(false)
 {
     utils::load_file(cartridge_data, file_name);
+
     cartridge_file_size = cartridge_data.size();
+    rom_size = get_rom_size(cartridge_data[0x148]);
+    ram_size = get_ram_size(cartridge_data[0x149]);
+    assert(rom_size + ram_size >= cartridge_file_size);
+    cartridge_data.resize(rom_size + ram_size);
+
     cartridge_type = get_type(cartridge_data[0x147]);
     auto it = cartridge_data.begin();
     game_title = std::string(it + 0x134, it + 0x143);
@@ -188,4 +194,33 @@ Cartridge::CartridgeType Cartridge::get_type(u8 val)
         case 0xff: return Cartridge::HuC1_RAM_BATTERY;
         default: return Cartridge::INVALID;
     }
+}
+
+int Cartridge::get_rom_size(u8 val)
+{
+    switch(val) {
+        case 0: return 2 * rom_bank_size;
+        case 1: return 4 * rom_bank_size;
+        case 2: return 8 * rom_bank_size;
+        case 3: return 16 * rom_bank_size;
+        case 4: return 32 * rom_bank_size;
+        case 5: return 64 * rom_bank_size;
+        case 6: return 128 * rom_bank_size;
+        case 0x52: return 72 * rom_bank_size;
+        case 0x53: return 80 * rom_bank_size;
+        case 0x54: return 96 * rom_bank_size;
+    }
+    assert(false);
+}
+
+int Cartridge::get_ram_size(u8 val)
+{
+    switch(val) {
+        case 0: return 0;
+        case 1: return ram_bank_size;
+        case 2: return ram_bank_size;
+        case 3: return 4 * ram_bank_size;
+        case 4: return 16 * ram_bank_size;
+    }
+    assert(false);
 }

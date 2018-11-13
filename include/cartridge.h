@@ -67,6 +67,8 @@ private:
     std::vector<u8> cartridge_data;
 
     CartridgeType get_type(u8 val);
+    int get_rom_size(u8 val);
+    int get_ram_size(u8 val);
 };
 
 #endif
