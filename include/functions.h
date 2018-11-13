@@ -4,11 +4,7 @@
 
 namespace utils
 {
-    void load_rom(u8 memory[], size_t offset, const char *path);
-
-    void load_rom(u8 memory[], size_t start, size_t offset, const char *path);
-
-    void load_rom(u8 memory[], u8 data[], size_t size);
+    void load_file(std::vector<u8> &dest, const std::string &file_path);
 
     // Check for carry from bit 3 to bit 4 in a + b
     bool half_carry_add(u16 a, u16 b);

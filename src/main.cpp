@@ -13,6 +13,7 @@
 #include <SDL2/SDL.h>
 #include <boost/program_options.hpp>
 
+#include "cartridge.h"
 #include "debug.h"
 #include "definitions.h"
 #include "registers.h"
@@ -66,13 +67,17 @@ int main(int argc, char *argv[])
         step_instr = true;
     }    
 
+    Cartridge game_cart(cartridge_filename);
+    std::cout << "Succesfully loaded " << game_cart.title() << std::endl << "Cartridge type - " 
+              << game_cart.type() << std::endl;
+
     Joypad gb_pad;
     GameWindow window(&gb_pad, 5);    
-    Memory gb_mem(&gb_pad, enable_boot_rom);
+    Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     GPU gb_gpu(&gb_mem, &window);
     Processor gb_cpu(&gb_mem);
     
-    gb_mem.load_cart(cartridge_filename.c_str(), 0);
+
     if (enable_boot_rom) {
         gb_mem.load_boot(boot_rom_filename.c_str());
     } 
@@ -83,7 +88,7 @@ int main(int argc, char *argv[])
     int break_pt = -1;
     int access_break_pt = -1;
     
-    while (true) {
+    while (!window.closed()) {
         window.process_input();
         if (enable_debug_mode) {
             if (gb_cpu.PC.value() == break_pt || step_instr || gb_mem.pause() || window.paused()) {

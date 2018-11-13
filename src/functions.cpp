@@ -2,55 +2,13 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <iterator>
 #include <cassert>
 #include <cstring>
 #include <cerrno>
 #include <algorithm>
 #include "gpu.h"
 using namespace std;
-
-void utils::load_rom(u8 memory[], size_t offset, const char *path)
-{
-    size_t file_size;
-    ifstream ifs(path, ios_base::in | ios_base::binary);
-    ifs.seekg(0, ios_base::end);
-    file_size = (size_t)ifs.tellg();
-    ifs.seekg(0, ios_base::beg);
-    if (!ifs.good()) {
-        cout << "Error reading file " << path << ": " << std::strerror(errno) << endl;
-		return;
-    }
-    char *buff = new char[file_size];
-    ifs.read(buff, file_size);
-    ifs.close();
-    assert(file_size + offset <= 0x8000);
-    std::memcpy(memory + offset, buff, file_size);
-    delete buff;
-}
-
-void utils::load_rom(u8 memory[], size_t start, size_t offset, const char *path)
-{
-    size_t file_size;
-    ifstream ifs(path, ios_base::in | ios_base::binary);
-    ifs.seekg(0, ios_base::end);
-    file_size = (size_t)ifs.tellg() - start;
-    ifs.seekg(start, ios_base::beg);
-    if (!ifs.good()) {
-        cout << "Error reading file " << path << ": " << std::strerror(errno) << endl;
-		return;
-    }
-    char *buff = new char[file_size];
-    ifs.read(buff, file_size);
-    ifs.close();
-    assert(file_size + offset <= 0x10000);
-    std::memcpy(memory + offset, buff, file_size);
-    delete buff;
-}
-
-void utils::load_rom(u8 memory[], u8 data[], size_t size)
-{
-    std::memcpy(memory, data, size);
-}
 
 bool utils::half_carry_add(u16 a, u16 b) 
 {
@@ -102,4 +60,24 @@ void utils::to_upper(std::string &s)
 bool utils::bit(int x, int bit)
 {
     return (bool)(x & (1 << bit));
+}
+
+void utils::load_file(std::vector<u8> &dest, const std::string &file_path)
+{
+    std::ifstream ifs(file_path, std::ios_base::in | std::ios_base::binary);
+    ifs.unsetf(std::ios_base::skipws);
+    ifs.seekg(0, std::ios_base::end);
+    std::streampos file_size = (size_t)ifs.tellg();
+    ifs.seekg(0, std::ios_base::beg);
+
+    if (!ifs.good()) {
+        std::cout << "Error reading file " << file_path << ": " << std::strerror(errno) 
+                  << std::endl;
+		return;
+    }
+    
+    dest.reserve(file_size);
+    dest.insert(dest.begin(), 
+        std::istream_iterator<u8>(ifs), std::istream_iterator<u8>());
+    ifs.close();
 }

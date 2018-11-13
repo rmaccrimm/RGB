@@ -4,29 +4,41 @@
 #include <cstring>
 #include <iostream>
 
-Memory::Memory(Joypad *pad, bool enable_boot) : mem{0}, joypad(pad), enable_boot_rom(enable_boot),
-    enable_break_pt(false), paused(false), vram_updated(false) {}
+Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) : 
+    cartridge(cart), 
+    mem{0}, 
+    joypad(pad), 
+    enable_boot_rom(enable_boot), 
+    enable_break_pt(false), 
+    paused(false), 
+    vram_updated(false) 
+{}
 
 void Memory::write(u16 addr, u8 data)
 {
-    if (enable_break_pt && addr == break_pt) {
-        paused = true;
+    if (enable_break_pt && addr == break_pt) { 
+        paused = true; 
     }
 
+    if (addr >= 0xa000 && addr <= 0xbfff) { // Switchable RAM bank
+        cartridge->write(addr, data);
+        return;
+    }
     if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
         return;
     }
-	else if (addr >= 0x8000 && addr <= 0x9fff) { // VRAM
+    
+	if (addr >= 0x8000 && addr <= 0x9fff) { // VRAM
 		vram_updated = true;
 	}
     else if (addr >= 0xe000 && addr < 0xfe00) { // Echo RAM
         addr -= 0x2000;
     }
-    /*else if (addr == reg::DIV) {
+    else if (addr == reg::DIV) {
         // writing any value to DIV writes 0 and resets system counter
-        mem[addr] = 0;
-        clock_counter->set(0);
-    }*/
+        /*mem[addr] = 0;
+        clock_counter->set(0);*/
+    }
     mem[addr] = data;
 }
 
@@ -35,10 +47,15 @@ u8 Memory::read(u16 addr)
     if (addr <= 0x100 && (!(mem[0xff50] & 1) && enable_boot_rom)) { 
             return boot_rom[addr];
     } 
-    else if (addr <= 0x7fff) { // Switchable ROM Banks
+
+    if (addr <= 0x7fff) { // Switchable ROM bank
         return cartridge->read(addr);
     }
-    else if (addr >= 0xe000 && addr < 0xfdff) { // Echo RAM
+    else if (addr >= 0xa000 && addr <= 0xbfff) { // Switchable RAM bank
+        return cartridge->read(addr);
+    }
+
+    if (addr >= 0xe000 && addr < 0xfdff) { // Echo RAM
         return mem[addr - 0x2000];
     }
     else if (addr >= 0xfea0 && addr <= 0xfeff) { // unusable memory
@@ -52,6 +69,7 @@ u8 Memory::read(u16 addr)
         bool select_dpad = (mem[addr] & (1 << 4)) == 0;
         return joypad->get_state(select_dpad);
     }
+
     return mem[addr];
 }
 
@@ -64,14 +82,9 @@ void Memory::set_flags(u16 addr, u8 mask, bool b)
     }
 }
 
-void Memory::load_cart(const char *file_path, size_t offset)
+void Memory::load_boot(std::string file_path)
 {
-    utils::load_rom(mem, offset, file_path);
-}
-
-void Memory::load_boot(const char *file_path)
-{
-    utils::load_rom(boot_rom, 0, file_path);
+    utils::load_file(boot_rom, file_path);
 }
 
 void Memory::load(u8 data[], size_t offset, size_t size)
