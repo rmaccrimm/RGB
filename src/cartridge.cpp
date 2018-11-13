@@ -59,7 +59,7 @@ u8 Cartridge::read(u16 addr)
         }
         else if ((addr >= 0xa000) && (addr <= 0xbfff)) {
             if (!enable_ram) {
-                return 0xffff; // Not sure which value to return
+                return 0xff;
             }
             else {
                 return cartridge_data[addr + current_ram_bank * ram_bank_size];
