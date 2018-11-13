@@ -9,7 +9,9 @@
 #include <algorithm>
 
 Cartridge::Cartridge(std::string file_name) : 
-    mode(ROM), current_rom_bank(1), current_ram_bank(0), 
+    mode(ROM), 
+    current_rom_bank(1), 
+    current_ram_bank(0), 
     rom_bank_size(0x4000), // 16kB 
     ram_bank_size(0x2000), // 8kB 
     enable_ram(false)
@@ -65,7 +67,7 @@ void Cartridge::write(u16 addr, u8 val)
     case MBC1_RAM:
     case MBC1_RAM_BATTERY:
         if (addr <= 0x1fff) { // enable/disable RAM
-            if ((val & 0xff) == 0x0a) {
+            if ((val & 0xf) == 0xa) {
                 enable_ram = true;
             }
             else {
@@ -80,9 +82,6 @@ void Cartridge::write(u16 addr, u8 val)
         }
         else if ((addr >= 0x4000) && (addr <= 0x5fff)) { // set RAM bank/2 msb of ROM bank 
             if (mode == RAM) {
-                if (!enable_ram) { // ? 
-                    return;
-                }
                 current_ram_bank = val & 0x3;
             }
             else if (mode == ROM) {
@@ -103,7 +102,7 @@ void Cartridge::write(u16 addr, u8 val)
                 return;
             }
             else {
-                cartridge_data[addr + current_ram_bank * ram_bank_size] = val;
+                cartridge_data[addr + (current_ram_bank * ram_bank_size)] = val;
             }
         }
         else {
