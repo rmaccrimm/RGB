@@ -11,7 +11,8 @@
 Cartridge::Cartridge(std::string file_name) : 
     mode(ROM), current_rom_bank(1), current_ram_bank(0), 
     rom_bank_size(0x4000), // 16kB 
-    ram_bank_size(0x2000)  // 8kB 
+    ram_bank_size(0x2000), // 8kB 
+    enable_ram(false)
 {
     utils::load_file(cartridge_data, file_name);
     cartridge_file_size = cartridge_data.size();
@@ -27,24 +28,32 @@ u8 Cartridge::read(u16 addr)
 {
     switch (cartridge_type) 
     {
-    case INVALID:
     case ROM_ONLY:
         return cartridge_data[addr];
         break;
 
     case MBC1:
-        if (addr < 0x4000) {
+    case MBC1_RAM:
+    case MBC1_RAM_BATTERY:
+        if (addr <= 0x3fff) {
             return cartridge_data[addr];
         }
-        else if (addr >= 0x4000 && addr <= 0x7fff) {
+        else if ((addr >= 0x4000) && (addr <= 0x7fff)) {
             u16 rom_bank_size = 0x4000; // 4kb
             return cartridge_data[addr + ((current_rom_bank - 1) * rom_bank_size)];
         }
-        else if (enable_ram && addr >= 0xa000 && addr <= 0xbfff) {
-            return cartridge_data[addr + current_ram_bank * ram_bank_size];
+        else if ((addr >= 0xa000) && (addr <= 0xbfff)) {
+            if (!enable_ram) {
+                return 0;
+            }
+            else {
+                return cartridge_data[addr + current_ram_bank * ram_bank_size];
+            }
         }
         break;
     }
+    std::cout << enable_ram << std::endl;
+    std::cout << "Addr " << std::hex << addr << " fell through read" << std::endl;
     assert(false);        
 }
 
@@ -53,40 +62,58 @@ void Cartridge::write(u16 addr, u8 val)
     switch (cartridge_type)
     {
     case MBC1:
+    case MBC1_RAM:
+    case MBC1_RAM_BATTERY:
         if (addr <= 0x1fff) { // enable/disable RAM
-            if (val == 0xa)
+            if ((val & 0xf) == 0xa) {
                 enable_ram = true;
-            else
+            }
+            else {
                 enable_ram = false;
+            }
         }
-        if (addr >= 0x2000 && addr <= 0x3fff) { // set 5lsb of ROM bank
+        if ((addr >= 0x2000) && (addr <= 0x3fff)) { // set 5lsb of ROM bank
             current_rom_bank &= (7 << 5); 
             current_rom_bank |= (0x1f & val); 
-            if (current_rom_bank & 0x1f == 0) 
+            if ((current_rom_bank & 0x1f) == 0) 
                 current_rom_bank++;
         }
-        else if (addr >= 0x4000 && addr <= 0x5fff) { // set RAM bank/2 msb of ROM bank 
+        else if ((addr >= 0x4000) && (addr <= 0x5fff)) { // set RAM bank/2 msb of ROM bank 
             if (mode == RAM) {
+                if (!enable_ram) { // ? 
+                    return;
+                }
                 current_ram_bank = val & 0x3;
             }
             else if (mode == ROM) {
                 current_rom_bank &= (0x1f); 
                 current_rom_bank |= (val & 3) << 5; 
-                if (current_rom_bank & 0x1f == 0)
+                if ((current_rom_bank & 0x1f) == 0)
                     current_rom_bank++;
             }
         }
-        else if (addr >= 0x6000 && addr <= 0x7fff) { // select mode
+        else if ((addr >= 0x6000) && (addr <= 0x7fff)) { // select mode
             if (val == 0)
                 mode = ROM;
             else
                 mode = RAM;
         }
-        else if (enable_ram && addr >= 0xa000 && addr <= 0xbfff) { // access RAM
-            cartridge_data[addr + current_ram_bank * ram_bank_size] = val;
+        else if ((addr >= 0xa000) && (addr <= 0xbfff)) { // access RAM
+            if (!enable_ram) {
+                return;
+            }
+            else {
+                cartridge_data[addr + current_ram_bank * ram_bank_size] = val;
+            }
+        }
+        else {
+            std::cout << enable_ram << std::endl;
+            std::cout << "Addr " << std::hex << addr << " fell through write" << std::endl;
+            assert(false);        
         }
         break;
     }
+
 
 }
 
