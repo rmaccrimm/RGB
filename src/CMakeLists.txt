@@ -1,11 +1,13 @@
 configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h)
 
-SET(GCC_DEBUG_COMPILE_FLAGS "-ggdb -Wfatal-errors -fsanitize=address")
-SET(GCC_DEBUG_LINK_FLAGS "-fsanitize=address")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET(GCC_DEBUG_COMPILE_FLAGS "-ggdb -Wall -Wfatal-errors -fsanitize=address")
+    SET(GCC_DEBUG_LINK_FLAGS "-fsanitize=address")
 
-set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} ${GCC_DEBUG_LINK_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_DEBUG_COMPILE_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_DEBUG_LINK_FLAGS}")
+    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} ${GCC_DEBUG_LINK_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_DEBUG_COMPILE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_DEBUG_LINK_FLAGS}")
+endif()
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/include 

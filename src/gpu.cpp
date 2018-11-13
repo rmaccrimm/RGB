@@ -9,7 +9,7 @@
 
 GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
 {
-    framebuffer.reserve(256 * 256); 
+    framebuffer.resize(256 * 256, 0); 
 }
 
 void GPU::step(unsigned int cpu_clock) 

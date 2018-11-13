@@ -18,7 +18,7 @@ Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) :
     paused(false), 
     vram_updated(false) 
 {
-    mem.reserve(0x10000);
+    mem.resize(0x10000, 0);
     init_registers();
 }
 
@@ -71,6 +71,7 @@ u8 Memory::read(u16 addr)
     default:
         std::cout << "Read from address " << addr << std::endl;
         assert(false);
+        return 0xff;
     }
 }
 

@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
     if (var_map.count("debug")) {
         enable_debug_mode = true;
         step_instr = true;
+
     }    
 
     Joypad gb_pad;
