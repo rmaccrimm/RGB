@@ -12,13 +12,20 @@
 class GameWindow 
 {
 public:
-    GameWindow(Joypad *pad, int scale = 4, std::string title = "");
+    GameWindow(Joypad *pad, int scale = 4, bool limit_framerate = true, std::string title = "");
+
     ~GameWindow();
+
     bool closed();
+
     bool paused();
+
     bool frame_drawn();
+
     void process_input();
+
     void draw_frame(u8 framebuffer[], int x, int y);
+
 	void set_bg_palette(u8 palette[]);
 
 private:

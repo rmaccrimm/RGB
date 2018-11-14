@@ -25,11 +25,11 @@ const float SCREEN_QUAD[] = {
      1,  1,  0,    SCREEN_W, SCREEN_H
 };
 
-GameWindow::GameWindow(Joypad *pad, int scale, std::string title) :
+GameWindow::GameWindow(Joypad *pad, int scale, bool limit_framerate, std::string title) :
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
 {
     init_window(title);
-    init_glcontext(true);
+    init_glcontext(limit_framerate);
     compile_shader();
     init_screen_texture();
 }
