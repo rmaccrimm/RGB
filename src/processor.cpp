@@ -9,7 +9,7 @@
 #include <cassert>
 
 Processor::Processor(Memory *mem) : 
-    memory(mem), clock_count(0), timer_count(0), ei_count(0), IME_flag(0), halted(0),
+    memory(mem), timer_count(0), ei_count(0), IME_flag(0), halted(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) ,
     div_reg(mem->mem_registers[reg::DIV]) {}
 
@@ -52,6 +52,8 @@ void Processor::init_state()
     memory->write(reg::WY, 0x00);
     memory->write(reg::WX, 0x00);
     memory->write(reg::IE, 0x00);
+    internal_clock_reg = 0xabcc;
+    div_reg.set(internal_clock_reg << 8);
 }
 
 u8 Processor::fetch_byte()
@@ -117,30 +119,33 @@ int Processor::step(bool print)
     return cycles;
 }
 
-void Processor::update_timer(int cycles)
+void Processor::update_timer(int instr_cycles)
 {
-    clock_count += cycles;
-    // Div written every 256 cycles, regardless of TAC
-    div_reg.set((clock_count >> 8) & 0xff);
-    
-    u8 timer_ctrl = memory->read(reg::TAC) & 7; // 5 highest bits ignored
-    if (timer_ctrl & 4) {
-        // if bit 2 set, timer started 
-        timer_count += cycles;
-        u8 t_prev = memory->read(reg::TIMA);
-        int cycles_per_clock = timer_cycles[timer_ctrl & 3]; // first 2 bits
+    // If value was written to DIV, reset internal clock
+    if (memory->reset_clock) {
+        internal_clock_reg = 0;
+        div_reg.set(0);
+    }
+    else {
+        internal_clock_reg += instr_cycles * 4;
+        div_reg.set(internal_clock_reg >> 8);
         
-        if (timer_count >= cycles_per_clock) {
-
-            timer_count -= cycles_per_clock;
-            u8 t = t_prev + 1;
-
-            if (t_prev > t) {
+        u8 timer_ctrl = memory->read(reg::TAC) & 7; // 5 highest bits ignored
+        if (utils::bit(timer_ctrl, 2)) {
+            timer_count += instr_cycles;
+            u8 t_prev = memory->read(reg::TIMA);
+            int cycles_per_clock = timer_cycles[timer_ctrl & 3] / 4; // first 2 bits
+            int i = 0;
+            while (timer_count >= cycles_per_clock) {
+                timer_count -= cycles_per_clock;
+                i++;
+            }
+            if ((int)t_prev + i > 0xff) { // overflow
                 memory->set_interrupt(interrupt::TIMER_bit);
                 memory->write(reg::TIMA, memory->read(reg::TMA));
             }
             else {
-                memory->write(reg::TIMA, t);
+                memory->write(reg::TIMA, t_prev + i);
             }
         }
     }
@@ -1796,41 +1801,41 @@ void Processor::cb_execute(u8 instr)
 }
 
 const int Processor::instr_cycles[256] = {
-     4, 12,  8,  8,  4,  4,  8,  4, 20,  8,  8,  8,  4,  4,  8,  4,
-     4, 12,  8,  8,  4,  4,  8,  4, 12,  8,  8,  8,  4,  4,  8,  4,
-     8, 12,  8,  8,  4,  4,  8,  4,  8,  8,  8,  8,  4,  4,  8,  4,
-     8, 12,  8,  8, 12, 12, 12,  4,  8,  8,  8,  8,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     8,  8,  8,  8,  8,  8,  4,  8,  4,  4,  4,  4,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     4,  4,  4,  4,  4,  4,  8,  4,  4,  4,  4,  4,  4,  4,  8,  4,
-     8, 12, 12, 16, 12, 16,  8, 16,  8, 16, 12,  0, 12, 24,  8, 16,
-     8, 12, 12,  0, 12, 16,  8, 16,  8, 16, 12,  0, 12,  0,  8, 16,
-    12, 12,  8,  0,  0, 16,  8, 16, 16,  4, 16,  0,  0,  0,  8, 16,
-    12, 12,  8,  4,  0, 16,  8, 16, 12,  8, 16,  4,  0,  0,  8, 16
+    1,3,2,2,1,1,2,1,5,2,2,2,1,1,2,1,
+	0,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
+	2,3,2,2,1,1,2,1,2,2,2,2,1,1,2,1,
+	2,3,2,2,3,3,3,1,2,2,2,2,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	2,2,2,2,2,2,0,2,1,1,1,1,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+	2,3,3,4,3,4,2,4,2,4,3,0,3,6,2,4,
+	2,3,3,0,3,4,2,4,2,4,3,0,3,0,2,4,
+	3,3,2,0,0,4,2,4,4,1,4,0,0,0,2,4,
+	3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4
 };
 
 const int Processor::cb_instr_cycles[256] = {
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 ,
-    8 , 8 , 8 , 8 , 8 , 8 , 16, 8 , 8 , 8 , 8 , 8 , 8 , 8 , 16, 8 
+    2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2
 };
 
 const u16 Processor::interrupt_addr[5] = {
