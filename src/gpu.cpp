@@ -151,17 +151,17 @@ void GPU::render_background()
 
     if (lcd_control & BG_ENABLE) {
         if (lcd_control & BG_TILE_MAP_SELECT) {
-            tile_map = reg::TILE_MAP_1;
+            tile_map = TILE_MAP_1;
         }
         else {
-            tile_map = reg::TILE_MAP_0;
+            tile_map = TILE_MAP_0;
         }
         if (lcd_control & TILE_DATA_SELECT) {
-            tile_data = reg::TILE_DATA_1;
+            tile_data = TILE_DATA_1;
             signed_map = false;
         }
         else {
-            tile_data = reg::TILE_DATA_0;
+            tile_data = TILE_DATA_0;
             signed_map = true;
         }  
 
@@ -206,7 +206,7 @@ void GPU::render_sprites()
     bool enable_sprites = utils::bit(lcd_control, 1);
     bool two_tile_sprites = utils::bit(lcd_control, 2);
     
-    std::vector<u8>::iterator sprite_data = memory->get_mem_ptr(reg::OAM);
+    std::vector<u8>::iterator sprite_data = memory->get_mem_ptr(OAM_data);
     for (int i = 0; i < 40; i++) {
         int byte_ind = 4 * i;
         int ypos = sprite_data[byte_ind];
@@ -235,7 +235,7 @@ void GPU::render_sprites()
 
         // position of lower left corner in framebuffer
         int pixel_index = 256 * (256 - ypos) + xpos;
-        u16 tile_addr = reg::TILE_DATA_1 + (16 * tile_num);
+        u16 tile_addr = TILE_DATA_1 + (16 * tile_num);
 
         read_tile(framebuffer.begin() + pixel_index, tile_addr);
     }

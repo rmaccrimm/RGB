@@ -53,10 +53,7 @@ u8 Memory::read(u16 addr)
         return mem[addr];
     case 0xe:
     case 0xf:
-        if (mem_registers.find(addr) != mem_registers.end()) {
-            return read_reg(addr);
-        }
-        else if (addr <= 0xfdff) { // Echo RAM
+        if (addr <= 0xfdff) { // Echo RAM 
             return mem[addr - 0x2000];
         }
         else if (addr <= 0xfe9f) { // OAM
@@ -65,7 +62,18 @@ u8 Memory::read(u16 addr)
         else if (addr <= 0xfeff) { // unusable memory
             return 0xff;
         }
-        else if (addr >= 0xff00) { // I/O Registers + High RAM
+        else if (addr <= 0xff7f || addr == reg::IE) { // I/O Registers
+            if (mem_registers.find(addr) != mem_registers.end()) {
+                return read_reg(addr);
+            }
+            else if (addr >= 0xff30 && addr <= 0xff3f) { // Wave pattern RAM
+                return mem[addr];
+            }
+            else {
+                return 0xff;
+            }
+        }
+        else { //High RAM
             return mem[addr];
         }   
     default:
@@ -111,18 +119,28 @@ void Memory::write(u16 addr, u8 data)
         break;
     case 0xe:
     case 0xf:
-        if (mem_registers.find(addr) != mem_registers.end()) {
-            write_reg(addr, data);
-        }
-        else if (addr <= 0xfdff) { // Echo RAM
+        if (addr <= 0xfdff) { // Echo RAM
             mem[addr - 0x2000] = data;
         }
         else if (addr <= 0xfe9f) { // OAM
             vram_updated = true;
             mem[addr] = data;
         }
-        // 0xfea0-0xfeff not usable
-        else if (addr >= 0xff00 ) {
+        else if (addr <= 0xfeff) { // unusable memory
+            break;            
+        }
+        else if (addr <= 0xff7f || addr == reg::IE) { // I/O registers
+            if (mem_registers.find(addr) != mem_registers.end()) {
+                write_reg(addr, data);
+            }
+            else if (addr >= 0xff30 && addr <= 0xff3f) { // Wave pattern RAM
+                    mem[addr] = data;
+            }
+            else {
+                break;
+            }
+        }
+        else { // High RAM
             mem[addr] = data;
         }
         break;
@@ -136,7 +154,7 @@ u8 Memory::read_reg(u16 addr)
 {
     switch(addr) 
     {
-    case reg::JOYP: 
+    case reg::P1: 
     {
         bool select_dpad = !utils::bit(mem_registers[addr].value(), 4);
         return (3 << 6) | joypad->get_state(select_dpad);
@@ -158,7 +176,7 @@ void Memory::write_reg(u16 addr, u8 data)
     }
 }
 
-void Memory::request_interrupt(int interrupt_bit)
+void Memory::set_interrupt(int interrupt_bit)
 {
     u8 int_request = read(reg::IF);
     write(reg::IF, utils::set(int_request, interrupt_bit));
@@ -183,12 +201,45 @@ std::vector<u8>::iterator Memory::get_mem_ptr(u16 addr) { return mem.begin() + a
 
 void Memory::init_registers()
 {
-    u8 bit[8];
-    for (int i = 0; i < 8; i++) {
-        bit[i] = 1 << i;
-    }
-
+    mem_registers[reg::P1] = Register8bit(0b11000000);
+    mem_registers[reg::SB] = Register8bit();
+    mem_registers[reg::SC] = Register8bit(0b01111110);
     mem_registers[reg::DIV] = Register8bit();
-    mem_registers[reg::JOYP] = Register8bit(bit[7] | bit[6]);
-    mem_registers[reg::STAT] = Register8bit(0, bit[2] | bit[1] | bit[0]);
+    mem_registers[reg::TIMA] = Register8bit();
+    mem_registers[reg::TAC] = Register8bit(0b11111000);
+    mem_registers[reg::IF] = Register8bit(0b11100000);
+    mem_registers[reg::NR10] = Register8bit(0b10000000);
+    mem_registers[reg::NR11] = Register8bit(0b00111111);
+    mem_registers[reg::NR12] = Register8bit();
+    mem_registers[reg::NR13] = Register8bit();
+    mem_registers[reg::NR14] = Register8bit(0b10111111);
+    mem_registers[reg::NR21] = Register8bit(0b00111111);
+    mem_registers[reg::NR22] = Register8bit();
+    mem_registers[reg::NR23] = Register8bit();
+    mem_registers[reg::NR24] = Register8bit(0b10111111);
+    mem_registers[reg::NR30] = Register8bit(0b01111111);
+    mem_registers[reg::NR31] = Register8bit();
+    mem_registers[reg::NR32] = Register8bit(0b10011111);
+    mem_registers[reg::NR33] = Register8bit();
+    mem_registers[reg::NR34] = Register8bit(0b10111111);
+    mem_registers[reg::NR41] = Register8bit(0b11000000);
+    mem_registers[reg::NR42] = Register8bit();
+    mem_registers[reg::NR43] = Register8bit();
+    mem_registers[reg::NR44] = Register8bit(0b10111111);
+    mem_registers[reg::NR50] = Register8bit();
+    mem_registers[reg::NR51] = Register8bit();
+    mem_registers[reg::NR52] = Register8bit(0b01110000);
+    mem_registers[reg::LCDC] = Register8bit();
+    mem_registers[reg::SCROLLY] = Register8bit();
+    mem_registers[reg::SCROLLX] = Register8bit();
+    mem_registers[reg::LY] = Register8bit();
+    mem_registers[reg::LYC] = Register8bit();
+    mem_registers[reg::DMA] = Register8bit();
+    mem_registers[reg::BGP] = Register8bit();
+    mem_registers[reg::OBP0] = Register8bit();
+    mem_registers[reg::OBP1] = Register8bit();    
+    mem_registers[reg::WY] = Register8bit();
+    mem_registers[reg::WX] = Register8bit();
+    mem_registers[reg::STAT] = Register8bit(0b10000000, 0b00000111);
+    mem_registers[reg::IE] = Register8bit();
 }

@@ -16,6 +16,12 @@ public:
     void build_framebuffer();
     void step(unsigned int cpu_clock);
 
+    static const u16 TILE_MAP_0     = 0x9800; // unsigned
+    static const u16 TILE_MAP_1     = 0x9c00; // signed
+    static const u16 TILE_DATA_0    = 0x9000; // signed tile index
+    static const u16 TILE_DATA_1    = 0x8000; // unsigned tile index
+    static const u16 OAM_data       = 0xfe00; // sprites
+
 private:
     Memory *memory;
     GameWindow *window;
@@ -55,11 +61,11 @@ private:
         0x00    // 11 black
     };
 
-    
-
     // opengl expects framebuffer drawn from bottom up
     const bool INVERT_MAP = true;
     const bool INVERT_TILES = true;
+
+    
 };
 
 #endif

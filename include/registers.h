@@ -5,14 +5,8 @@
 
 namespace reg
 {
-    // VRAM
-    static const u16 TILE_MAP_0     = 0x9800; // unsigned
-    static const u16 TILE_MAP_1     = 0x9c00; // signed
-    static const u16 TILE_DATA_0    = 0x9000; // signed tile index
-    static const u16 TILE_DATA_1    = 0x8000; // unsigned tile index
-    static const u16 OAM            = 0xfe00; // sprites
     // Joypad
-    static const u16 JOYP       = 0xff00;
+    static const u16 P1         = 0xff00;
     // Serial transfer data
     static const u16 SB         = 0xff01;
     // SIO control
@@ -26,17 +20,21 @@ namespace reg
     static const u16 TAC        = 0xff07;
     // Interrupt request
     static const u16 IF         = 0xff0f;
+    // Audio registers
     static const u16 NR10       = 0xff10;
     static const u16 NR11       = 0xff11;
     static const u16 NR12       = 0xff12;
+    static const u16 NR13       = 0xff13;
     static const u16 NR14       = 0xff14;
     static const u16 NR21       = 0xff16;
     static const u16 NR22       = 0xff17;
+    static const u16 NR23       = 0xff18;
     static const u16 NR24       = 0xff19;
     static const u16 NR30       = 0xff1a;
     static const u16 NR31       = 0xff1b;
     static const u16 NR32       = 0xff1c;
-    static const u16 NR33       = 0xff1e;
+    static const u16 NR33       = 0xff1d;
+    static const u16 NR34       = 0xff1e;
     static const u16 NR41       = 0xff20;
     static const u16 NR42       = 0xff21;
     static const u16 NR43       = 0xff22;
