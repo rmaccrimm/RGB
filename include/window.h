@@ -6,12 +6,13 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include <string>
 
 
 class GameWindow 
 {
 public:
-    GameWindow(Joypad *pad, int scale = 4);
+    GameWindow(Joypad *pad, int scale = 4, std::string title = "");
     ~GameWindow();
     bool closed();
     bool paused();
@@ -35,7 +36,7 @@ private:
     int scrollx, scrolly;
 
     void compile_shader();
-    void init_window();
+    void init_window(std::string title);
     void init_glcontext(bool limit_framerate);
     void init_screen_texture();
 };

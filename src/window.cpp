@@ -25,10 +25,10 @@ const float SCREEN_QUAD[] = {
      1,  1,  0,    SCREEN_W, SCREEN_H
 };
 
-GameWindow::GameWindow(Joypad *pad, int scale) : 
+GameWindow::GameWindow(Joypad *pad, int scale, std::string title) :
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
 {
-    init_window();
+    init_window(title);
     init_glcontext(true);
     compile_shader();
     init_screen_texture();
@@ -102,7 +102,7 @@ void GameWindow::set_bg_palette(u8 palette[])
     );
 }
 
-void GameWindow::init_window() 
+void GameWindow::init_window(std::string title) 
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "Initialization failed. SDL Error: " << SDL_GetError() << std::endl;
@@ -110,7 +110,7 @@ void GameWindow::init_window()
     else {
         
         sdl_window = SDL_CreateWindow(
-            "Gameboy Emulator", 
+            title.c_str(),
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, 
             SCREEN_W * window_scale,

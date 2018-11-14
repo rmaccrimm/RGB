@@ -145,7 +145,7 @@ void Cartridge::read_header()
     u16 MBC_TYPE = 0x147;
     u16 ROM_SIZE = 0x148;
     u16 RAM_SIZE = 0x149;
-    u16 TITLE_START = 0x132;
+    u16 TITLE_START = 0x134;
     u16 TITLE_END = 0x142;
        
     std::map<u8, u8> rom_bank_opts = {{0, 2},  {1, 4}, {2, 8}, {3, 16}, {4, 32}, {5, 64}, {6, 128}, 
@@ -166,9 +166,6 @@ void Cartridge::read_header()
         mask_ignore_bits |= (1 << i);
         i++;
     }
-    //mask_ignore_bits = std::min(mask_ignore_bits, (u8)0x1f);
-    std::cout << std::hex << "mask: " << (int)mask_ignore_bits << std::endl;
-
 
     std::cout << "Succesfully loaded " << title() << std::endl 
               << "Cartridge type - " << type() << std::endl

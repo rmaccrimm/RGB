@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
     }    
 
     Joypad gb_pad;
-    GameWindow window(&gb_pad, 5);    
     Cartridge game_cart(cartridge_filename);
+    GameWindow window(&gb_pad, 5, game_cart.title());    
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
