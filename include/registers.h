@@ -53,7 +53,8 @@ namespace reg
     static const u16 SCROLLX    = 0xff43;
     // Current line
     static const u16 LY         = 0xff44;
-    static const u16 LYC        = 0xff45;        
+    static const u16 LYC        = 0xff45;
+    static const u16 DMA        = 0xff46;    
     // Background color palette
     static const u16 BGP        = 0xff47;
     // Sprite color palettes

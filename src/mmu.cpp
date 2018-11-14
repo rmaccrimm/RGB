@@ -53,7 +53,7 @@ u8 Memory::read(u16 addr)
         return mem[addr];
     case 0xe:
     case 0xf:
-        if (special_registers.find(addr) != special_registers.end()) {
+        if (mem_registers.find(addr) != mem_registers.end()) {
             return read_reg(addr);
         }
         else if (addr <= 0xfdff) { // Echo RAM
@@ -111,7 +111,7 @@ void Memory::write(u16 addr, u8 data)
         break;
     case 0xe:
     case 0xf:
-        if (special_registers.find(addr) != special_registers.end()) {
+        if (mem_registers.find(addr) != mem_registers.end()) {
             write_reg(addr, data);
         }
         else if (addr <= 0xfdff) { // Echo RAM
@@ -134,17 +134,15 @@ void Memory::write(u16 addr, u8 data)
 
 u8 Memory::read_reg(u16 addr) 
 {
-    switch(addr)
+    switch(addr) 
     {
     case reg::JOYP: 
     {
-        bool select_dpad = (mem[addr] & (1 << 4)) == 0;
-        return joypad->get_state(select_dpad);
+        bool select_dpad = !utils::bit(mem_registers[addr].value(), 4);
+        return (3 << 6) | joypad->get_state(select_dpad);
     }
-    case reg::STAT: // bit 7 is always set
-        return (1 << 7) | mem[addr];
     default:
-        return mem[addr];
+        return mem_registers[addr].value();
     }
 }
 
@@ -153,22 +151,10 @@ void Memory::write_reg(u16 addr, u8 data)
     switch(addr)
     {
     case reg::DIV:
-        mem[addr] = 0;
-        break;
-    case reg::STAT: // bits 0 - 2 read-only
-        mem[addr] = (data & ~7) | (mem[addr] & 7); 
+        mem_registers[addr].write(0);
         break;
     default:
-        mem[addr] = data;
-    }
-}
-
-void Memory::set_flags(u16 addr, u8 mask, bool b)
-{
-    if (b) {
-        mem[addr] |= mask;
-    } else {
-        mem[addr] &= ~mask;
+        mem_registers[addr].write(data);
     }
 }
 
@@ -191,10 +177,12 @@ u8* Memory::get_mem_ptr(u16 addr) { return &mem.data()[addr]; }
 
 void Memory::init_registers()
 {
-    std::vector<u16> r = {
-        reg::DIV,
-        reg::JOYP,
-        reg::STAT
-    };
-    special_registers.insert(r.begin(), r.end());
+    u8 bit[8];
+    for (int i = 0; i < 8; i++) {
+        bit[i] = 1 << i;
+    }
+
+    mem_registers[reg::DIV] = Register8bit();
+    mem_registers[reg::JOYP] = Register8bit(bit[7] | bit[6]);
+    mem_registers[reg::STAT] = Register8bit(0, bit[2] | bit[1] | bit[0]);
 }

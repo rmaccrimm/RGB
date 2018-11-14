@@ -28,14 +28,17 @@ namespace utils
 
     u8 reset(u8 x, int bit);
 
-    // Set or reset masked bits depending on cond
-    u8 set_cond(u8 x, u8 mask, bool cond);
+    // Set or reset bit depending on cond
+    u8 set_cond(u8 x, int bit, bool cond);
+
+    // Check if bit is set in x
+    bool bit(int x, int bit);
 
     void to_lower(std::string &s);
 
     void to_upper(std::string &s);
 
-    bool bit(int x, int bit);
+    
 };
 
 #endif

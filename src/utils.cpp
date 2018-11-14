@@ -49,12 +49,12 @@ u8 utils::reset(u8 x, int bit)
     return x & (~(1 << bit));
 }
 
-u8 utils::set_cond(u8 x, u8 mask, bool cond) 
+u8 utils::set_cond(u8 x, int bit, bool cond) 
 {
     if (cond) 
-        return x | mask;
+        return x | (1 << bit);
     else 
-        return x & (~mask);
+        return x & (~(1 << bit));
 }
 
 void utils::to_lower(std::string &s) 

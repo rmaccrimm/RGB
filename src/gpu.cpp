@@ -7,7 +7,8 @@
 #include <cassert>
 #include <algorithm>
 
-GPU::GPU(Memory *mem, GameWindow *win): memory(mem), window(win), clock(0), line(0), mode(OAM)
+GPU::GPU(Memory *mem, GameWindow *win): 
+    memory(mem), window(win), clock(0), line(0), mode(OAM), stat_reg(mem->mem_registers[reg::STAT])
 {
     framebuffer.resize(256 * 256, 0); 
 }
@@ -100,20 +101,16 @@ void GPU::update_stat_register()
 void GPU::change_mode(Mode m)
 {
     mode = m;
-    // Lowest two bits of STAT register contain mode
     // TODO - If LCD is off, set to 0
-    u8 stat = memory->read(reg::STAT);
-    memory->mem[reg::STAT] = (stat & ~3) | (int)mode;
+    stat_reg.set((stat_reg.value() & ~3) | (int)mode);
 }
 
 void GPU::increment_line()
 {
     line++;
     memory->write(reg::LY, line);
-    // set bit 2 if LYC = LY
-    u8 stat = utils::set_cond(
-        memory->read(reg::STAT), 1 << 2, memory->read(reg::LYC) == memory->read(reg::LY));
-    memory->mem[reg::STAT] = stat;
+    u8 stat = utils::set_cond(stat_reg.value(), 2, memory->read(reg::LYC) == memory->read(reg::LY));
+    stat_reg.set(stat);
 }
 
 void GPU::build_framebuffer()
