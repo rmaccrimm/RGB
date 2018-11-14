@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include <map>
 
 Cartridge::Cartridge(std::string file_name) :
     mode(ROM),
@@ -16,27 +17,8 @@ Cartridge::Cartridge(std::string file_name) :
     ram_bank_size(0x2000), // 8kB
     enable_ram(false)
 {
-    utils::load_file(cartridge_data, file_name);
-
-    cartridge_file_size = cartridge_data.size();
-    rom_size = get_rom_size(cartridge_data[0x148]);
-    ram_size = get_ram_size(cartridge_data[0x149]);
-    assert(rom_size + ram_size >= cartridge_file_size);
-    cartridge_data.resize(rom_size + ram_size);
-
-    cartridge_type = get_type(cartridge_data[0x147]);
-    auto it = cartridge_data.begin();
-    game_title = std::string(it + 0x134, it + 0x143);
-
-    std::cout << "Cartridge type - " << type() << " - 0x" << std::hex 
-              << (int)cartridge_data[0x147] << std::endl;
-
-    std::vector<CartridgeType> i = { ROM_ONLY, MBC1, MBC1_RAM, MBC1_RAM_BATTERY };
-    bool mbc_type_implemented = std::find(
-        i.begin(), i.end(), cartridge_type) != i.end();
-    assert(mbc_type_implemented);
-
-    std::cout << "Succesfully loaded " << title() << std::endl;
+    utils::load_file(read_only_mem, file_name);
+    read_header();
 }
 
 u8 Cartridge::read(u16 addr)
@@ -44,30 +26,42 @@ u8 Cartridge::read(u16 addr)
     switch (cartridge_type)
     {
     case ROM_ONLY:
-        return cartridge_data[addr];
+        return read_only_mem[addr]; 
         break;
 
     case MBC1:
     case MBC1_RAM:
     case MBC1_RAM_BATTERY:
-        if (addr <= 0x3fff) {
-            return cartridge_data[addr];
-        }
-        else if ((addr >= 0x4000) && (addr <= 0x7fff)) {
-            u16 rom_bank_size = 0x4000; // 4kb
-            return cartridge_data[addr + ((current_rom_bank - 1) * rom_bank_size)];
-        }
-        else if ((addr >= 0xa000) && (addr <= 0xbfff)) {
-            if (!enable_ram) {
+        switch (addr / 0x1000)
+        {
+        case 0x0:
+        case 0x1:
+        case 0x2:
+        case 0x3:
+            if (mode == ROM) {
+                return read_only_mem[addr];
+            }
+            else {
+                u8 bank_no = current_rom_bank & 0x60; // 2 msb
+                return read_only_mem[addr + (bank_no & mask_ignore_bits) * rom_bank_size];
+            }
+        case 0x4:
+        case 0x5:
+        case 0x6:
+        case 0x7:
+            return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits) - 1) * rom_bank_size];
+        case 0xa:
+        case 0xb:
+        {
+            addr -= 0xa000;
+            if (!enable_ram || (addr > random_access_mem.size())) {
                 return 0xff;
             }
             else {
-                return cartridge_data[addr + current_ram_bank * ram_bank_size];
+                return random_access_mem[addr + current_ram_bank * ram_bank_size];
             }
-        }
-        break;
+        }}
     }
-    std::cout << enable_ram << std::endl;
     std::cout << "Addr " << std::hex << addr << " fell through read" << std::endl;
     assert(false);
 }
@@ -79,52 +73,114 @@ void Cartridge::write(u16 addr, u8 val)
     case MBC1:
     case MBC1_RAM:
     case MBC1_RAM_BATTERY:
-        if (addr <= 0x1fff) { // enable/disable RAM
+        switch (addr / 0x1000)
+        {
+        // enable/disable RAM
+        case 0x0:
+        case 0x1:
             if ((val & 0xf) == 0xa) {
                 enable_ram = true;
             }
             else {
                 enable_ram = false;
             }
-        }
-        else if ((addr >= 0x2000) && (addr <= 0x3fff)) { // set 5lsb of ROM bank
+            break;
+        // set 5lsb of ROM bank
+        case 0x2:
+        case 0x3:
+        {
             current_rom_bank &= (7 << 5);
             current_rom_bank |= (0x1f & val);
             if ((current_rom_bank & 0x1f) == 0)
                 current_rom_bank++;
+            break;
         }
-        else if ((addr >= 0x4000) && (addr <= 0x5fff)) { // set RAM bank/2 msb of ROM bank
-            if (mode == RAM) {
+        // set RAM bank/2 msb of ROM bank
+        case 0x4:
+        case 0x5:
+            //if (mode == RAM) {
                 current_ram_bank = val & 0x3;
-            }
-            else if (mode == ROM) {
+            // }
+            // else if (mode == ROM) {
                 current_rom_bank &= (0x1f);
                 current_rom_bank |= (val & 3) << 5;
                 if ((current_rom_bank & 0x1f) == 0)
                     current_rom_bank++;
-            }
-        }
-        else if ((addr >= 0x6000) && (addr <= 0x7fff)) { // select mode
+            // }
+            break;
+        // select mode
+        case 0x6:
+        case 0x7:
             if (val == 0)
                 mode = ROM;
             else
                 mode = RAM;
-        }
-        else if ((addr >= 0xa000) && (addr <= 0xbfff)) { // access RAM
-            if (!enable_ram) {
+            break;
+        // access RAM
+        case 0xa:
+        case 0xb:
+        {
+            addr -= 0xa000;
+            if (num_ram_banks > 0) {
+                addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+            }
+            if (!enable_ram || (addr > random_access_mem.size())) {
                 return;
             }
             else {
-                cartridge_data[addr + (current_ram_bank * ram_bank_size)] = val;
+                random_access_mem[addr] = val;
             }
+            break;
         }
-        else {
+        default:
             std::cout << enable_ram << std::endl;
             std::cout << "Addr " << std::hex << addr << " fell through write" << std::endl;
             assert(false);
         }
         break;
     }
+}
+
+void Cartridge::read_header()
+{
+    u16 MBC_TYPE = 0x147;
+    u16 ROM_SIZE = 0x148;
+    u16 RAM_SIZE = 0x149;
+    u16 TITLE_START = 0x132;
+    u16 TITLE_END = 0x142;
+       
+    std::map<u8, u8> rom_bank_opts = {{0, 2},  {1, 4}, {2, 8}, {3, 16}, {4, 32}, {5, 64}, {6, 128}, 
+        {0x52, 72}, {0x53, 80}, {0x54, 96}};
+    std::map<u8, u8> ram_bank_opts = {{0, 0}, {1, 1}, {2, 1}, {3, 4}, {4, 16}, {5, 8}};
+    
+    num_rom_banks = rom_bank_opts[read_only_mem[ROM_SIZE]];
+    num_ram_banks = ram_bank_opts[read_only_mem[RAM_SIZE]];
+    cartridge_type = get_type(read_only_mem[MBC_TYPE]);
+    random_access_mem.resize(num_ram_banks * ram_bank_size, 0);
+    auto it = read_only_mem.begin();
+    game_title = std::string(it + TITLE_START, it + TITLE_END + 1);
+
+    // Determine how many bits are needed to store rom bank numbers
+    mask_ignore_bits = 0x0;
+    int i = 0;
+    while (mask_ignore_bits < (num_rom_banks - 1)) {
+        mask_ignore_bits |= (1 << i);
+        i++;
+    }
+    //mask_ignore_bits = std::min(mask_ignore_bits, (u8)0x1f);
+    std::cout << std::hex << "mask: " << (int)mask_ignore_bits << std::endl;
+
+
+    std::cout << "Succesfully loaded " << title() << std::endl 
+              << "Cartridge type - " << type() << std::endl
+              << num_rom_banks << " ROM banks" << std::endl
+              << num_ram_banks << " RAM banks" << std::endl;
+
+    assert(read_only_mem.size() == num_rom_banks * rom_bank_size);
+    std::vector<CartridgeType> im = { ROM_ONLY, MBC1, MBC1_RAM, MBC1_RAM_BATTERY };
+    bool mbc_type_implemented = std::find(
+        im.begin(), im.end(), cartridge_type) != im.end();
+    assert(mbc_type_implemented);
 }
 
 std::string Cartridge::title() { return game_title; }
@@ -199,33 +255,4 @@ Cartridge::CartridgeType Cartridge::get_type(u8 val)
         case 0xff: return Cartridge::HuC1_RAM_BATTERY;
         default: return Cartridge::INVALID;
     }
-}
-
-int Cartridge::get_rom_size(u8 val)
-{
-    switch(val) {
-        case 0: return 2 * rom_bank_size;
-        case 1: return 4 * rom_bank_size;
-        case 2: return 8 * rom_bank_size;
-        case 3: return 16 * rom_bank_size;
-        case 4: return 32 * rom_bank_size;
-        case 5: return 64 * rom_bank_size;
-        case 6: return 128 * rom_bank_size;
-        case 0x52: return 72 * rom_bank_size;
-        case 0x53: return 80 * rom_bank_size;
-        case 0x54: return 96 * rom_bank_size;
-    }
-    assert(false);
-}
-
-int Cartridge::get_ram_size(u8 val)
-{
-    switch(val) {
-        case 0: return 0;
-        case 1: return ram_bank_size;
-        case 2: return ram_bank_size;
-        case 3: return 4 * ram_bank_size;
-        case 4: return 16 * ram_bank_size;
-    }
-    assert(false);
 }

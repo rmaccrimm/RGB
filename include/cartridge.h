@@ -57,18 +57,20 @@ private:
     bool sgb; // super gameboy utils
     bool enable_ram;
     int cartridge_file_size;
-    int rom_size;
-    int ram_size;
+
     const int ram_bank_size;
     const int rom_bank_size;
+    int num_rom_banks;
+    int num_ram_banks;
+    u8 mask_ignore_bits;
 
     u8 current_rom_bank;
     u8 current_ram_bank;
-    std::vector<u8> cartridge_data;
+    std::vector<u8> read_only_mem;
+    std::vector<u8> random_access_mem;
 
     CartridgeType get_type(u8 val);
-    int get_rom_size(u8 val);
-    int get_ram_size(u8 val);
+    void read_header();
 };
 
 #endif

@@ -49,6 +49,14 @@ u8 utils::reset(u8 x, int bit)
     return x & (~(1 << bit));
 }
 
+u8 utils::set_cond(u8 x, u8 mask, bool cond) 
+{
+    if (cond) 
+        return x | mask;
+    else 
+        return x & (~mask);
+}
+
 void utils::to_lower(std::string &s) 
 {
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);

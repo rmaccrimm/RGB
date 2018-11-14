@@ -49,7 +49,7 @@ void GPU::step(unsigned int cpu_clock)
                     framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
                 // Set bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
-                memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK));
+                memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK_bit));
             } else {
                 change_mode(OAM);
             }
@@ -66,10 +66,34 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(OAM);
                 // Clear bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
-                memory->write(reg::IF, utils::reset(int_request, interrupt::VBLANK));
+                memory->write(reg::IF, utils::reset(int_request, interrupt::VBLANK_bit));
             }
         }
         break;    
+    }
+    update_stat_register();
+}
+
+void GPU::update_stat_register()
+{
+    // set LCDSTAT interrupt request if internal signal goes from 0 to 1
+    bool prev_sig = stat_irq_signal;
+    u8 stat = memory->read(reg::STAT);
+
+    u8 coincedence_enable = 1 << 6;
+    u8 oam_enable = 1 << 5;
+    u8 vblank_enable = 1 << 4;
+    u8 hblank_enable = 1 << 3;
+    u8 coincidence_set = 1 << 2;
+
+    stat_irq_signal = ((stat & coincidence_set) && (stat & coincidence_set)) ||
+                      ((stat & hblank_enable) && mode == HBLANK) ||
+                      ((stat & oam_enable) && mode == OAM) ||
+                      ((stat & (vblank_enable | oam_enable)) && mode == VBLANK);
+    
+    if (!prev_sig && stat_irq_signal) {
+        u8 int_request = memory->read(reg::IF);
+        memory->write(reg::IF, utils::set(int_request, interrupt::LCDSTAT_bit));
     }
 }
 
@@ -77,14 +101,19 @@ void GPU::change_mode(Mode m)
 {
     mode = m;
     // Lowest two bits of STAT register contain mode
+    // TODO - If LCD is off, set to 0
     u8 stat = memory->read(reg::STAT);
-    memory->write(reg::STAT, (stat & ~3) | (int)mode);
+    memory->mem[reg::STAT] = (stat & ~3) | (int)mode;
 }
 
 void GPU::increment_line()
 {
     line++;
     memory->write(reg::LY, line);
+    // set bit 2 if LYC = LY
+    u8 stat = utils::set_cond(
+        memory->read(reg::STAT), 1 << 2, memory->read(reg::LYC) == memory->read(reg::LY));
+    memory->mem[reg::STAT] = stat;
 }
 
 void GPU::build_framebuffer()

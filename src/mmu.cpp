@@ -136,11 +136,13 @@ u8 Memory::read_reg(u16 addr)
 {
     switch(addr)
     {
-    case reg::JOYP:
+    case reg::JOYP: 
     {
         bool select_dpad = (mem[addr] & (1 << 4)) == 0;
         return joypad->get_state(select_dpad);
     }
+    case reg::STAT: // bit 7 is always set
+        return (1 << 7) | mem[addr];
     default:
         return mem[addr];
     }
@@ -152,6 +154,10 @@ void Memory::write_reg(u16 addr, u8 data)
     {
     case reg::DIV:
         mem[addr] = 0;
+        break;
+    case reg::STAT: // bits 0 - 2 read-only
+        mem[addr] = (data & ~7) | (mem[addr] & 7); 
+        break;
     default:
         mem[addr] = data;
     }
@@ -185,6 +191,10 @@ u8* Memory::get_mem_ptr(u16 addr) { return &mem.data()[addr]; }
 
 void Memory::init_registers()
 {
-    special_registers.insert(reg::DIV);
-    special_registers.insert(reg::JOYP);
+    std::vector<u16> r = {
+        reg::DIV,
+        reg::JOYP,
+        reg::STAT
+    };
+    special_registers.insert(r.begin(), r.end());
 }
