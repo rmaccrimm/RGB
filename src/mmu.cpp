@@ -173,7 +173,7 @@ void Memory::clear_access_break_pt() { enable_break_pt = false; }
 
 bool Memory::pause() { return paused; }
 
-u8* Memory::get_mem_ptr(u16 addr) { return &mem.data()[addr]; }
+std::vector<u8>::iterator Memory::get_mem_ptr(u16 addr) { return mem.begin() + addr; }
 
 void Memory::init_registers()
 {

@@ -2,7 +2,7 @@
 #define MMU_H
 
 #include <map>
-#include <set>
+#include <iterator>
 #include "definitions.h"
 #include "register16bit.h"
 #include "joypad.h"
@@ -35,8 +35,8 @@ private:
     void write_reg(u16 addr, u8 data);
     u8 read_reg(u16 addr);
     void init_registers();
-    // For accessing VRAM more quickly
-    u8* get_mem_ptr(u16 addr);
+    
+    std::vector<u8>::iterator get_mem_ptr(u16 addr);
 
     Joypad *joypad;
     Cartridge *cartridge;
