@@ -48,9 +48,13 @@ public:
     Register16bit PC;
 
     Memory *memory; 
+    Register8bit &div_reg;
 
     bool IME_flag;
+
     bool halted;
+    bool halt_bug;
+
     int ei_count;
     int clock_count;
     int timer_count;

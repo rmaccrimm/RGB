@@ -11,6 +11,7 @@
 class Memory
 {
     friend class GPU;
+    friend class Processor;
     
 public:
     Memory(Cartridge *cart, Joypad *pad, bool enable_boot = 0);

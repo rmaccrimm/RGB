@@ -10,7 +10,8 @@
 
 Processor::Processor(Memory *mem) : 
     memory(mem), clock_count(0), timer_count(0), ei_count(0), IME_flag(0), halted(0),
-    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) {}
+    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) ,
+    div_reg(mem->mem_registers[reg::DIV]) {}
 
 void Processor::init_state()
 {
@@ -109,7 +110,6 @@ int Processor::step(bool print)
         }
     }
     else {
-        // HALT takes 4 cycles
         cycles = 4;
     }
     update_timer(cycles);
@@ -121,7 +121,7 @@ void Processor::update_timer(int cycles)
 {
     clock_count += cycles;
     // Div written every 256 cycles, regardless of TAC
-    memory->write(reg::DIV, (clock_count >> 8) & 0xff);
+    div_reg.set((clock_count >> 8) & 0xff);
     
     u8 timer_ctrl = memory->read(reg::TAC) & 7; // 5 highest bits ignored
     if (timer_ctrl & 4) {
@@ -150,9 +150,7 @@ void Processor::process_interrupts()
 {
     // Missing behaviour - if IF is written the same cycle a flag is set, retain written value
     if (interrupt_pending()) {
-        if (halted) {
-            halted = false;
-        }
+        halted = false;
         if (IME_flag) {
             u8 int_request = memory->read(reg::IF);
             u8 int_enable = memory->read(reg::IE);
@@ -181,7 +179,9 @@ bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
 
 bool Processor::carry_flag() { return F.value() & CARRY; }
 
-bool Processor::interrupt_pending() { return (memory->read(reg::IF) & 63); }
+bool Processor::interrupt_pending() { 
+    return (memory->read(reg::IF) & memory->read(reg::IE) & 0x1f) != 0; 
+}
 
 void Processor::execute(u8 instr)
 {
@@ -567,7 +567,15 @@ void Processor::execute(u8 instr)
         break;
     case 0x76:
         // HALT
-        halted = true;
+        if (IME_flag) {
+            halted = true;
+        }
+        else if (!interrupt_pending()) { 
+            halted = true;
+        }
+        else {
+            halt_bug = true;
+        }
         break;
     case 0x77:
         op::LD_mem(this, HL, A);               
