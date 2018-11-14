@@ -136,9 +136,7 @@ void Processor::update_timer(int cycles)
             u8 t = t_prev + 1;
 
             if (t_prev > t) {
-                // set timer overflow interrupt request
-                u8 int_request = utils::set(memory->read(reg::IF), interrupt::TIMER_bit);
-                memory->write(reg::IF, int_request);
+                memory->set_interrupt(interrupt::TIMER_bit);
                 memory->write(reg::TIMA, memory->read(reg::TMA));
             }
             else {

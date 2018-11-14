@@ -158,6 +158,12 @@ void Memory::write_reg(u16 addr, u8 data)
     }
 }
 
+void Memory::request_interrupt(int interrupt_bit)
+{
+    u8 int_request = read(reg::IF);
+    write(reg::IF, utils::set(int_request, interrupt_bit));
+}
+
 void Memory::load_boot(std::string file_path)
 {
     utils::load_file(boot_rom, file_path);

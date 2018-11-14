@@ -48,9 +48,7 @@ void GPU::step(unsigned int cpu_clock)
 				}
                 window->draw_frame(
                     framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
-                // Set bit 0 of interrupt request
-                u8 int_request = memory->read(reg::IF);
-                memory->write(reg::IF, utils::set(int_request, interrupt::VBLANK_bit));
+                memory->set_interrupt(interrupt::VBLANK_bit);
             } else {
                 change_mode(OAM);
             }
@@ -93,8 +91,7 @@ void GPU::update_stat_register()
                       ((stat & (vblank_enable | oam_enable)) && mode == VBLANK);
     
     if (!prev_sig && stat_irq_signal) {
-        u8 int_request = memory->read(reg::IF);
-        memory->write(reg::IF, utils::set(int_request, interrupt::LCDSTAT_bit));
+        memory->set_interrupt(interrupt::LCDSTAT_bit);
     }
 }
 

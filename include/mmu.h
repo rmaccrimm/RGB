@@ -19,7 +19,7 @@ public:
 
     u8 read(u16 addr);
     
-    void request_interrupt(u8 interrupt_bit);
+    void set_interrupt(int interrupt_bit);
 
     void load_boot(std::string s);
 
