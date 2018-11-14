@@ -49,16 +49,19 @@ u8 Cartridge::read(u16 addr)
         case 0x5:
         case 0x6:
         case 0x7:
-            return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits) - 1) * rom_bank_size];
+            return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits)-1) * rom_bank_size];
         case 0xa:
         case 0xb:
         {
             addr -= 0xa000;
-            if (!enable_ram || (addr > random_access_mem.size())) {
+            if (!enable_ram || num_ram_banks == 0) {
                 return 0xff;
             }
             else {
-                return random_access_mem[addr + current_ram_bank * ram_bank_size];
+                if (mode == RAM) {
+                    addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+                }
+                return random_access_mem[addr];
             }
         }}
     }
@@ -98,15 +101,11 @@ void Cartridge::write(u16 addr, u8 val)
         // set RAM bank/2 msb of ROM bank
         case 0x4:
         case 0x5:
-            //if (mode == RAM) {
                 current_ram_bank = val & 0x3;
-            // }
-            // else if (mode == ROM) {
                 current_rom_bank &= (0x1f);
                 current_rom_bank |= (val & 3) << 5;
                 if ((current_rom_bank & 0x1f) == 0)
                     current_rom_bank++;
-            // }
             break;
         // select mode
         case 0x6:
@@ -121,13 +120,13 @@ void Cartridge::write(u16 addr, u8 val)
         case 0xb:
         {
             addr -= 0xa000;
-            if (num_ram_banks > 0) {
-                addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
-            }
-            if (!enable_ram || (addr > random_access_mem.size())) {
+            if (!enable_ram || num_ram_banks == 0) {
                 return;
             }
             else {
+                if (mode == RAM) {
+                    addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+                }
                 random_access_mem[addr] = val;
             }
             break;
