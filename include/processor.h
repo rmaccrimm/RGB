@@ -59,6 +59,7 @@ public:
     int timer_count;
 
     static const int instr_cycles[256];
+    static const int instr_cycles_cond[256];
     static const int cb_instr_cycles[256];
     static const int timer_cycles[4];
     static const u16 interrupt_addr[5];

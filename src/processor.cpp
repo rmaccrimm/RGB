@@ -97,7 +97,13 @@ int Processor::step(bool print)
             cycles = cb_instr_cycles[instr];
         } else { 
             execute(instr);
-            cycles = instr_cycles[instr];
+            if (cond_taken) {
+                cycles = instr_cycles_cond[instr];
+                cond_taken = false;
+            }
+            else {
+                cycles = instr_cycles[instr];
+            }
         }
 
         if (print || memory->pause()) {
@@ -812,6 +818,7 @@ void Processor::execute(u8 instr)
         op::CP(this, A, A);;                   
         break;
     case 0xc0:
+        if (!zero_flag()) cond_taken = true;
         op::RET(this, !zero_flag());
         break;
     case 0xc1:
@@ -838,6 +845,7 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x00);                   
         break;
     case 0xc8:
+        if (zero_flag()) cond_taken = true;
         op::RET(this, zero_flag());
         break;
     case 0xc9:
@@ -852,6 +860,7 @@ void Processor::execute(u8 instr)
         cb_execute(instr);
         break;
     case 0xcc:
+        if (zero_flag()) cond_taken = true;
         op::CALL(this, zero_flag());
         break;
     case 0xcd:
@@ -864,6 +873,7 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x08);                   
         break;
     case 0xd0:
+        if (!carry_flag()) cond_taken = true;
         op::RET(this, !carry_flag());
         break;
     case 0xd1:
@@ -877,6 +887,7 @@ void Processor::execute(u8 instr)
         op::INVALID();                         
         break;
     case 0xd4:
+        if (!carry_flag()) cond_taken = true;
         op::CALL(this, !carry_flag());
         break;
     case 0xd5:
@@ -889,6 +900,7 @@ void Processor::execute(u8 instr)
         op::RST(this, 0x10);                   
         break;
     case 0xd8:
+        if (carry_flag()) cond_taken = true;
         op::RET(this, carry_flag());
         break;
     case 0xd9:
@@ -1833,6 +1845,25 @@ const int Processor::instr_cycles[256] = {
 	2,3,3,0,3,4,2,4,2,4,3,0,3,0,2,4,
 	3,3,2,0,0,4,2,4,4,1,4,0,0,0,2,4,
 	3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4
+};
+
+const int Processor::instr_cycles_cond[256] = {
+    1,3,2,2,1,1,2,1,5,2,2,2,1,1,2,1,
+    0,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
+    3,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
+    3,3,2,2,3,3,3,1,3,2,2,2,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    2,2,2,2,2,2,0,2,1,1,1,1,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
+    5,3,4,4,6,4,2,4,5,4,4,0,6,6,2,4,
+    5,3,4,0,6,4,2,4,5,4,4,0,6,0,2,4,
+    3,3,2,0,0,4,2,4,4,1,4,0,0,0,2,4,
+    3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4
 };
 
 const int Processor::cb_instr_cycles[256] = {
