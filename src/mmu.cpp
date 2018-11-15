@@ -16,7 +16,8 @@ Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) :
     enable_boot_rom(enable_boot), 
     enable_break_pt(false), 
     paused(false), 
-    vram_updated(false) 
+    vram_updated(false),
+    reset_clock(false)
 {
     mem.resize(0x10000, 0);
     init_registers();
@@ -170,6 +171,7 @@ void Memory::write_reg(u16 addr, u8 data)
     {
     case reg::DIV:
         mem_registers[addr].write(0);
+        reset_clock = true;
         break;
     default:
         mem_registers[addr].write(data);
@@ -206,6 +208,7 @@ void Memory::init_registers()
     mem_registers[reg::SC] = Register8bit(0b01111110);
     mem_registers[reg::DIV] = Register8bit();
     mem_registers[reg::TIMA] = Register8bit();
+    mem_registers[reg::TMA] = Register8bit();
     mem_registers[reg::TAC] = Register8bit(0b11111000);
     mem_registers[reg::IF] = Register8bit(0b11100000);
     mem_registers[reg::NR10] = Register8bit(0b10000000);
@@ -242,4 +245,10 @@ void Memory::init_registers()
     mem_registers[reg::WX] = Register8bit();
     mem_registers[reg::STAT] = Register8bit(0b10000000, 0b00000111);
     mem_registers[reg::IE] = Register8bit();
+    // Additional unlisted registers
+    mem_registers[0xff72] = Register8bit();
+    mem_registers[0xff73] = Register8bit();
+    mem_registers[0xff75] = Register8bit(0b10001111);
+    mem_registers[0xff76] = Register8bit(0, 0b11111111);
+    mem_registers[0xff77] = Register8bit(0, 0b11111111);
 }
