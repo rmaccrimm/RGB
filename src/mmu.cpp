@@ -15,9 +15,9 @@ Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) :
 {
     video_RAM.resize(0x2000, 0); // 8kB
     internal_RAM.resize(0x2000, 0); 
-    sprite_attribute_table.resize(0xa0);
-    wave_pattern_RAM.resize(0xf);
-    high_RAM.resize(0x7f);
+    sprite_attribute_table.resize(0xa0, 0);
+    wave_pattern_RAM.resize(0x10, 0);
+    high_RAM.resize(0x7f, 0);
     init_registers();
 }
 
@@ -144,8 +144,9 @@ u8 Memory::read_reg(u16 addr)
     case reg::P1: 
     {
         bool select_dpad = !utils::bit(io_registers[addr].value(), 4);
-        io_registers[addr].write(joypad->get_state(select_dpad) & 0xf);
-        return io_registers[addr].value();
+        // io_registers[addr].write(joypad->get_state(select_dpad) & 0xf);
+        // return io_registers[addr].value();
+        return (3 << 6) | joypad->get_state(select_dpad);
     }
     default:
         return io_registers[addr].value();
