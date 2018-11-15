@@ -39,7 +39,7 @@ void Memory::write(u16 addr, u8 data)
 
 void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
 {
-    if (enable_boot_rom && addr <= 0x100) { // && !utils::bit(read_reg(0xff50), 1)
+    if (enable_boot_rom && addr <= 0xff && !utils::bit(read_reg(0xff50), 1)) {
     // Boot ROM
 
         if (!write_operation)
@@ -240,7 +240,7 @@ void Memory::init_registers()
     io_registers[reg::WX] = r8();
     io_registers[reg::STAT] = r8(0b10000000, 0b00000111);
     // boot-rom enable
-    io_registers[0xff50] = r8(0b11111111);
+    io_registers[0xff50] = r8();
 
     io_used.resize(0x80, false);
     for (auto p: io_registers) {
