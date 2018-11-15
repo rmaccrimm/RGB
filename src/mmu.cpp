@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "registers.h"
 #include "register8bit.h"
+#include <map>
 #include <cstring>
 #include <iostream>
 #include <cassert>
@@ -64,7 +65,7 @@ u8 Memory::read(u16 addr)
             return 0xff;
         }
         else if (addr <= 0xff7f || addr == reg::IE) { // I/O Registers
-            if (mem_registers.find(addr) != mem_registers.end()) {
+            if (addr == reg::IE || used_io[addr - 0xff00]) {
                 return read_reg(addr);
             }
             else if (addr >= 0xff30 && addr <= 0xff3f) { // Wave pattern RAM
@@ -131,7 +132,7 @@ void Memory::write(u16 addr, u8 data)
             break;            
         }
         else if (addr <= 0xff7f || addr == reg::IE) { // I/O registers
-            if (mem_registers.find(addr) != mem_registers.end()) {
+            if (addr == reg::IE || used_io[addr - 0xff00]) {
                 write_reg(addr, data);
             }
             else if (addr >= 0xff30 && addr <= 0xff3f) { // Wave pattern RAM
@@ -202,54 +203,62 @@ std::vector<u8>::iterator Memory::get_mem_ptr(u16 addr) { return mem.begin() + a
 
 void Memory::init_registers()
 {
-    mem_registers[reg::P1] = Register8bit(0b11000000);
-    mem_registers[reg::SB] = Register8bit();
-    mem_registers[reg::SC] = Register8bit(0b01111110);
+    std::map<u16, Register8bit> temp;
+    temp[reg::P1] = Register8bit(0b11000000);
+    temp[reg::SB] = Register8bit();
+    temp[reg::SC] = Register8bit(0b01111110);
     // hidden lower byte of timer
-    mem_registers[0xff03] = Register8bit(0b11111111, 0b11111111);
-    mem_registers[reg::DIV] = Register8bit();
-    mem_registers[reg::TIMA] = Register8bit();
-    mem_registers[reg::TMA] = Register8bit();
-    mem_registers[reg::TAC] = Register8bit(0b11111000);
-    mem_registers[reg::IF] = Register8bit(0b11100000);
-    mem_registers[reg::NR10] = Register8bit(0b10000000);
-    mem_registers[reg::NR11] = Register8bit(0b00111111);
-    mem_registers[reg::NR12] = Register8bit();
-    mem_registers[reg::NR13] = Register8bit();
-    mem_registers[reg::NR14] = Register8bit(0b10111111);
-    mem_registers[reg::NR21] = Register8bit(0b00111111);
-    mem_registers[reg::NR22] = Register8bit();
-    mem_registers[reg::NR23] = Register8bit();
-    mem_registers[reg::NR24] = Register8bit(0b10111111);
-    mem_registers[reg::NR30] = Register8bit(0b01111111);
-    mem_registers[reg::NR31] = Register8bit();
-    mem_registers[reg::NR32] = Register8bit(0b10011111);
-    mem_registers[reg::NR33] = Register8bit();
-    mem_registers[reg::NR34] = Register8bit(0b10111111);
-    mem_registers[reg::NR41] = Register8bit(0b11000000);
-    mem_registers[reg::NR42] = Register8bit();
-    mem_registers[reg::NR43] = Register8bit();
-    mem_registers[reg::NR44] = Register8bit(0b10111111);
-    mem_registers[reg::NR50] = Register8bit();
-    mem_registers[reg::NR51] = Register8bit();
-    mem_registers[reg::NR52] = Register8bit(0b01110000);
-    mem_registers[reg::LCDC] = Register8bit();
-    mem_registers[reg::SCROLLY] = Register8bit();
-    mem_registers[reg::SCROLLX] = Register8bit();
-    mem_registers[reg::LY] = Register8bit();
-    mem_registers[reg::LYC] = Register8bit();
-    mem_registers[reg::DMA] = Register8bit();
-    mem_registers[reg::BGP] = Register8bit();
-    mem_registers[reg::OBP0] = Register8bit();
-    mem_registers[reg::OBP1] = Register8bit();    
-    mem_registers[reg::WY] = Register8bit();
-    mem_registers[reg::WX] = Register8bit();
-    mem_registers[reg::STAT] = Register8bit(0b10000000, 0b00000111);
-    mem_registers[reg::IE] = Register8bit();
+    temp[0xff03] = Register8bit(0b11111111, 0b11111111);
+    temp[reg::DIV] = Register8bit();
+    temp[reg::TIMA] = Register8bit();
+    temp[reg::TMA] = Register8bit();
+    temp[reg::TAC] = Register8bit(0b11111000);
+    temp[reg::IF] = Register8bit(0b11100000);
+    temp[reg::NR10] = Register8bit(0b10000000);
+    temp[reg::NR11] = Register8bit(0b00111111);
+    temp[reg::NR12] = Register8bit();
+    temp[reg::NR13] = Register8bit();
+    temp[reg::NR14] = Register8bit(0b10111111);
+    temp[reg::NR21] = Register8bit(0b00111111);
+    temp[reg::NR22] = Register8bit();
+    temp[reg::NR23] = Register8bit();
+    temp[reg::NR24] = Register8bit(0b10111111);
+    temp[reg::NR30] = Register8bit(0b01111111);
+    temp[reg::NR31] = Register8bit();
+    temp[reg::NR32] = Register8bit(0b10011111);
+    temp[reg::NR33] = Register8bit();
+    temp[reg::NR34] = Register8bit(0b10111111);
+    temp[reg::NR41] = Register8bit(0b11000000);
+    temp[reg::NR42] = Register8bit();
+    temp[reg::NR43] = Register8bit();
+    temp[reg::NR44] = Register8bit(0b10111111);
+    temp[reg::NR50] = Register8bit();
+    temp[reg::NR51] = Register8bit();
+    temp[reg::NR52] = Register8bit(0b01110000);
+    temp[reg::LCDC] = Register8bit();
+    temp[reg::SCROLLY] = Register8bit();
+    temp[reg::SCROLLX] = Register8bit();
+    temp[reg::LY] = Register8bit();
+    temp[reg::LYC] = Register8bit();
+    temp[reg::DMA] = Register8bit();
+    temp[reg::BGP] = Register8bit();
+    temp[reg::OBP0] = Register8bit();
+    temp[reg::OBP1] = Register8bit();    
+    temp[reg::WY] = Register8bit();
+    temp[reg::WX] = Register8bit();
+    temp[reg::STAT] = Register8bit(0b10000000, 0b00000111);
     // Additional unlisted registers
-    mem_registers[0xff72] = Register8bit();
-    mem_registers[0xff73] = Register8bit();
-    mem_registers[0xff75] = Register8bit(0b10001111);
-    mem_registers[0xff76] = Register8bit(0, 0b11111111);
-    mem_registers[0xff77] = Register8bit(0, 0b11111111);
+    temp[0xff72] = Register8bit();
+    temp[0xff73] = Register8bit();
+    temp[0xff75] = Register8bit(0b10001111);
+    temp[0xff76] = Register8bit(0, 0b11111111);
+    temp[0xff77] = Register8bit(0, 0b11111111);
+
+    used_io.resize(0x80, false);
+    for (auto x: temp) {
+        mem_registers.insert(x);
+        used_io[x.first - 0xff00] = true;
+    }
+
+    mem_registers[reg::IE] = Register8bit();
 }

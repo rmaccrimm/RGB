@@ -1,7 +1,7 @@
 #ifndef MMU_H
 #define MMU_H
 
-#include <map>
+#include <unordered_map>
 #include <iterator>
 #include "definitions.h"
 #include "register16bit.h"
@@ -41,11 +41,8 @@ private:
 
     Joypad *joypad;
     Cartridge *cartridge;
-
     std::vector<u8> mem;
-    
 
-    
     bool enable_boot_rom;
     bool enable_break_pt;
     bool paused;
@@ -54,8 +51,9 @@ private:
 
     u16 break_pt;
 
-    std::map<u16, Register8bit> mem_registers;
+    std::unordered_map<u16, Register8bit> mem_registers;
     std::vector<u8> boot_rom;
+    std::vector<bool> used_io;
 };
 
 #endif
