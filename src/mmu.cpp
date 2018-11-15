@@ -1,154 +1,139 @@
 #include "mmu.h"
 #include "utils.h"
 #include "registers.h"
-#include "register8bit.h"
-#include <map>
-#include <cstring>
-#include <iostream>
-#include <cassert>
-#include <algorithm>
 
 typedef Register8bit r8;
 
 Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) : 
     joypad(pad), 
     cartridge(cart), 
-    mem{0}, 
-    enable_boot_rom(enable_boot), 
+    enable_boot_rom(enable_boot),
     enable_break_pt(false), 
     paused(false), 
     vram_updated(false),
     reset_clock(false)
 {
-    mem.resize(0x10000, 0);
+    video_RAM.resize(0x2000, 0); // 8kB
+    internal_RAM.resize(0x2000, 0); 
+    sprite_attribute_table.resize(0xa0);
+    wave_pattern_RAM.resize(0xf);
+    high_RAM.resize(0x7f);
     init_registers();
 }
 
 u8 Memory::read(u16 addr) 
 {
-    switch(addr / 0x1000) 
-    {
-    // Switchable ROM Bank
-    case 0x0: 
-        if (addr <= 0x100 && (!(mem[0xff50] & 1) && enable_boot_rom)) { 
-            return boot_rom[addr];
-        } 
-    case 0x1:
-    case 0x2:
-    case 0x3:
-    case 0x4:
-    case 0x5:
-    case 0x6:
-    case 0x7: 
-        return cartridge->read(addr);
-    // VRAM        
-    case 8: 
-    case 9:
-        return mem[addr];
-    // Switchable RAM bank
-    case 0xa: 
-    case 0xb:
-        return cartridge->read(addr);
-    // Internal RAM
-    case 0xc:
-    case 0xd:
-        return mem[addr];
-    case 0xe:
-    case 0xf:
-        if (addr <= 0xfdff) { // Echo RAM 
-            return mem[addr - 0x2000];
-        }
-        else if (addr <= 0xfe9f) { // OAM
-            return mem[addr];
-        }
-        else if (addr <= 0xfeff) { // unusable memory
-            return 0xff;
-        }
-        else if (addr <= 0xff7f || addr == reg::IE) { // I/O Registers
-            if (addr == reg::IE || used_io[addr - 0xff00]) {
-                return read_reg(addr);
-            }
-            else if (addr >= 0xff30 && addr <= 0xff3f) { // Wave pattern RAM
-                return mem[addr];
-            }
-            else {
-                return 0xff;
-            }
-        }
-        else { //High RAM
-            return mem[addr];
-        }   
-    default:
-        std::cout << "Read from address " << addr << std::endl;
-        assert(false);
-        return 0xff;
-    }
+    u8 r;
+    map_memory(addr, 0, false, r);
+    return r;
 }
 
 void Memory::write(u16 addr, u8 data)
-{
-    if (enable_break_pt && addr == break_pt) { 
+{   
+    if (enable_break_pt && addr == break_pt) 
         paused = true; 
-    }
 
-    switch(addr / 0x1000) {
-    // Select RAM/ROM bank                 
-    case 0x0: 
-    case 0x1:
-    case 0x2:
-    case 0x3:
-    case 0x4:
-    case 0x5:
-    case 0x6:
-    case 0x7: 
-        cartridge->write(addr, data);
-        break;
-    // VRAM        
-    case 8: 
-    case 9:
-        vram_updated = true;
-        mem[addr] = data;
-        break;
-    // Switchable RAM bank
-    case 0xa: 
-    case 0xb:
-        cartridge->write(addr, data);
-        break;
-    // Internal RAM
-    case 0xc:
-    case 0xd:
-        mem[addr] = data;
-        break;
-    case 0xe:
-    case 0xf:
-        if (addr <= 0xfdff) { // Echo RAM
-            mem[addr - 0x2000] = data;
-        }
-        else if (addr <= 0xfe9f) { // OAM
+    u8 r;
+    map_memory(addr, data, true, r);
+}
+
+void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
+{
+    if (enable_boot_rom && addr <= 0x100) { // && !utils::bit(read_reg(0xff50), 1)
+    // Boot ROM
+
+        if (!write_operation)
+            return_val = boot_ROM[addr];
+    }
+    else if (addr <= 0x7fff) {
+    // External ROM
+
+        if (write_operation) 
+            cartridge->write(addr, data);
+        else
+            return_val = cartridge->read(addr);
+    }
+    else if (addr >= 0x8000 && addr <= 0x9fff) {
+    // VRAM
+
+        if (write_operation) {
             vram_updated = true;
-            mem[addr] = data;
+            video_RAM[addr - 0x8000] = data;
         }
-        else if (addr <= 0xfeff) { // unusable memory
-            break;            
+        else 
+            return_val = video_RAM[addr - 0x8000];
+    }
+    else if (addr >= 0xa000 && addr <= 0xbfff) {
+    // External RAM
+
+        if (write_operation) 
+            cartridge->write(addr, data);
+        else 
+            return_val = cartridge->read(addr);
+    }
+    else if (addr >= 0xc000 && addr <= 0xdfff) {
+    // Internal RAM
+
+        if (write_operation)
+            internal_RAM[addr - 0xc000] = data;
+        else
+            return_val = internal_RAM[addr - 0xc000];
+
+    }
+    else if (addr >= 0xe000 && addr <= 0xfdff) {
+    // Echo RAM
+
+        map_memory(addr - 0x2000, data, write_operation, return_val);
+    }
+    else if (addr >= 0xfe00 && addr <= 0xfe9f) {
+    // OAM
+
+        if (write_operation)
+            sprite_attribute_table[addr - 0xfe00] = data;
+        else
+            return_val = sprite_attribute_table[addr - 0xfe00];
+    }
+    else if (addr >= 0xfea0 && addr <= 0xfeff) {
+    // Unusable 
+
+        if (!write_operation)
+            return_val = 0xff;
+    }
+    else if (addr >= 0xff00 && addr <= 0xff7f) {
+    // IO registers
+
+        if (addr >= 0xff30 && addr <= 0xff3f) { 
+        // Wave pattern RAM
+        
+                if (write_operation) 
+                    wave_pattern_RAM[addr - 0xff30] = data;
+                else
+                    return_val = wave_pattern_RAM[addr - 0xff30];
         }
-        else if (addr <= 0xff7f || addr == reg::IE) { // I/O registers
-            if (addr == reg::IE || used_io[addr - 0xff00]) {
-                write_reg(addr, data);
+        else {
+            if (write_operation) {
+                if (io_used[addr - 0xff00])
+                    write_reg(addr, data);
             }
-            else if (addr >= 0xff30 && addr <= 0xff3f) { // Wave pattern RAM
-                    mem[addr] = data;
-            }
-            else {
-                break;
-            }
+            else 
+                return_val = io_used[addr - 0xff00] ? read_reg(addr) : 0xff;
         }
-        else { // High RAM
-            mem[addr] = data;
-        }
-        break;
-    default:
-        std::cout << "Wrote to address " << addr << std::endl;
-        assert(false);
+    }
+    else if (addr >= 0xff80 && addr <= 0xfffe) {
+    // High RAM
+
+        if (write_operation) 
+            high_RAM[addr - 0xff80] = data;
+        else
+            return_val = high_RAM[addr - 0xff80];
+    }
+    else if (addr == 0xffff) {
+    // IE register
+
+        if (write_operation)
+            write_reg(addr, data);
+        else
+            return_val = read_reg(addr);
     }
 }
 
@@ -158,11 +143,12 @@ u8 Memory::read_reg(u16 addr)
     {
     case reg::P1: 
     {
-        bool select_dpad = !utils::bit(mem_registers[addr].value(), 4);
-        return (3 << 6) | joypad->get_state(select_dpad);
+        bool select_dpad = !utils::bit(io_registers[addr].value(), 4);
+        io_registers[addr].write(joypad->get_state(select_dpad) & 0xf);
+        return io_registers[addr].value();
     }
     default:
-        return mem_registers[addr].value();
+        return io_registers[addr].value();
     }
 }
 
@@ -174,7 +160,7 @@ void Memory::write_reg(u16 addr, u8 data)
         reset_clock = true;
         break;
     default:
-        mem_registers[addr].write(data);
+        io_registers[addr].write(data);
     }
 }
 
@@ -186,7 +172,7 @@ void Memory::set_interrupt(int interrupt_bit)
 
 void Memory::load_boot(std::string file_path)
 {
-    utils::load_file(boot_rom, file_path);
+    utils::load_file(boot_ROM, file_path);
 }
 
 void Memory::set_access_break_pt(u16 addr) 
@@ -199,95 +185,64 @@ void Memory::clear_access_break_pt() { enable_break_pt = false; }
 
 bool Memory::pause() { return paused; }
 
-std::vector<u8>::iterator Memory::get_mem_ptr(u16 addr) { return mem.begin() + addr; }
+// This seems dangerous and should definitely be removed later
+std::vector<u8>::iterator Memory::get_vram_ptr(u16 addr)
+{
+    return video_RAM.begin() + (addr - 0x8000);
+}
 
 void Memory::init_registers()
 {
-    mem_registers[reg::P1] = Register8bit(0b11000000);
-    mem_registers[reg::SB] = Register8bit();
-    mem_registers[reg::SC] = Register8bit(0b01111110);
+    /* Registers with unused/read-only bits or special behaviour or read/write
+    */
+    io_registers[reg::P1] = r8(0b11000000);
+    io_registers[reg::SB] = r8();
+    io_registers[reg::SC] = r8(0b01111110);
     // hidden lower byte of timer
-    mem_registers[0xff03] = Register8bit(0b11111111, 0b11111111);
-    mem_registers[reg::DIV] = Register8bit();
-    mem_registers[reg::TIMA] = Register8bit();
-    mem_registers[reg::TMA] = Register8bit();
-    mem_registers[reg::TAC] = Register8bit(0b11111000);
-    mem_registers[reg::IF] = Register8bit(0b11100000);
-    mem_registers[reg::NR10] = Register8bit(0b10000000);
-    mem_registers[reg::NR11] = Register8bit(0b00111111);
-    mem_registers[reg::NR12] = Register8bit();
-    mem_registers[reg::NR13] = Register8bit();
-    mem_registers[reg::NR14] = Register8bit(0b10111111);
-    mem_registers[reg::NR21] = Register8bit(0b00111111);
-    mem_registers[reg::NR22] = Register8bit();
-    mem_registers[reg::NR23] = Register8bit();
-    mem_registers[reg::NR24] = Register8bit(0b10111111);
-    mem_registers[reg::NR30] = Register8bit(0b01111111);
-    mem_registers[reg::NR31] = Register8bit();
-    mem_registers[reg::NR32] = Register8bit(0b10011111);
-    mem_registers[reg::NR33] = Register8bit();
-    mem_registers[reg::NR34] = Register8bit(0b10111111);
-    mem_registers[reg::NR41] = Register8bit(0b11000000);
-    mem_registers[reg::NR42] = Register8bit();
-    mem_registers[reg::NR43] = Register8bit();
-    mem_registers[reg::NR44] = Register8bit(0b10111111);
-    mem_registers[reg::NR50] = Register8bit();
-    mem_registers[reg::NR51] = Register8bit();
-    mem_registers[reg::NR52] = Register8bit(0b01110000);
-    mem_registers[reg::LCDC] = Register8bit();
-    mem_registers[reg::SCROLLY] = Register8bit();
-    mem_registers[reg::SCROLLX] = Register8bit();
-    mem_registers[reg::LY] = Register8bit();
-    mem_registers[reg::LYC] = Register8bit();
-    mem_registers[reg::DMA] = Register8bit();
-    mem_registers[reg::BGP] = Register8bit();
-    mem_registers[reg::OBP0] = Register8bit();
-    mem_registers[reg::OBP1] = Register8bit();    
-    mem_registers[reg::WY] = Register8bit();
-    mem_registers[reg::WX] = Register8bit();
-    mem_registers[reg::STAT] = Register8bit(0b10000000, 0b00000111);
+    io_registers[0xff03] = r8(0b11111111, 0b11111111);
+    io_registers[reg::DIV] = r8();
+    io_registers[reg::TIMA] = r8();
+    io_registers[reg::TMA] = r8();
+    io_registers[reg::TAC] = r8(0b11111000);
+    io_registers[reg::IF] = r8(0b11100000);
+    io_registers[reg::NR10] = r8(0b10000000);
+    io_registers[reg::NR11] = r8(0b00111111);
+    io_registers[reg::NR12] = r8();
+    io_registers[reg::NR13] = r8();
+    io_registers[reg::NR14] = r8(0b10111111);
+    io_registers[reg::NR21] = r8(0b00111111);
+    io_registers[reg::NR22] = r8();
+    io_registers[reg::NR23] = r8();
+    io_registers[reg::NR24] = r8(0b10111111);
+    io_registers[reg::NR30] = r8(0b01111111);
+    io_registers[reg::NR31] = r8();
+    io_registers[reg::NR32] = r8(0b10011111);
+    io_registers[reg::NR33] = r8();
+    io_registers[reg::NR34] = r8(0b10111111);
+    io_registers[reg::NR41] = r8(0b11000000);
+    io_registers[reg::NR42] = r8();
+    io_registers[reg::NR43] = r8();
+    io_registers[reg::NR44] = r8(0b10111111);
+    io_registers[reg::NR50] = r8();
+    io_registers[reg::NR51] = r8();
+    io_registers[reg::NR52] = r8(0b01110000);
+    io_registers[reg::LCDC] = r8();
+    io_registers[reg::SCROLLY] = r8();
+    io_registers[reg::SCROLLX] = r8();
+    io_registers[reg::LY] = r8();
+    io_registers[reg::LYC] = r8();
+    io_registers[reg::DMA] = r8();
+    io_registers[reg::BGP] = r8();
+    io_registers[reg::OBP0] = r8();
+    io_registers[reg::OBP1] = r8();    
+    io_registers[reg::WY] = r8();
+    io_registers[reg::WX] = r8();
+    io_registers[reg::STAT] = r8(0b10000000, 0b00000111);
+    // boot-rom enable
+    io_registers[0xff50] = r8(0b11111111);
 
-    used_io.resize(0x80, false);
-    used_io[-0xff00 + reg::P1] = true; 
-    used_io[-0xff00 + reg::SB] = true;
-    used_io[-0xff00 + reg::SC] = true;
-    used_io[0xff03] = true; 
-    used_io[-0xff00 + reg::DIV] = true;
-    used_io[-0xff00 + reg::TIMA] = true;
-    used_io[-0xff00 + reg::TMA] = true; 
-    used_io[-0xff00 + reg::TAC] = true; 
-    used_io[-0xff00 + reg::IF] = true; 
-    used_io[-0xff00 + reg::NR10] = true;
-    used_io[-0xff00 + reg::NR11] = true;
-    used_io[-0xff00 + reg::NR12] = true;
-    used_io[-0xff00 + reg::NR13] = true;
-    used_io[-0xff00 + reg::NR14] = true;
-    used_io[-0xff00 + reg::NR21] = true;
-    used_io[-0xff00 + reg::NR22] = true;
-    used_io[-0xff00 + reg::NR23] = true;
-    used_io[-0xff00 + reg::NR24] = true;
-    used_io[-0xff00 + reg::NR30] = true;
-    used_io[-0xff00 + reg::NR31] = true;
-    used_io[-0xff00 + reg::NR32] = true;
-    used_io[-0xff00 + reg::NR33] = true;
-    used_io[-0xff00 + reg::NR34] = true;
-    used_io[-0xff00 + reg::NR41] = true;
-    used_io[-0xff00 + reg::NR42] = true;
-    used_io[-0xff00 + reg::NR43] = true;
-    used_io[-0xff00 + reg::NR44] = true;
-    used_io[-0xff00 + reg::NR50] = true;
-    used_io[-0xff00 + reg::NR51] = true;
-    used_io[-0xff00 + reg::NR52] = true;
-    used_io[-0xff00 + reg::LCDC] = true;
-    used_io[-0xff00 + reg::SCROLLY] = true; 
-    used_io[-0xff00 + reg::SCROLLX] = true; 
-    used_io[-0xff00 + reg::LY] = true;
-    used_io[-0xff00 + reg::LYC] = true;
-    used_io[-0xff00 + reg::DMA] = true;
-    used_io[-0xff00 + reg::BGP] = true;
-    used_io[-0xff00 + reg::OBP0] = true;
-    used_io[-0xff00 + reg::OBP1] = true;
-    used_io[-0xff00 + reg::WY] = true; 
-    used_io[-0xff00 + reg::WX] = true; 
-    used_io[-0xff00 + reg::STAT] = true; 
+    io_used.resize(0x80, false);
+    for (auto p: io_registers) {
+        io_used[p.first - 0xff00] = true;
+    }
 }

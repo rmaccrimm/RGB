@@ -10,7 +10,7 @@
 
 Processor::Processor(Memory *mem) : 
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L),
-    memory(mem), internal_timer(&mem->mem_registers[reg::DIV], &timer_lsb),
+    memory(mem), internal_timer(&mem->io_registers[reg::DIV], &timer_lsb),
     IME_flag(0), ei_count(0), cond_taken(false), timer_count(0), halted(0), halt_bug(false)
 {}
 

@@ -8,7 +8,7 @@
 #include <algorithm>
 
 GPU::GPU(Memory *mem, GameWindow *win): 
-    memory(mem), window(win), stat_reg(mem->mem_registers[reg::STAT]), clock(0), line(0), mode(OAM)
+    memory(mem), window(win), stat_reg(mem->io_registers[reg::STAT]), clock(0), line(0), mode(OAM)
 {
     framebuffer.resize(256 * 256, 0); 
 }
@@ -128,7 +128,7 @@ void GPU::set_bg_palette()
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
 void GPU::read_tile(std::vector<u8>::iterator dest, u16 tile_addr)
 {
-    std::vector<u8>::iterator pix_data = memory->get_mem_ptr(tile_addr);
+    std::vector<u8>::iterator pix_data = memory->get_vram_ptr(tile_addr);
 
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
@@ -206,7 +206,7 @@ void GPU::render_sprites()
     // bool enable_sprites = utils::bit(lcd_control, 1);
     // bool two_tile_sprites = utils::bit(lcd_control, 2);
     
-    std::vector<u8>::iterator sprite_data = memory->get_mem_ptr(OAM_data);
+    std::vector<u8>::iterator sprite_data = memory->get_vram_ptr(OAM_data);
     for (int i = 0; i < 40; i++) {
         int byte_ind = 4 * i;
         int ypos = sprite_data[byte_ind];
