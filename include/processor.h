@@ -47,6 +47,8 @@ public:
     Register16bit SP;
     Register16bit PC;
 
+    u16 internal_clock_reg;
+
     Memory *memory; 
     Register8bit &div_reg;
 
@@ -54,9 +56,7 @@ public:
 
     bool halted;
     bool halt_bug;
-
     int ei_count;
-    int clock_count;
     int timer_count;
 
     static const int instr_cycles[256];

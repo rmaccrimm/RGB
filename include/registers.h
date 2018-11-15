@@ -7,18 +7,15 @@ namespace reg
 {
     // Joypad
     static const u16 P1         = 0xff00;
-    // Serial transfer data
+    // Serial registres
     static const u16 SB         = 0xff01;
-    // SIO control
     static const u16 SC         = 0xff02;
-    // Divider
+    // Timer registers
     static const u16 DIV        = 0xff04;
-    // Timer
     static const u16 TIMA       = 0xff05;
-    // Timer modulo
     static const u16 TMA        = 0xff06;
     static const u16 TAC        = 0xff07;
-    // Interrupt request
+    // Interrupt flags
     static const u16 IF         = 0xff0f;
     // Audio registers
     static const u16 NR10       = 0xff10;
@@ -42,14 +39,11 @@ namespace reg
     static const u16 NR50       = 0xff24;
     static const u16 NR51       = 0xff25;
     static const u16 NR52       = 0xff26;
-    // LCD control
+    // LCD registers
     static const u16 LCDC       = 0xff40;
-    // LCD status
     static const u16 STAT       = 0xff41;
-    // Screen position
     static const u16 SCROLLY    = 0xff42;
     static const u16 SCROLLX    = 0xff43;
-    // Current line
     static const u16 LY         = 0xff44;
     static const u16 LYC        = 0xff45;
     static const u16 DMA        = 0xff46;    

@@ -46,6 +46,7 @@ private:
     std::map<u16, Register8bit> mem_registers;
     std::vector<u8> boot_rom;
 
+    bool reset_clock;
     bool enable_boot_rom;
     bool enable_break_pt;
     bool paused;

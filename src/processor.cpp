@@ -125,19 +125,20 @@ void Processor::update_timer(int instr_cycles)
     if (memory->reset_clock) {
         internal_clock_reg = 0;
         div_reg.set(0);
+        memory->reset_clock = false;
     }
     else {
-        internal_clock_reg += instr_cycles * 4;
+        internal_clock_reg += instr_cycles;
         div_reg.set(internal_clock_reg >> 8);
         
-        u8 timer_ctrl = memory->read(reg::TAC) & 7; // 5 highest bits ignored
+        u8 timer_ctrl = memory->read(reg::TAC);
         if (utils::bit(timer_ctrl, 2)) {
             timer_count += instr_cycles;
             u8 t_prev = memory->read(reg::TIMA);
-            int cycles_per_clock = timer_cycles[timer_ctrl & 3] / 4; // first 2 bits
+            int cycles_to_inc = timer_cycles[timer_ctrl & 3]; 
             int i = 0;
-            while (timer_count >= cycles_per_clock) {
-                timer_count -= cycles_per_clock;
+            while (timer_count >= cycles_to_inc) {
+                timer_count -= cycles_to_inc;
                 i++;
             }
             if ((int)t_prev + i > 0xff) { // overflow
