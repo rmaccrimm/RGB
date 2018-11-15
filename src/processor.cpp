@@ -11,7 +11,9 @@
 Processor::Processor(Memory *mem) : 
     memory(mem), timer_count(0), ei_count(0), IME_flag(0), halted(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L),
-    internal_timer(&mem->mem_registers[reg::DIV], &mem->mem_registers[0xff03]) {}
+    internal_timer(&mem->mem_registers[reg::DIV], &timer_lsb),
+    cond_taken(false)     
+{}
 
 void Processor::init_state()
 {
@@ -81,11 +83,14 @@ void Processor::set_flags(u8 mask, bool b)
 
 int Processor::step(bool print)
 {
+    process_interrupts();
+
     int cycles;
     if (!halted) {
         u16 prev_pc = PC.value();
         u8 instr = fetch_byte();
         bool cb = instr == 0xcb;
+
         if (cb) {
             instr = fetch_byte();
             cb_execute(instr);
@@ -94,6 +99,7 @@ int Processor::step(bool print)
             execute(instr);
             cycles = instr_cycles[instr];
         }
+
         if (print || memory->pause()) {
             std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)prev_pc << ":\t";
             if (cb) {
@@ -111,38 +117,38 @@ int Processor::step(bool print)
         }
     }
     else {
-        cycles = 4;
+        cycles = 1;
     }
     update_timer(cycles);
-    process_interrupts();
     return cycles;
 }
 
 void Processor::update_timer(int instr_cycles)
 {
-    // If value was written to DIV, reset internal clock
+    // If any value was written to DIV, reset timer
     if (memory->reset_clock) {
         internal_timer.set(0);
-        memory->reset_clock = false;
+        memory->reset_clock = false;    
     }
     else {
-        u16 t_prev = internal_timer.value();
-        internal_timer.add(4 * instr_cycles);
-        u16 t = internal_timer.value();
 
-        int bit_select[] = {9, 3, 5, 7};
+        internal_timer.add(4 * instr_cycles);
+
         u8 timer_ctrl = memory->read(reg::TAC);
-        int bit = bit_select[timer_ctrl & 3];
-        // Detect falling edge on bit selected by TAC
-        bool increment_tima = (utils::bit(t_prev, bit)) && (!utils::bit(t, bit));
-        
-        if (increment_tima && utils::bit(timer_ctrl, 2)) {
-            u8 tima_prev = memory->read(reg::TIMA);
-            memory->write(reg::TIMA, tima_prev + 1);
-            u8 tima = memory->read(reg::TIMA);
-            bool overflow = (utils::bit(tima_prev, 7)) && (!utils::bit(tima, 7));
-            if (overflow) {
-                memory->write(reg::TIMA, memory->read(reg::TMA));
+        if (utils::bit(timer_ctrl, 2)) {
+            int cycle_opts[] = {1024, 16, 64, 256};
+            int cycle_threshold = cycle_opts[timer_ctrl & 3];
+
+            timer_count += (4 * instr_cycles);
+            while (timer_count >= cycle_threshold) {
+                timer_count -= cycle_threshold;
+                u8 t = memory->read(reg::TIMA);
+                memory->write(reg::TIMA, t + 1);
+
+                if (memory->read(reg::TIMA) == 0) { // overflow
+                    memory->write(reg::TIMA, memory->read(reg::TMA));
+                    memory->set_interrupt(interrupt::TIMER_bit);
+                }
             }
         }
     }
@@ -157,14 +163,17 @@ void Processor::process_interrupts()
             u8 int_request = memory->read(reg::IF);
             u8 int_enable = memory->read(reg::IE);
             for (int i = 0; i < 5; i++) {
-                if (int_request >> i & 1) {
-                    if (int_enable >> i & 1) {
+                if ((int_request >> i) & 1) {
+                    if ((int_enable >> i) & 1) {
                         // Reset master enable and reqest bit
                         IME_flag = false;
                         memory->write(reg::IF, utils::reset(int_request, i));
                         // Jump to interrupt routine
                         op::PUSH(this, PC);
                         PC.set(interrupt_addr[i]);
+                        //Dispatching an interrupt takes 20 clocks
+                        internal_timer.add(20);
+                        timer_count += 20;
                         break;
                     }
                 }
@@ -300,6 +309,7 @@ void Processor::execute(u8 instr)
         set_flags(ZERO, 0);
         break;
     case 0x20:
+        if (!zero_flag()) cond_taken = true;
         op::JR(this, !zero_flag());
         break;
     case 0x21:
@@ -326,6 +336,7 @@ void Processor::execute(u8 instr)
         op::DAA(this);                         
         break;
     case 0x28:
+        if(zero_flag()) cond_taken = true;
         op::JR(this, zero_flag());
         break;
     case 0x29:
@@ -352,6 +363,7 @@ void Processor::execute(u8 instr)
         op::CPL(this);                         
         break;
     case 0x30:
+        if (!carry_flag()) cond_taken = true;
         op::JR(this, !carry_flag());
         break;
     case 0x31:
@@ -380,6 +392,7 @@ void Processor::execute(u8 instr)
         op::SCF(this);                         
         break;
     case 0x38:
+        if (carry_flag()) cond_taken = true;
         op::JR(this, carry_flag());
         break;
     case 0x39:
@@ -805,12 +818,14 @@ void Processor::execute(u8 instr)
         op::POP(this, BC);                     
         break;
     case 0xc2:
+        if (!zero_flag()) cond_taken = true;
         op::JP(this, !zero_flag());
         break;
     case 0xc3:
         op::JP(this, true);
         break;
     case 0xc4:
+        if (!zero_flag()) cond_taken = true;
         op::CALL(this, !zero_flag());
         break;
     case 0xc5:
@@ -829,6 +844,7 @@ void Processor::execute(u8 instr)
         op::RET(this, true);
         break;
     case 0xca:
+        if (zero_flag()) cond_taken = true;
         op::JP(this, zero_flag());
         break;
     case 0xcb:
@@ -854,6 +870,7 @@ void Processor::execute(u8 instr)
         op::POP(this, DE);                     
         break;
     case 0xd2:
+        if (!carry_flag()) cond_taken = true;
         op::JP(this, !carry_flag());
         break;
     case 0xd3:
@@ -880,12 +897,14 @@ void Processor::execute(u8 instr)
         IME_flag = true;
         break;
     case 0xda:
+        if (carry_flag()) cond_taken = true;
         op::JP(this, carry_flag());
         break;
     case 0xdb:
         op::INVALID();                         
         break;
     case 0xdc:
+        if (carry_flag()) cond_taken = true;
         op::CALL(this, carry_flag());
         break;
     case 0xdd:

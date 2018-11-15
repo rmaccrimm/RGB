@@ -16,13 +16,13 @@ Register16bit::~Register16bit()
 
 void Register16bit::set(u16 x)
 {
-    rhigh->set(x >> 8);
+    rhigh->set((x >> 8) & 0xff);
     rlow->set(x & 0xff);
 }
 
 u16 Register16bit::value() const
 {
-    return rhigh->value() << 8 | rlow->value();
+    return (rhigh->value() << 8) | rlow->value();
 }
 
 u8 Register16bit::value_low() const { return rlow->value(); }

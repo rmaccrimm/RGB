@@ -5,6 +5,8 @@
 #include <sstream>
 #include "gpu.h"
 
+#define EXTRA 1
+
 // return false to quit program
 bool debug::menu(Processor *cpu, int &break_pt, int &access_break_pt, bool &print_instr)
 {
@@ -76,7 +78,13 @@ void debug::print_registers(Processor *cpu)
               << "SP:\t"  <<  std::setw(4) << std::setfill('0')
               << std::hex << (int)cpu->SP.value() << "\n"
               << "PC:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->PC.value() << "\n";            
+              << std::hex << (int)cpu->PC.value() << "\n";    
+    if (EXTRA) {
+        std::cout << "\nTIMA:\t" << (int)cpu->memory->read(reg::TIMA) << "\n"
+                  << "DIV:\t" << (int)cpu->memory->read(reg::DIV) << "\n"
+                  << "TAC:\t" << (int)cpu->memory->read(reg::TAC) << "\n"
+                  << "TMA:\t" << (int)cpu->memory->read(reg::TMA) << "\n";
+    }
 }
 
 void debug::setup_gradient_tile(u8 *memory)

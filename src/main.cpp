@@ -27,6 +27,8 @@
 #include "mmu.h"
 #include "assembly.h"
 
+#define PRINT(x) std::cout << #x": " << std::hex << std::setw(4) << std::setfill('0') << (int)x << std::endl;
+
 #undef main
 
 namespace po = boost::program_options;
@@ -74,6 +76,15 @@ int main(int argc, char *argv[])
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
+
+    /*gb_cpu.internal_timer.set(0xff);
+    PRINT(gb_cpu.internal_timer.value());
+    PRINT(gb_mem.read(reg::DIV));
+    gb_cpu.internal_timer.add(4);
+    PRINT(gb_cpu.internal_timer.value());
+    PRINT(gb_mem.read(reg::DIV));
+    return 0;*/
+
 
     if (enable_boot_rom) {
         gb_mem.load_boot(boot_rom_filename.c_str());
