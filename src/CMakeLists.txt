@@ -1,7 +1,8 @@
 configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    SET(GCC_DEBUG_COMPILE_FLAGS "-ggdb -Wall -Wfatal-errors -fsanitize=address")
+    SET(GCC_DEBUG_COMPILE_FLAGS "-fsanitize=address -ggdb -Wall -Wextra -Wshadow -Wduplicated-cond\
+        -Wfatal-errors -Wlogical-op -Wnull-dereference -Wuseless-cast")
     SET(GCC_DEBUG_LINK_FLAGS "-fsanitize=address")
 
     set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} ${GCC_DEBUG_LINK_FLAGS}")
