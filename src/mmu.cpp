@@ -170,7 +170,6 @@ void Memory::write_reg(u16 addr, u8 data)
     switch(addr)
     {
     case reg::DIV:
-        mem_registers[addr].write(0);
         reset_clock = true;
         break;
     default:
@@ -206,6 +205,8 @@ void Memory::init_registers()
     mem_registers[reg::P1] = Register8bit(0b11000000);
     mem_registers[reg::SB] = Register8bit();
     mem_registers[reg::SC] = Register8bit(0b01111110);
+    // hidden lower byte of timer
+    mem_registers[0xff03] = Register8bit(0b11111111, 0b11111111);
     mem_registers[reg::DIV] = Register8bit();
     mem_registers[reg::TIMA] = Register8bit();
     mem_registers[reg::TMA] = Register8bit();

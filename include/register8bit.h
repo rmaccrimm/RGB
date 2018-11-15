@@ -23,7 +23,8 @@ public:
 
     // Get contents of register
     u8 value() const;
-    
+
+    // These functions directly modify contents, ignoring read-only
     void increment();
 
     void decrement();

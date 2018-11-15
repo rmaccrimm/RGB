@@ -47,13 +47,10 @@ public:
     Register16bit SP;
     Register16bit PC;
 
-    u16 internal_clock_reg;
+    Register16bit internal_timer;
 
     Memory *memory; 
-    Register8bit &div_reg;
-
     bool IME_flag;
-
     bool halted;
     bool halt_bug;
     int ei_count;
@@ -63,7 +60,6 @@ public:
     static const int cb_instr_cycles[256];
     static const int timer_cycles[4];
     static const u16 interrupt_addr[5];
-
     static const int div_cycles = 256;
 
     // F register flags

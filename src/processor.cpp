@@ -10,8 +10,8 @@
 
 Processor::Processor(Memory *mem) : 
     memory(mem), timer_count(0), ei_count(0), IME_flag(0), halted(0),
-    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L) ,
-    div_reg(mem->mem_registers[reg::DIV]) {}
+    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L),
+    internal_timer(&mem->mem_registers[reg::DIV], &mem->mem_registers[0xff03]) {}
 
 void Processor::init_state()
 {
@@ -52,8 +52,7 @@ void Processor::init_state()
     memory->write(reg::WY, 0x00);
     memory->write(reg::WX, 0x00);
     memory->write(reg::IE, 0x00);
-    internal_clock_reg = 0xabcc;
-    div_reg.set(internal_clock_reg << 8);
+    internal_timer.set(0xabcc);
 }
 
 u8 Processor::fetch_byte()
@@ -91,7 +90,7 @@ int Processor::step(bool print)
             instr = fetch_byte();
             cb_execute(instr);
             cycles = cb_instr_cycles[instr];
-        } else {
+        } else { 
             execute(instr);
             cycles = instr_cycles[instr];
         }
@@ -123,30 +122,27 @@ void Processor::update_timer(int instr_cycles)
 {
     // If value was written to DIV, reset internal clock
     if (memory->reset_clock) {
-        internal_clock_reg = 0;
-        div_reg.set(0);
+        internal_timer.set(0);
         memory->reset_clock = false;
     }
     else {
-        internal_clock_reg += instr_cycles;
-        div_reg.set(internal_clock_reg >> 8);
-        
+        u16 t_prev = internal_timer.value();
+        internal_timer.add(4 * instr_cycles);
+        u16 t = internal_timer.value();
+
+        int bit_select[] = {9, 3, 5, 7};
         u8 timer_ctrl = memory->read(reg::TAC);
-        if (utils::bit(timer_ctrl, 2)) {
-            timer_count += instr_cycles;
-            u8 t_prev = memory->read(reg::TIMA);
-            int cycles_to_inc = timer_cycles[timer_ctrl & 3]; 
-            int i = 0;
-            while (timer_count >= cycles_to_inc) {
-                timer_count -= cycles_to_inc;
-                i++;
-            }
-            if ((int)t_prev + i > 0xff) { // overflow
-                memory->set_interrupt(interrupt::TIMER_bit);
+        int bit = bit_select[timer_ctrl & 3];
+        // Detect falling edge on bit selected by TAC
+        bool increment_tima = (utils::bit(t_prev, bit)) && (!utils::bit(t, bit));
+        
+        if (increment_tima && utils::bit(timer_ctrl, 2)) {
+            u8 tima_prev = memory->read(reg::TIMA);
+            memory->write(reg::TIMA, tima_prev + 1);
+            u8 tima = memory->read(reg::TIMA);
+            bool overflow = (utils::bit(tima_prev, 7)) && (!utils::bit(tima, 7));
+            if (overflow) {
                 memory->write(reg::TIMA, memory->read(reg::TMA));
-            }
-            else {
-                memory->write(reg::TIMA, t_prev + i);
             }
         }
     }
