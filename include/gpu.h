@@ -28,8 +28,8 @@ private:
     Register8bit &stat_reg;
     std::vector<u8> framebuffer;
 
-    int line;
     int clock;
+    int line;
     Mode mode;
 
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt

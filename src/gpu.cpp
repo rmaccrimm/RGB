@@ -113,7 +113,7 @@ void GPU::increment_line()
 void GPU::build_framebuffer()
 {
     render_background();
-    render_sprites();
+    // render_sprites();
 }
 
 void GPU::set_bg_palette()
@@ -199,7 +199,7 @@ void GPU::render_window()
 
 void GPU::render_sprites()
 {
-    u8 lcd_control = memory->read(reg::LCDC);
+    // u8 lcd_control = memory->read(reg::LCDC);
     u8 scroll_y = memory->read(reg::SCROLLY);
     u8 scroll_x = memory->read(reg::SCROLLX);
 

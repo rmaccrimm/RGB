@@ -35,8 +35,8 @@ public:
 
 private:
     u8 byte;
-    u8 write_mask;
     u8 read_mask;
+    u8 write_mask;
 };
 
 #endif

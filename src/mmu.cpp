@@ -10,9 +10,9 @@
 typedef Register8bit r8;
 
 Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) : 
+    joypad(pad), 
     cartridge(cart), 
     mem{0}, 
-    joypad(pad), 
     enable_boot_rom(enable_boot), 
     enable_break_pt(false), 
     paused(false), 

@@ -47,21 +47,22 @@ public:
     Register16bit SP;
     Register16bit PC;
 
+    Memory *memory; 
+
     Register16bit internal_timer;
     Register8bit timer_lsb;
 
-    Memory *memory; 
+    
     bool IME_flag;
+    int ei_count;
+    bool cond_taken;
+    int timer_count;
     bool halted;
     bool halt_bug;
-    bool cond_taken;
-    int ei_count;
-    int timer_count;
 
     static const int instr_cycles[256];
     static const int instr_cycles_cond[256];
     static const int cb_instr_cycles[256];
-    static const int timer_cycles[4];
     static const u16 interrupt_addr[5];
 
     static const int div_cycles = 256;

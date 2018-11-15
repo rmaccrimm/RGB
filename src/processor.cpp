@@ -9,10 +9,9 @@
 #include <cassert>
 
 Processor::Processor(Memory *mem) : 
-    memory(mem), timer_count(0), ei_count(0), IME_flag(0), halted(0),
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L),
-    internal_timer(&mem->mem_registers[reg::DIV], &timer_lsb),
-    cond_taken(false)     
+    memory(mem), internal_timer(&mem->mem_registers[reg::DIV], &timer_lsb),
+    IME_flag(0), ei_count(0), cond_taken(false), timer_count(0), halted(0), halt_bug(false)
 {}
 
 void Processor::init_state()
@@ -129,7 +128,7 @@ int Processor::step(bool print)
     return cycles;
 }
 
-void Processor::update_timer(int instr_cycles)
+void Processor::update_timer(int cycles)
 {
     // If any value was written to DIV, reset timer
     if (memory->reset_clock) {
@@ -138,14 +137,14 @@ void Processor::update_timer(int instr_cycles)
     }
     else {
 
-        internal_timer.add(4 * instr_cycles);
+        internal_timer.add(4 * cycles);
 
         u8 timer_ctrl = memory->read(reg::TAC);
         if (utils::bit(timer_ctrl, 2)) {
             int cycle_opts[] = {1024, 16, 64, 256};
             int cycle_threshold = cycle_opts[timer_ctrl & 3];
 
-            timer_count += (4 * instr_cycles);
+            timer_count += (4 * cycles);
             while (timer_count >= cycle_threshold) {
                 timer_count -= cycle_threshold;
                 u8 t = memory->read(reg::TIMA);
@@ -1891,11 +1890,4 @@ const u16 Processor::interrupt_addr[5] = {
     0x50,   // Timer 
     0x58,   // Serial
     0x60    // Joypad
-};
-
-const int Processor::timer_cycles[4] = { 
-    1024,
-    16,
-    64,
-    256
 };

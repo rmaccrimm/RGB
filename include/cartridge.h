@@ -15,8 +15,6 @@ public:
     std::string type();
     std::string title();
 
-    enum Mode { ROM, RAM };
-
     enum CartridgeType {
         INVALID,                
         ROM_ONLY,                        
@@ -50,27 +48,29 @@ public:
     };
 
 private:
+    enum Mode { MODE0, MODE1 };
+
+    void read_header();
+
     CartridgeType cartridge_type;
     std::string game_title;
     bool mode;
-    bool gbc; // color cartridge
-    bool sgb; // super gameboy utils
+
     bool enable_ram;
-    int cartridge_file_size;
-
-    const int ram_bank_size;
-    const int rom_bank_size;
-    int num_rom_banks;
-    int num_ram_banks;
-    u8 mask_ignore_bits;
-
     u8 current_rom_bank;
     u8 current_ram_bank;
+    const int rom_bank_size;
+    const int ram_bank_size;
+    int num_rom_banks;
+    int num_ram_banks;
+
+    u8 mask_ignore_bits;
+    
     std::vector<u8> read_only_mem;
     std::vector<u8> random_access_mem;
 
     CartridgeType get_type(u8 val);
-    void read_header();
+    
 };
 
 #endif

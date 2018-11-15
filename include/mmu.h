@@ -30,7 +30,7 @@ public:
 
     bool pause();
 
-	bool vram_updated;
+	
 
 private:
     void write_reg(u16 addr, u8 data);
@@ -43,14 +43,19 @@ private:
     Cartridge *cartridge;
 
     std::vector<u8> mem;
-    std::map<u16, Register8bit> mem_registers;
-    std::vector<u8> boot_rom;
+    
 
-    bool reset_clock;
+    
     bool enable_boot_rom;
     bool enable_break_pt;
     bool paused;
+    bool vram_updated;
+    bool reset_clock;
+
     u16 break_pt;
+
+    std::map<u16, Register8bit> mem_registers;
+    std::vector<u8> boot_rom;
 };
 
 #endif
