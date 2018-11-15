@@ -31,7 +31,7 @@ public:
 private:
     Joypad *joypad;
     SDL_Window *sdl_window;
-    SDL_GLContext *gl_context;
+    SDL_GLContext gl_context;
     SDL_Event event;
     GLuint shader_id;
     GLuint screen_tex;
