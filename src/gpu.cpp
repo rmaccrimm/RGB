@@ -8,7 +8,7 @@
 #include <algorithm>
 
 GPU::GPU(Memory *mem, GameWindow *win): 
-    memory(mem), window(win), clock(0), line(0), mode(OAM), stat_reg(mem->mem_registers[reg::STAT])
+    memory(mem), window(win), stat_reg(mem->mem_registers[reg::STAT]), clock(0), line(0), mode(OAM)
 {
     framebuffer.resize(256 * 256, 0); 
 }
@@ -79,13 +79,13 @@ void GPU::update_stat_register()
     bool prev_sig = stat_irq_signal;
     u8 stat = memory->read(reg::STAT);
 
-    u8 coincedence_enable = 1 << 6;
+    u8 coincidence_enable = 1 << 6;
     u8 oam_enable = 1 << 5;
     u8 vblank_enable = 1 << 4;
     u8 hblank_enable = 1 << 3;
     u8 coincidence_set = 1 << 2;
 
-    stat_irq_signal = ((stat & coincidence_set) && (stat & coincidence_set)) ||
+    stat_irq_signal = ((stat & coincidence_enable) && (stat & coincidence_set)) ||
                       ((stat & hblank_enable) && mode == HBLANK) ||
                       ((stat & oam_enable) && mode == OAM) ||
                       ((stat & (vblank_enable | oam_enable)) && mode == VBLANK);
@@ -203,8 +203,8 @@ void GPU::render_sprites()
     u8 scroll_y = memory->read(reg::SCROLLY);
     u8 scroll_x = memory->read(reg::SCROLLX);
 
-    bool enable_sprites = utils::bit(lcd_control, 1);
-    bool two_tile_sprites = utils::bit(lcd_control, 2);
+    // bool enable_sprites = utils::bit(lcd_control, 1);
+    // bool two_tile_sprites = utils::bit(lcd_control, 2);
     
     std::vector<u8>::iterator sprite_data = memory->get_mem_ptr(OAM_data);
     for (int i = 0; i < 40; i++) {
@@ -221,9 +221,9 @@ void GPU::render_sprites()
         int tile_num = sprite_data[byte_ind + 2];
         int flags = sprite_data[byte_ind + 3];
 
-        bool behind_bg = utils::bit(flags, 7);
-        bool flip_y = utils::bit(flags, 6);
-        bool flip_x = utils::bit(flags, 5);
+        // bool behind_bg = utils::bit(flags, 7);
+        // bool flip_y = utils::bit(flags, 6);
+        // bool flip_x = utils::bit(flags, 5);
         bool palette_num = utils::bit(flags, 4);
 
         u16 obp_addr[2] = { reg::OBP0, reg::OBP1 };
