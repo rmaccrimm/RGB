@@ -5,7 +5,7 @@
 #include "definitions.h"
 #include "register8bit.h"
 #include "register16bit.h"
-#include "utils.h"
+#include "util.h"
 #include "mmu.h"
 #include "operations.h"
 

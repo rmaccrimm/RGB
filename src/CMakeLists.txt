@@ -22,7 +22,7 @@ find_package(Boost COMPONENTS program_options REQUIRED)
 include_directories(${GLEW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 link_libraries(${GLEW_LIBRARIES})
 
-add_library(funcs utils.cpp)
+add_library(funcs util.cpp)
 add_library(proc processor.cpp register16bit.cpp register8bit.cpp)
 add_library(mem mmu.cpp joypad.cpp cartridge.cpp)
 add_library(ops operations.cpp)

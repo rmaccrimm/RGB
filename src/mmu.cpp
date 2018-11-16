@@ -1,5 +1,5 @@
 #include "mmu.h"
-#include "utils.h"
+#include "util.h"
 #include "registers.h"
 
 typedef Register8bit r8;

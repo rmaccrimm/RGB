@@ -1,5 +1,5 @@
 #include "cartridge.h"
-#include "utils.h"
+#include "util.h"
 #include <fstream>
 #include <iostream>
 #include <iterator>
