@@ -1,6 +1,7 @@
 #include "mmu.h"
 #include "util.h"
 #include "registers.h"
+#include <map>
 
 typedef Register8bit r8;
 
@@ -102,7 +103,7 @@ void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
     else if (addr >= 0xff00 && addr <= 0xff7f) {
     // IO registers
 
-        if (addr >= 0xff30 && addr <= 0xff3f) { 
+        /*if (addr >= 0xff30 && addr <= 0xff3f) { 
         // Wave pattern RAM
         
                 if (write_operation) 
@@ -110,14 +111,13 @@ void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
                 else
                     return_val = wave_pattern_RAM[addr - 0xff30];
         }
-        else {
+        else {*/
             if (write_operation) {
-                if (io_used[addr - 0xff00])
-                    write_reg(addr, data);
+                write_reg(addr, data);
             }
             else 
-                return_val = io_used[addr - 0xff00] ? read_reg(addr) : 0xff;
-        }
+                return_val = read_reg(addr);
+        //}
     }
     else if (addr >= 0xff80 && addr <= 0xfffe) {
     // High RAM
@@ -131,25 +131,26 @@ void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
     // IE register
 
         if (write_operation)
-            write_reg(addr, data);
+            IE = data;
         else
-            return_val = read_reg(addr);
+            return_val = IE;
     }
 }
 
 u8 Memory::read_reg(u16 addr) 
 {
+    u8 reg_val = io_registers[addr - 0xff00] | io_read_masks[addr - 0xff00];
     switch(addr) 
     {
     case reg::P1: 
     {
-        bool select_dpad = !utils::bit(io_registers[addr].value(), 4);
+        bool select_dpad = !utils::bit(reg_val, 4);
         // io_registers[addr].write(joypad->get_state(select_dpad) & 0xf);
         // return io_registers[addr].value();
         return (3 << 6) | joypad->get_state(select_dpad);
     }
     default:
-        return io_registers[addr].value();
+        return reg_val;
     }
 }
 
@@ -160,8 +161,13 @@ void Memory::write_reg(u16 addr, u8 data)
     case reg::DIV:
         reset_clock = true;
         break;
+    case 0xff03:
+        break;
+    case reg::STAT:
+        // bits 0 - 2 read-only
+        io_registers[addr - 0xff00] = (data & ~7) | (io_registers[addr - 0xff00] & 7);
     default:
-        io_registers[addr].write(data);
+        io_registers[addr - 0xff00] = data;
     }
 }
 
@@ -196,54 +202,67 @@ void Memory::init_registers()
 {
     /* Registers with unused/read-only bits or special behaviour or read/write
     */
-    io_registers[reg::P1] = r8(0b11000000);
-    io_registers[reg::SB] = r8();
-    io_registers[reg::SC] = r8(0b01111110);
+    std::map<u8, u8> io;
+    io[reg::P1] = 0b11000000;
+    io[reg::SB] = 0;
+    io[reg::SC] = 0b01111110;
     // hidden lower byte of timer
-    io_registers[0xff03] = r8(0b11111111, 0b11111111);
-    io_registers[reg::DIV] = r8();
-    io_registers[reg::TIMA] = r8();
-    io_registers[reg::TMA] = r8();
-    io_registers[reg::TAC] = r8(0b11111000);
-    io_registers[reg::IF] = r8(0b11100000);
-    io_registers[reg::NR10] = r8(0b10000000);
-    io_registers[reg::NR11] = r8(0b00111111);
-    io_registers[reg::NR12] = r8();
-    io_registers[reg::NR13] = r8();
-    io_registers[reg::NR14] = r8(0b10111111);
-    io_registers[reg::NR21] = r8(0b00111111);
-    io_registers[reg::NR22] = r8();
-    io_registers[reg::NR23] = r8();
-    io_registers[reg::NR24] = r8(0b10111111);
-    io_registers[reg::NR30] = r8(0b01111111);
-    io_registers[reg::NR31] = r8();
-    io_registers[reg::NR32] = r8(0b10011111);
-    io_registers[reg::NR33] = r8();
-    io_registers[reg::NR34] = r8(0b10111111);
-    io_registers[reg::NR41] = r8(0b11000000);
-    io_registers[reg::NR42] = r8();
-    io_registers[reg::NR43] = r8();
-    io_registers[reg::NR44] = r8(0b10111111);
-    io_registers[reg::NR50] = r8();
-    io_registers[reg::NR51] = r8();
-    io_registers[reg::NR52] = r8(0b01110000);
-    io_registers[reg::LCDC] = r8();
-    io_registers[reg::SCROLLY] = r8();
-    io_registers[reg::SCROLLX] = r8();
-    io_registers[reg::LY] = r8();
-    io_registers[reg::LYC] = r8();
-    io_registers[reg::DMA] = r8();
-    io_registers[reg::BGP] = r8();
-    io_registers[reg::OBP0] = r8();
-    io_registers[reg::OBP1] = r8();    
-    io_registers[reg::WY] = r8();
-    io_registers[reg::WX] = r8();
-    io_registers[reg::STAT] = r8(0b10000000, 0b00000111);
+    io[0xff03] = 0b11111111;//, 0b11111111);
+    io[reg::DIV] = 0;
+    io[reg::TIMA] = 0;
+    io[reg::TMA] = 0;
+    io[reg::TAC] = 0b11111000;
+    io[reg::IF] = 0b11100000;
+    io[reg::NR10] = 0b10000000;
+    io[reg::NR11] = 0b00111111;
+    io[reg::NR12] = 0;
+    io[reg::NR13] = 0;
+    io[reg::NR14] = 0b10111111;
+    io[reg::NR21] = 0b00111111;
+    io[reg::NR22] = 0;
+    io[reg::NR23] = 0;
+    io[reg::NR24] = 0b10111111;
+    io[reg::NR30] = 0b01111111;
+    io[reg::NR31] = 0;
+    io[reg::NR32] = 0b10011111;
+    io[reg::NR33] = 0;
+    io[reg::NR34] = 0b10111111;
+    io[reg::NR41] = 0b11000000;
+    io[reg::NR42] = 0;
+    io[reg::NR43] = 0;
+    io[reg::NR44] = 0b10111111;
+    io[reg::NR50] = 0;
+    io[reg::NR51] = 0;
+    io[reg::NR52] = 0b01110000;
+    io[reg::LCDC] = 0;
+    io[reg::SCROLLY] = 0;
+    io[reg::SCROLLX] = 0;
+    io[reg::LY] = 0;
+    io[reg::LYC] = 0;
+    io[reg::DMA] = 0;
+    io[reg::BGP] = 0;
+    io[reg::OBP0] = 0;
+    io[reg::OBP1] = 0;    
+    io[reg::WY] = 0;
+    io[reg::WX] = 0;
+    io[reg::STAT] = 0b10000000;//, 0b00000111;
     // boot-rom enable
-    io_registers[0xff50] = r8();
+    io[0xff50] = 0;
 
-    io_used.resize(0x80, false);
-    for (auto p: io_registers) {
-        io_used[p.first - 0xff00] = true;
+    io_registers.resize(0x80, 0);
+    io_read_masks.resize(0x80, 0);
+    io_write_masks.resize(0x80, 0);
+
+    io_write_masks[0xff03 - 0xff00] = 0xff;
+    io_write_masks[reg::STAT - 0xff00] = 0x7;
+
+    for (int i = 0xff00; i < 0xff80; i++) {
+        auto p = io.begin();
+        if ((p = io.find(i)) != io.end()) {
+            io_read_masks[i - 0xff00] = p->second;
+        }
+        else if (!(i >= 0xff30 && i <= 0xff3f)) {
+            io_read_masks[i - 0xff00] = 0xff;
+        }
     }
 }

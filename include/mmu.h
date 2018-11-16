@@ -42,7 +42,13 @@ private:
     std::vector<u8> sprite_attribute_table;
     std::vector<u8> wave_pattern_RAM;
     std::vector<u8> high_RAM;
-    std::unordered_map<u16, Register8bit> io_registers;
+
+    std::vector<u8> io_registers;
+    std::vector<u8> io_read_masks;
+    std::vector<u8> io_write_masks;
+
+    u8 IE;
+    
     std::vector<bool> io_used;
 
     bool enable_boot_rom;

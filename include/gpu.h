@@ -25,7 +25,7 @@ public:
 private:
     Memory *memory;
     GameWindow *window;
-    Register8bit &stat_reg;
+    //Register8bit &stat_reg;
     std::vector<u8> framebuffer;
 
     int clock;
