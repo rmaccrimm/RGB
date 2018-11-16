@@ -1,3 +1,4 @@
+#include "utils.h"
 #include <fstream>
 #include <vector>
 #include <iostream>
@@ -7,12 +8,7 @@
 #include <cerrno>
 #include <algorithm>
 
-#include "gpu.h"
-#include "utils.h"
-
-using namespace std;
-
-bool utils::half_carry_add(u16 a, u16 b) 
+bool utils::half_carry_add(u16 a, u16 b)
 {
     return (((a & 0xf) + (b & 0xf)) & 0x10) == 0x10;
 }

@@ -53,6 +53,7 @@ void Processor::init_state()
     memory->write(reg::WY, 0x00);
     memory->write(reg::WX, 0x00);
     memory->write(reg::IE, 0x00);
+    memory->write(0xff50, 0xff);
     internal_timer.set(0xabcc);
 }
 
