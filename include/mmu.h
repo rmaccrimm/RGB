@@ -47,9 +47,7 @@ private:
     std::vector<u8> io_read_masks;
     std::vector<u8> io_write_masks;
 
-    u8 IE;
-    
-    std::vector<bool> io_used;
+    u8 ie_reg;
 
     bool enable_boot_rom;
     bool enable_break_pt;
@@ -68,6 +66,8 @@ private:
     u8 read_reg(u16 addr);
 
     std::vector<u8>::iterator get_vram_ptr(u16 addr);
+
+    u8& get_mem_reference(u16 addr);
 };
 
 #endif

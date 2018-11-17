@@ -2,6 +2,7 @@
 #include "util.h"
 #include "registers.h"
 #include <map>
+#include <cassert>
 
 typedef Register8bit r8;
 
@@ -103,21 +104,11 @@ void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
     else if (addr >= 0xff00 && addr <= 0xff7f) {
     // IO registers
 
-        /*if (addr >= 0xff30 && addr <= 0xff3f) { 
-        // Wave pattern RAM
-        
-                if (write_operation) 
-                    wave_pattern_RAM[addr - 0xff30] = data;
-                else
-                    return_val = wave_pattern_RAM[addr - 0xff30];
+        if (write_operation) {
+            write_reg(addr, data);
         }
-        else {*/
-            if (write_operation) {
-                write_reg(addr, data);
-            }
-            else 
-                return_val = read_reg(addr);
-        //}
+        else 
+            return_val = read_reg(addr);
     }
     else if (addr >= 0xff80 && addr <= 0xfffe) {
     // High RAM
@@ -131,9 +122,9 @@ void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
     // IE register
 
         if (write_operation)
-            IE = data;
+            ie_reg = data;
         else
-            return_val = IE;
+            return_val = ie_reg;
     }
 }
 
@@ -168,6 +159,18 @@ void Memory::write_reg(u16 addr, u8 data)
         io_registers[addr - 0xff00] = (data & ~7) | (io_registers[addr - 0xff00] & 7);
     default:
         io_registers[addr - 0xff00] = data;
+    }
+}
+
+u8& Memory::get_mem_reference(u16 addr)
+{
+    switch (addr)
+    {
+    case reg::STAT:
+    case reg::DIV:
+        return io_registers[addr - 0xff00];
+    default:
+        assert(false);
     }
 }
 

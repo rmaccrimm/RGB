@@ -8,9 +8,9 @@
 #include <algorithm>
 
 GPU::GPU(Memory *mem, GameWindow *win): 
-    memory(mem), window(win), clock(0), line(0), mode(OAM)
+    memory(mem), window(win), clock(0), line(0), mode(OAM), 
+    stat_reg(mem->get_mem_reference(reg::STAT))
 {
-    
     framebuffer.resize(256 * 256, 0); 
 }
 
@@ -100,16 +100,15 @@ void GPU::change_mode(Mode m)
 {
     mode = m;
     // TODO - If LCD is off, set to 0
-    memory->io_registers[reg::STAT - 0xff00] = (memory->read(reg::STAT) & ~3) | (int)mode;
+    stat_reg = (stat_reg & ~3) | (int)mode;
 }
 
 void GPU::increment_line()
 {
     line++;
     memory->write(reg::LY, line);
-    u8 stat_reg = memory->read(reg::STAT);
-    u8 stat = utils::set_cond(stat_reg, 2, memory->read(reg::LYC) == memory->read(reg::LY));
-    memory->io_registers[reg::STAT - 0xff00] = stat;
+    bool coincidence_flag = memory->read(reg::LYC) == memory->read(reg::LY);
+    stat_reg = utils::set_cond(stat_reg, 2, coincidence_flag);
 }
 
 void GPU::build_framebuffer()

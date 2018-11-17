@@ -10,7 +10,7 @@
 
 Processor::Processor(Memory *mem) : 
     A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L),
-    memory(mem), internal_timer(),
+    memory(mem), internal_timer(), div_reg(mem->get_mem_reference(reg::DIV)),
     IME_flag(0), ei_count(0), cond_taken(false), timer_count(0), halted(0), halt_bug(false)
 {}
 
@@ -134,13 +134,13 @@ void Processor::update_timer(int cycles)
     // If any value was written to DIV, reset timer
     if (memory->reset_clock) {
         internal_timer.set(0);
-        memory->io_registers[reg::DIV - 0xff00] = 0;
+        div_reg = 0;
         memory->reset_clock = false;    
     }
     else {
 
         internal_timer.add(4 * cycles);
-        memory->io_registers[reg::DIV - 0xff00] = internal_timer.value_high();
+        div_reg = internal_timer.value_high();
 
         u8 timer_ctrl = memory->read(reg::TAC);
         if (utils::bit(timer_ctrl, 2)) {

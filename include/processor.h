@@ -49,9 +49,18 @@ public:
 
     Memory *memory; 
 
+    // F register flags
+    static const u8 ZERO = 1 << 7;       
+    static const u8 SUBTRACT = 1 << 6;   
+    static const u8 HALF_CARRY = 1 << 5; 
+    static const u8 CARRY = 1 << 4;      
+
+private:
+
     Register16bit internal_timer;
     Register8bit timer_lsb;
 
+    u8 &div_reg;
     
     bool IME_flag;
     int ei_count;
@@ -64,14 +73,7 @@ public:
     static const int instr_cycles_cond[256];
     static const int cb_instr_cycles[256];
     static const u16 interrupt_addr[5];
-
     static const int div_cycles = 256;
-
-    // F register flags
-    static const u8 ZERO = 1 << 7;       
-    static const u8 SUBTRACT = 1 << 6;   
-    static const u8 HALF_CARRY = 1 << 5; 
-    static const u8 CARRY = 1 << 4;      
 };    
 
 #endif

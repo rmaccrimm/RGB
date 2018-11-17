@@ -33,6 +33,8 @@ private:
     Mode mode;
 
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
+
+    u8 &stat_reg;
     
     void read_tile(std::vector<u8>::iterator pixels, u16 tile_addr);
     void render_background();
@@ -64,8 +66,6 @@ private:
     // opengl expects framebuffer drawn from bottom up
     const bool INVERT_MAP = true;
     const bool INVERT_TILES = true;
-
-    
 };
 
 #endif
