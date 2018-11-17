@@ -8,7 +8,11 @@
 #include <algorithm>
 
 GPU::GPU(Memory *mem, GameWindow *win): 
-    memory(mem), window(win), clock(0), line(0), mode(OAM), 
+    memory(mem), 
+    window(win), 
+    clock(0), 
+    line(0), 
+    mode(OAM), 
     stat_reg(mem->get_mem_reference(reg::STAT))
 {
     framebuffer.resize(256 * 256, 0); 
@@ -114,7 +118,7 @@ void GPU::increment_line()
 void GPU::build_framebuffer()
 {
     render_background();
-    // render_sprites();
+    render_sprites();
 }
 
 void GPU::set_bg_palette()
@@ -170,7 +174,7 @@ void GPU::render_background()
             for (int tile_j = 0; tile_j < 32; tile_j++) {
 
                 // locate the tiles in memory
-                int map_index = 32 * (tile_i % 32) + (tile_j % 32);
+                int map_index = 32 * tile_i + tile_j;
 
                 // read the tile map and determine address of tile
                 u16 tile_addr;
@@ -193,27 +197,22 @@ void GPU::render_background()
     }
 }
 
-void GPU::render_window()
-{
-
-}
-
 void GPU::render_sprites()
 {
-    // u8 lcd_control = memory->read(reg::LCDC);
+    u8 lcd_control = memory->read(reg::LCDC);
     u8 scroll_y = memory->read(reg::SCROLLY);
     u8 scroll_x = memory->read(reg::SCROLLX);
 
-    // bool enable_sprites = utils::bit(lcd_control, 1);
-    // bool two_tile_sprites = utils::bit(lcd_control, 2);
+    bool enable_sprites = utils::bit(lcd_control, 1);
+    bool two_tile_sprites = utils::bit(lcd_control, 2);
     
-    std::vector<u8>::iterator sprite_data = memory->get_vram_ptr(OAM_data);
+    std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
     for (int i = 0; i < 40; i++) {
         int byte_ind = 4 * i;
         int ypos = sprite_data[byte_ind];
         int xpos = sprite_data[byte_ind + 1];
 
-        if (xpos == 0 || xpos >= 168 || ypos == 0 || ypos >= 160) {
+        if (xpos == 0 || xpos >= 168 || ypos == 0 || ypos >= 160) { // sprite hidden
             continue;
         }
         ypos += scroll_y + 16;
@@ -222,13 +221,14 @@ void GPU::render_sprites()
         int tile_num = sprite_data[byte_ind + 2];
         int flags = sprite_data[byte_ind + 3];
 
-        // bool behind_bg = utils::bit(flags, 7);
-        // bool flip_y = utils::bit(flags, 6);
-        // bool flip_x = utils::bit(flags, 5);
+        bool behind_bg = utils::bit(flags, 7);
+        bool flip_y = utils::bit(flags, 6);
+        bool flip_x = utils::bit(flags, 5);
         bool palette_num = utils::bit(flags, 4);
 
         u16 obp_addr[2] = { reg::OBP0, reg::OBP1 };
         u8 obp = memory->read(obp_addr[palette_num]);
+
         color_palette[0] = COLORS[obp & 3];
         color_palette[1] = COLORS[(obp >> 2) & 3];
         color_palette[2] = COLORS[(obp >> 4) & 3];
@@ -242,3 +242,7 @@ void GPU::render_sprites()
     }
 }
 
+void GPU::render_window()
+{
+
+}

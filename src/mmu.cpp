@@ -157,6 +157,8 @@ void Memory::write_reg(u16 addr, u8 data)
     case reg::STAT:
         // bits 0 - 2 read-only
         io_registers[addr - 0xff00] = (data & ~7) | (io_registers[addr - 0xff00] & 7);
+    case reg::DMA:
+        dma_transfer(data);
     default:
         io_registers[addr - 0xff00] = data;
     }
@@ -201,11 +203,19 @@ std::vector<u8>::iterator Memory::get_vram_ptr(u16 addr)
     return video_RAM.begin() + (addr - 0x8000);
 }
 
+void Memory::dma_transfer(u8 src)
+{
+    u16 start_addr = src << 8;
+    for (int i = 0; i <= 0x9f; i++) {
+        sprite_attribute_table[i] = read(start_addr + i);
+    }
+}
+
 void Memory::init_registers()
 {
     /* Registers with unused/read-only bits or special behaviour or read/write
     */
-    std::map<u8, u8> io;
+    std::map<u16, u8> io;
     io[reg::P1] = 0b11000000;
     io[reg::SB] = 0;
     io[reg::SC] = 0b01111110;

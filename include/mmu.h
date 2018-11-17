@@ -68,6 +68,8 @@ private:
     std::vector<u8>::iterator get_vram_ptr(u16 addr);
 
     u8& get_mem_reference(u16 addr);
+
+    void dma_transfer(u8 src);
 };
 
 #endif
