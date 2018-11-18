@@ -32,6 +32,8 @@ public:
 
 	void set_bg_palette(u8 palette[]);
 
+    bool draw;
+
 private:
     Joypad *joypad;
     SDL_Window *sdl_window;
@@ -43,7 +45,7 @@ private:
 	GLuint color_palette;
     const int window_scale;
     int key_pressed[8];
-    bool draw;
+    
     bool pause;
     // shader uniforms
     bool background;

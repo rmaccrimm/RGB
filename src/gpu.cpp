@@ -13,7 +13,8 @@ GPU::GPU(Memory *mem, GameWindow *win):
     clock(0), 
     line(0),
     mode(OAM), 
-    stat_reg(mem->get_mem_reference(reg::STAT))
+    stat_reg(mem->get_mem_reference(reg::STAT)),
+    prev_cpu_clock(0)
 {
     framebuffer.resize(256 * 256, 0);
     sprite_texture.resize(176 * 176 * 2, 0);
@@ -21,7 +22,13 @@ GPU::GPU(Memory *mem, GameWindow *win):
 
 void GPU::step(unsigned int cpu_clock)
 {
-    clock += cpu_clock;
+    if (cpu_clock < prev_cpu_clock) {
+        clock += ((1 << 16) - prev_cpu_clock) + cpu_clock;
+    }
+    else {
+        clock += (cpu_clock - prev_cpu_clock);
+    }
+    prev_cpu_clock = cpu_clock;
 
     switch (mode)
     {
@@ -48,10 +55,10 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(VBLANK);
                 // Draw screen
 				set_bg_palette();
-				if (memory->vram_updated) {
-					build_framebuffer();
-					memory->vram_updated = false;
-				}
+				//if (memory->vram_updated) {
+                build_framebuffer();
+					// memory->vram_updated = false;
+				// }
                 window->draw_frame(
                     framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
                 window->draw_sprites(sprite_texture.data());
@@ -231,7 +238,7 @@ void GPU::render_sprites()
     std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
     sprite_texture.assign(sprite_texture.size(), 0);
 
-    for (int i = 0; i < 40; i++) {
+    for (int i = 39; i >= 0; i--) {
         int byte_ind = 4 * i;
         int ypos = sprite_data[byte_ind];
         int xpos = sprite_data[byte_ind + 1];

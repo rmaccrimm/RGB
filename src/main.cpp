@@ -111,12 +111,13 @@ int main(int argc, char *argv[])
         }
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
-		if (window.frame_drawn()) {
+		/*if (window.frame_drawn()) {
+            window.draw = false;
 			if (window.closed()) {
 				break;
 			}
 			window.process_input();
-		}
+		}*/
     }
     if (enable_debug_mode) {
         debug::print_registers(&gb_cpu);

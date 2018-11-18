@@ -35,6 +35,8 @@ private:
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
 
     u8 &stat_reg;
+
+    int prev_cpu_clock;
     
     void read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src);
     void read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src,
