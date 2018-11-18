@@ -67,8 +67,10 @@ bool GameWindow::paused()
 
 void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
 {  
+    glUniform1i(tex_type, (int)Textures::BACKGROUND);
     glUniform1i(scrollx, x);
     glUniform1i(scrolly, y);
+    glUniform1i(background, 1);
     glActiveTexture(GL_TEXTURE0);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
@@ -82,6 +84,26 @@ void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
         framebuffer
     );
     glDrawArrays(GL_TRIANGLES, 0, 6); 
+    SDL_GL_SwapWindow(sdl_window);
+    draw = true;
+}
+
+void GameWindow::draw_sprites(u8 tex[])
+{
+    glUniform1i(tex_type, (int)Textures::SPRITES);
+    glActiveTexture(GL_TEXTURE1);
+    glTexSubImage2D(
+        GL_TEXTURE_2D, 
+        0,
+        0,
+        0, 
+        176,
+        172, 
+        GL_RED_INTEGER,
+        GL_UNSIGNED_BYTE, 
+        tex
+    );
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     SDL_GL_SwapWindow(sdl_window);
     draw = true;
 }
@@ -140,13 +162,21 @@ void GameWindow::init_glcontext(bool limit_framerate)
     }
 }
 
+int GameWindow::get_uniform(std::string shader_name)
+{
+    int uniformloc = glGetUniformLocation(shader_id, "background_texture");
+    if (uniformloc == -1) {
+        std::cout << "Error: Uniform \"" << shader_name << "\" not found" << std::endl;
+    }
+    return uniformloc;
+}
+
 void GameWindow::init_screen_texture()
 {
     // Create new texture for screen quad
     glGenTextures(1, &screen_tex);
     glGenTextures(1, &color_palette);
     
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, screen_tex);
     // No texture smoothing
@@ -184,30 +214,12 @@ void GameWindow::init_screen_texture()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glUseProgram(shader_id);
-    int uniformloc = glGetUniformLocation(shader_id, "screen_texture");
-    if (uniformloc == -1) {
-        std::cout << "Error: Uniform \"screen_texture\" not found" << std::endl;
-    }
-    glUniform1i(uniformloc, 0);
-	
-	// uniformloc = glGetUniformLocation(shader_id, "color_palette");
-	// if (uniformloc == -1) {
-	// 	std::cout << "Error: Uniform \"color_palette\" not found" << std::endl;
-	// }
-	// glUniform1i(uniformloc, 1);
-
-    scrollx = glGetUniformLocation(shader_id, "scrollx");
-    if (scrollx == -1) {
-		std::cout << "Error: Uniform \"scrollx\" not found" << std::endl;
-	}
-    glUniform1i(scrollx, 0);
-
-    scrolly = glGetUniformLocation(shader_id, "scrolly");
-    if (scrollx == -1) {
-		std::cout << "Error: Uniform \"scrolly\" not found" << std::endl;
-	}
-    glUniform1i(scrolly, 0);
-
+    glUniform1i(get_uniform("background_texture"), 0);
+    glUniform1i(get_uniform("sprite_texture"), 1);
+    glUniform1i(scrollx = get_uniform("scrollx"), 0);
+    glUniform1i(scrolly = get_uniform("scrollyasdf"), 0);
+    glUniform1i(tex_type = get_uniform("tex_type"), (int)Textures::BACKGROUND);
+    glUniform1i(background = get_uniform("background"), 1);
 
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR) {

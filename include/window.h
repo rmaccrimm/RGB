@@ -26,6 +26,8 @@ public:
 
     void draw_frame(u8 framebuffer[], int x, int y);
 
+    void draw_sprites(u8 tex[]);
+
 	void set_bg_palette(u8 palette[]);
 
 private:
@@ -40,12 +42,20 @@ private:
     int key_pressed[8];
     bool draw;
     bool pause;
-    int scrollx, scrolly;
+    // shader uniforms
+    bool background;
+    int scrollx;
+    int scrolly;
+    int tex_type;
+
+
+    enum Textures { BACKGROUND, SPRITES, WINDOW };
 
     void compile_shader();
     void init_window(std::string title);
     void init_glcontext(bool limit_framerate);
     void init_screen_texture();
+    int get_uniform(std::string uniform_name);
 };
 
 #endif

@@ -11,14 +11,16 @@ GPU::GPU(Memory *mem, GameWindow *win):
     memory(mem), 
     window(win), 
     clock(0), 
-    line(0), 
+    line(0),
     mode(OAM), 
     stat_reg(mem->get_mem_reference(reg::STAT))
 {
-    framebuffer.resize(256 * 256, 0); 
+    framebuffer.resize(256 * 256, 0);
+    // h - 176, w - 172
+    sprite_texture.resize(176 * 172, 0);
 }
 
-void GPU::step(unsigned int cpu_clock) 
+void GPU::step(unsigned int cpu_clock)
 {
     clock += cpu_clock;
 
@@ -131,18 +133,31 @@ void GPU::set_bg_palette()
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
-void GPU::read_tile(std::vector<u8>::iterator dest, u16 tile_addr)
+void GPU::read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src)
 {
-    std::vector<u8>::iterator pix_data = memory->get_vram_ptr(tile_addr);
-
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             // two bytes per line, contain lsb and msb of color
             int byte_ind = 2 * (7 - j);
-            u8 lsb = (pix_data[byte_ind] >> (7 - i)) & 1;
-            u8 msb = (pix_data[byte_ind + 1] >> (7 - i)) & 1;
+            u8 lsb = (src[byte_ind] >> (7 - i)) & 1;
+            u8 msb = (src[byte_ind + 1] >> (7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;
             dest[256 * j + i] = color_palette[color];
+        }
+    }
+}
+
+// dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
+void GPU::read_tile_s(std::vector<u8>::iterator dest, std::vector<u8>::iterator src)
+{
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            // two bytes per line, contain lsb and msb of color
+            int byte_ind = 2 * (7 - j);
+            u8 lsb = (src[byte_ind] >> (7 - i)) & 1;
+            u8 msb = (src[byte_ind + 1] >> (7 - i)) & 1;
+            int color = ((msb << 1) | lsb) & 3;
+            dest[172 * j + i] = color_palette[color];
         }
     }
 }
@@ -178,12 +193,13 @@ void GPU::render_background()
 
                 // read the tile map and determine address of tile
                 u16 tile_addr;
+                int tile_num;
                 if (signed_map) {
-                    i8 tile_num = (i8)memory->read(tile_map + map_index);
+                    tile_num = (i8)memory->read(tile_map + map_index);
                     tile_addr = tile_data + (16 * tile_num);
                 }
                 else {
-                    u8 tile_num = memory->read(tile_map + map_index);
+                    tile_num = memory->read(tile_map + map_index);
                     tile_addr = tile_data + (16 * tile_num);
                 }
 
@@ -191,7 +207,8 @@ void GPU::render_background()
                 int pixel_x = 8 * tile_j;
                 int pixel_index = 256 * pixel_y + pixel_x;
                 
-                read_tile(framebuffer.begin() + pixel_index, tile_addr);
+                read_tile(framebuffer.begin() + pixel_index, 
+                    memory->video_RAM.begin() + (tile_data - 0x8000) + 16*tile_num);
             }
         }        
     }
@@ -204,7 +221,7 @@ void GPU::render_sprites()
     u8 scroll_x = memory->read(reg::SCROLLX);
 
     bool enable_sprites = utils::bit(lcd_control, 1);
-    bool two_tile_sprites = utils::bit(lcd_control, 2);
+    bool double_height = utils::bit(lcd_control, 2);
     
     std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
     for (int i = 0; i < 40; i++) {
@@ -215,8 +232,8 @@ void GPU::render_sprites()
         if (xpos == 0 || xpos >= 168 || ypos == 0 || ypos >= 160) { // sprite hidden
             continue;
         }
-        ypos += scroll_y + 16;
-        xpos += scroll_x + 8;
+        // ypos += scroll_y + 16;
+        // xpos += scroll_x + 8;
 
         int tile_num = sprite_data[byte_ind + 2];
         int flags = sprite_data[byte_ind + 3];
@@ -235,10 +252,13 @@ void GPU::render_sprites()
         color_palette[3] = COLORS[(obp >> 6) & 3];
 
         // position of lower left corner in framebuffer
-        int pixel_index = 256 * (256 - ypos) + xpos;
+        int pixel_index = 176 * (160 - ypos) + xpos;
         u16 tile_addr = TILE_DATA_1 + (16 * tile_num);
 
-        read_tile(framebuffer.begin() + pixel_index, tile_addr);
+        assert(pixel_index < 28896);
+
+        read_tile_s(sprite_texture.begin() + pixel_index, 
+            memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num);
     }
 }
 

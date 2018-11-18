@@ -25,8 +25,8 @@ public:
 private:
     Memory *memory;
     GameWindow *window;
-    //Register8bit &stat_reg;
     std::vector<u8> framebuffer;
+    std::vector<u8> sprite_texture;
 
     int clock;
     int line;
@@ -36,7 +36,8 @@ private:
 
     u8 &stat_reg;
     
-    void read_tile(std::vector<u8>::iterator pixels, u16 tile_addr);
+    void read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src);
+    void read_tile_s(std::vector<u8>::iterator dest, std::vector<u8>::iterator src);
     void render_background();
     void render_window();
     void render_sprites();
