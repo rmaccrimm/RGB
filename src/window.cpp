@@ -67,10 +67,8 @@ bool GameWindow::paused()
 
 void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
 {  
-    glUniform1i(tex_type, (int)Textures::BACKGROUND);
     glUniform1i(scrollx, x);
     glUniform1i(scrolly, y);
-    glUniform1i(background, 1);
     glActiveTexture(GL_TEXTURE0);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
@@ -83,14 +81,10 @@ void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
         GL_UNSIGNED_BYTE, 
         framebuffer
     );
-    glDrawArrays(GL_TRIANGLES, 0, 6); 
-    SDL_GL_SwapWindow(sdl_window);
-    draw = true;
 }
 
 void GameWindow::draw_sprites(u8 tex[])
 {
-    glUniform1i(tex_type, (int)Textures::SPRITES);
     glActiveTexture(GL_TEXTURE1);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
@@ -98,12 +92,16 @@ void GameWindow::draw_sprites(u8 tex[])
         0,
         0, 
         176,
-        172, 
-        GL_RED_INTEGER,
+        176, 
+        GL_RG_INTEGER,
         GL_UNSIGNED_BYTE, 
         tex
     );
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void GameWindow::draw_n()
+{
+    glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
     draw = true;
 }
@@ -164,7 +162,7 @@ void GameWindow::init_glcontext(bool limit_framerate)
 
 int GameWindow::get_uniform(std::string shader_name)
 {
-    int uniformloc = glGetUniformLocation(shader_id, "background_texture");
+    int uniformloc = glGetUniformLocation(shader_id, shader_name.c_str());
     if (uniformloc == -1) {
         std::cout << "Error: Uniform \"" << shader_name << "\" not found" << std::endl;
     }
@@ -175,7 +173,7 @@ void GameWindow::init_screen_texture()
 {
     // Create new texture for screen quad
     glGenTextures(1, &screen_tex);
-    glGenTextures(1, &color_palette);
+    glGenTextures(1, &sprite_tex);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, screen_tex);
@@ -197,7 +195,27 @@ void GameWindow::init_screen_texture()
         0
     );
 
-	check_glError("Screen Texture:");
+    check_glError("Background Texture:");
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, sprite_tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(
+        GL_TEXTURE_2D, 
+        0, 
+        GL_RG8UI, 
+        176,
+        176,
+        0, 
+        GL_RG_INTEGER,
+        GL_UNSIGNED_BYTE, 
+        0
+    );
+
+	check_glError("Sprite Texture:");
     
     GLuint screen_vao;
     GLuint screen_vbo;
@@ -217,9 +235,7 @@ void GameWindow::init_screen_texture()
     glUniform1i(get_uniform("background_texture"), 0);
     glUniform1i(get_uniform("sprite_texture"), 1);
     glUniform1i(scrollx = get_uniform("scrollx"), 0);
-    glUniform1i(scrolly = get_uniform("scrollyasdf"), 0);
-    glUniform1i(tex_type = get_uniform("tex_type"), (int)Textures::BACKGROUND);
-    glUniform1i(background = get_uniform("background"), 1);
+    glUniform1i(scrolly = get_uniform("scrolly"), 0);
 
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR) {

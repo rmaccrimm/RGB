@@ -28,6 +28,8 @@ public:
 
     void draw_sprites(u8 tex[]);
 
+    void draw_n();
+
 	void set_bg_palette(u8 palette[]);
 
 private:
@@ -37,6 +39,7 @@ private:
     SDL_Event event;
     GLuint shader_id;
     GLuint screen_tex;
+    GLuint sprite_tex;
 	GLuint color_palette;
     const int window_scale;
     int key_pressed[8];

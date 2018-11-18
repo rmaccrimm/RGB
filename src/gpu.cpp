@@ -16,8 +16,7 @@ GPU::GPU(Memory *mem, GameWindow *win):
     stat_reg(mem->get_mem_reference(reg::STAT))
 {
     framebuffer.resize(256 * 256, 0);
-    // h - 176, w - 172
-    sprite_texture.resize(176 * 172, 0);
+    sprite_texture.resize(176 * 176 * 2, 0);
 }
 
 void GPU::step(unsigned int cpu_clock)
@@ -55,6 +54,8 @@ void GPU::step(unsigned int cpu_clock)
 				}
                 window->draw_frame(
                     framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
+                window->draw_sprites(sprite_texture.data());
+                window->draw_n();
                 memory->set_interrupt(interrupt::VBLANK_bit);
             } else {
                 change_mode(OAM);
@@ -157,7 +158,10 @@ void GPU::read_tile_s(std::vector<u8>::iterator dest, std::vector<u8>::iterator 
             u8 lsb = (src[byte_ind] >> (7 - i)) & 1;
             u8 msb = (src[byte_ind + 1] >> (7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;
-            dest[172 * j + i] = color_palette[color];
+            if (color != 0) {
+                dest[2 * (176 * j + i)] = color_palette[color];
+                dest[2 * (176 * j + i) + 1] = 1;
+            }
         }
     }
 }
@@ -224,6 +228,8 @@ void GPU::render_sprites()
     bool double_height = utils::bit(lcd_control, 2);
     
     std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
+    sprite_texture.assign(sprite_texture.size(), 0);
+
     for (int i = 0; i < 40; i++) {
         int byte_ind = 4 * i;
         int ypos = sprite_data[byte_ind];
@@ -255,9 +261,7 @@ void GPU::render_sprites()
         int pixel_index = 176 * (160 - ypos) + xpos;
         u16 tile_addr = TILE_DATA_1 + (16 * tile_num);
 
-        assert(pixel_index < 28896);
-
-        read_tile_s(sprite_texture.begin() + pixel_index, 
+        read_tile_s(sprite_texture.begin() + 2 * pixel_index, 
             memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num);
     }
 }
