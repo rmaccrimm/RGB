@@ -149,7 +149,7 @@ void GameWindow::init_glcontext(bool limit_framerate)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     gl_context = SDL_GL_CreateContext(sdl_window);
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(limit_framerate);
     if (gl_context == nullptr) {
         std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
     }

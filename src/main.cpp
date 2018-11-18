@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
         ("help,h", "produce help message")
         ("boot-rom,b", po::value<std::string>(), "provide boot rom")
         ("debug,d", "enable debug mode")
+        ("unlock,u", "unlock framerate")
         ("input-file", po::value<std::string>(), "rom file to load");
     po::positional_options_description p_desc;
     p_desc.add("input-file", -1);
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
     bool enable_boot_rom = false;
     int enable_debug_mode = false;
     bool step_instr = false;
+    bool unlock_framerate = false;
 
     if (var_map.count("boot-rom")) {
         enable_boot_rom = true;
@@ -68,23 +70,17 @@ int main(int argc, char *argv[])
         enable_debug_mode = true;
         step_instr = true;
 
-    }    
-    bool unlock_framerate = false;
+    }
+    if (var_map.count("unlock")) {
+        unlock_framerate = true;
+    }
+    
     Joypad gb_pad;
     Cartridge game_cart(cartridge_filename);
     GameWindow window(&gb_pad, 5, !unlock_framerate, game_cart.title());
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
-
-    /*gb_cpu.internal_timer.set(0xff);
-    PRINT(gb_cpu.internal_timer.value());
-    PRINT(gb_mem.read(reg::DIV));
-    gb_cpu.internal_timer.add(4);
-    PRINT(gb_cpu.internal_timer.value());
-    PRINT(gb_mem.read(reg::DIV));
-    return 0;*/
-
 
     if (enable_boot_rom) {
         gb_mem.load_boot(boot_rom_filename.c_str());
