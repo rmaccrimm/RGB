@@ -149,14 +149,15 @@ void GPU::read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator sr
 }
 
 // dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
-void GPU::read_tile_s(std::vector<u8>::iterator dest, std::vector<u8>::iterator src)
+void GPU::read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src,
+    bool flip_x, bool flip_y)
 {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             // two bytes per line, contain lsb and msb of color
-            int byte_ind = 2 * (7 - j);
-            u8 lsb = (src[byte_ind] >> (7 - i)) & 1;
-            u8 msb = (src[byte_ind + 1] >> (7 - i)) & 1;
+            int byte_ind = 2 * (flip_y ? i : 7 - j);
+            u8 lsb = (src[byte_ind] >> (flip_x ? i : 7 - i)) & 1;
+            u8 msb = (src[byte_ind + 1] >> (flip_x ? i: 7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;
             if (color != 0) {
                 dest[2 * (176 * j + i)] = color_palette[color];
@@ -261,8 +262,8 @@ void GPU::render_sprites()
         int pixel_index = 176 * (160 - ypos) + xpos;
         u16 tile_addr = TILE_DATA_1 + (16 * tile_num);
 
-        read_tile_s(sprite_texture.begin() + 2 * pixel_index, 
-            memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num);
+        read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
+            memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num, flip_x, flip_y);
     }
 }
 
