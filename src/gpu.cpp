@@ -55,14 +55,11 @@ void GPU::step(unsigned int cpu_clock)
                 change_mode(VBLANK);
                 // Draw screen
 				set_bg_palette();
-				//if (memory->vram_updated) {
                 build_framebuffer();
-					// memory->vram_updated = false;
-				// }
-                window->draw_frame(
+                window->update_background(
                     framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
-                window->draw_sprites(sprite_texture.data());
-                window->draw_n();
+                window->update_sprites(sprite_texture.data());
+                window->draw_frame();
                 memory->set_interrupt(interrupt::VBLANK_bit);
             } else {
                 change_mode(OAM);
@@ -268,9 +265,20 @@ void GPU::render_sprites()
         // position of lower left corner in framebuffer
         int pixel_index = 176 * (160 - ypos) + xpos;
         u16 tile_addr = TILE_DATA_1 + (16 * tile_num);
-
-        read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
-            memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num, flip_x, flip_y);
+        
+        if (double_height) {
+            u8 upper = tile_num & 0xfe;
+            read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
+                memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*upper, flip_x, flip_y);
+            u8 lower = tile_num | 1;                
+            pixel_index = 176 * (160 - ypos - 8) + xpos;
+            read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
+                memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*lower, flip_x, flip_y);
+        }
+        else {
+            read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
+                memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num, flip_x, flip_y);
+        }
     }
 }
 

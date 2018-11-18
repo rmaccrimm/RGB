@@ -24,11 +24,11 @@ public:
 
     void process_input();
 
-    void draw_frame(u8 framebuffer[], int x, int y);
+    void update_background(u8 background[], int x, int y);
 
-    void draw_sprites(u8 tex[]);
+    void update_sprites(u8 sprites[]);
 
-    void draw_n();
+    void draw_frame();
 
 	void set_bg_palette(u8 palette[]);
 

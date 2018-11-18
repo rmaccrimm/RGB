@@ -65,7 +65,7 @@ bool GameWindow::paused()
     }
 }
 
-void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
+void GameWindow::update_background(u8 background[], int x, int y)
 {  
     glUniform1i(scrollx, x);
     glUniform1i(scrolly, y);
@@ -79,11 +79,11 @@ void GameWindow::draw_frame(u8 framebuffer[], int x, int y)
         256, 
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE, 
-        framebuffer
+        background
     );
 }
 
-void GameWindow::draw_sprites(u8 tex[])
+void GameWindow::update_sprites(u8 sprites[])
 {
     glActiveTexture(GL_TEXTURE1);
     glTexSubImage2D(
@@ -95,11 +95,11 @@ void GameWindow::draw_sprites(u8 tex[])
         176, 
         GL_RG_INTEGER,
         GL_UNSIGNED_BYTE, 
-        tex
+        sprites
     );
 }
 
-void GameWindow::draw_n()
+void GameWindow::draw_frame()
 {
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
