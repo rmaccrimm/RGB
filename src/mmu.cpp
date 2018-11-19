@@ -41,7 +41,7 @@ void Memory::write(u16 addr, u8 data)
 
 void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
 {
-    if (enable_boot_rom && addr <= 0xff && !utils::bit(read_reg(0xff50), 1)) {
+    if (enable_boot_rom && addr <= 0xff) { 
     // Boot ROM
 
         if (!write_operation)
@@ -157,8 +157,13 @@ void Memory::write_reg(u16 addr, u8 data)
     case reg::STAT:
         // bits 0 - 2 read-only
         io_registers[addr - 0xff00] = (data & ~7) | (io_registers[addr - 0xff00] & 7);
+        break;
     case reg::DMA:
         dma_transfer(data);
+        break;
+    case 0xff50:
+        enable_boot_rom = false;
+        break;
     default:
         io_registers[addr - 0xff00] = data;
     }
@@ -260,7 +265,7 @@ void Memory::init_registers()
     io[reg::WX] = 0;
     io[reg::STAT] = 0b10000000;//, 0b00000111;
     // boot-rom enable
-    io[0xff50] = 0;
+    io[0xff50] = 0b11111111;
 
     io_registers.resize(0x80, 0);
     io_read_masks.resize(0x80, 0);

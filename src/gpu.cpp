@@ -137,7 +137,6 @@ void GPU::set_bg_palette()
     color_palette[3] = COLORS[(bgp >> 6) & 3];
 }
 
-// dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
 void GPU::read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src)
 {
     for (int i = 0; i < 8; i++) {
@@ -152,7 +151,6 @@ void GPU::read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator sr
     }
 }
 
-// dest is a pointer to the first pixel in the framebuffer where the tile will be loaded
 void GPU::read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src,
     bool flip_x, bool flip_y)
 {
