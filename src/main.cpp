@@ -10,7 +10,6 @@
 #include <string>
 #include <thread>
 #include <chrono>
-#include <SDL2/SDL.h>
 #include <boost/program_options.hpp>
 
 #include "cartridge.h"
@@ -71,7 +70,7 @@ int main(int argc, char *argv[])
         step_instr = true;
 
     }
-    if (var_map.count("unlock")) {
+    if (var_map.count("unlock")) {                  
         unlock_framerate = true;
     }
     

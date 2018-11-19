@@ -136,8 +136,6 @@ u8 Memory::read_reg(u16 addr)
     case reg::P1: 
     {
         bool select_dpad = !utils::bit(reg_val, 4);
-        // io_registers[addr].write(joypad->get_state(select_dpad) & 0xf);
-        // return io_registers[addr].value();
         return (3 << 6) | joypad->get_state(select_dpad);
     }
     default:
@@ -203,17 +201,11 @@ void Memory::clear_access_break_pt() { enable_break_pt = false; }
 
 bool Memory::pause() { return paused; }
 
-// This seems dangerous and should definitely be removed later
-std::vector<u8>::iterator Memory::get_vram_ptr(u16 addr)
-{
-    return video_RAM.begin() + (addr - 0x8000);
-}
-
 void Memory::dma_transfer(u8 src)
 {
     u16 start_addr = src << 8;
     for (int i = 0; i <= 0x9f; i++) {
-        sprite_attribute_table[i] = read(start_addr + i);
+        sprite_attribute_table[i] =  read(start_addr + i);
     }
 }
 
