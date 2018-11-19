@@ -233,6 +233,10 @@ void GPU::render_sprites()
     std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
     sprite_texture.assign(sprite_texture.size(), 0);
 
+    if (!enable_sprites) {
+        return;
+    }
+
     for (int i = 39; i >= 0; i--) {
         int byte_ind = 4 * i;
         int ypos = sprite_data[byte_ind];

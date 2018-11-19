@@ -160,6 +160,7 @@ void Memory::write_reg(u16 addr, u8 data)
         break;
     case reg::DMA:
         dma_transfer(data);
+        io_registers[addr - 0xff00] = data;
         break;
     case 0xff50:
         enable_boot_rom = false;
