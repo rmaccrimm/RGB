@@ -10,7 +10,7 @@
 #include <map>
 
 Cartridge::Cartridge(std::string file_name) :
-    mode(MODE0),
+    mode(0),
     enable_ram(false),
     current_rom_bank(1),
     current_ram_bank(0),
@@ -23,56 +23,71 @@ Cartridge::Cartridge(std::string file_name) :
 
 u8 Cartridge::read(u16 addr)
 {
-    switch (cartridge_type)
-    {
-    case ROM_ONLY:
-        return read_only_mem[addr]; 
-        break;
-
-    case MBC1:
-    case MBC1_RAM:
-    case MBC1_RAM_BATTERY:
-        switch (addr / 0x1000)
-        {
-        case 0x0:
-        case 0x1:
-        case 0x2:
-        case 0x3:
-            if (mode == MODE0) {
-                return read_only_mem[addr];
-            }
-            else {
-                u8 bank_no = current_rom_bank & 0x60; // 2 msb
-                return read_only_mem[addr + (bank_no & mask_ignore_bits) * rom_bank_size];
-            }
-        case 0x4:
-        case 0x5:
-        case 0x6:
-        case 0x7:
-            return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits)-1) * rom_bank_size];
-        case 0xa:
-        case 0xb:
-        {
-            addr -= 0xa000;
-            if (!enable_ram || num_ram_banks == 0) {
-                return 0xff;
-            }
-            else {
-                if (mode == MODE1) {
-                    addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
-                }
-                return random_access_mem[addr];
-            }
-        }
-        default:
-            break;
-        }
-    default:
-        break;
+    if (mbc == NONE) {
+        return none_read(addr);
     }
-    std::cout << "Addr " << std::hex << addr << " fell through read" << std::endl;
-    assert(false);
+    else if (mbc == MBC1) {
+        return mcb1_read(addr);
+    }
+    else if (mbc == MBC2) {
+        return mbc2_read(addr);
+    }
+    else if (mbc == MBC2) {
+        return mbc3_read(addr);
+    }
+    else if (mbc == MBC5) {
+        return mbc5_read(addr);
+    }
 }
+
+void Cartridge::write(u16 addr, u8 data)
+{
+    if (mbc == NONE) {
+        none_write(addr, data);
+    }
+    else if (mbc == MBC1) {
+        mcb1_write(addr, data);
+    }
+    else if (mbc == MBC2) {
+        mbc2_write(addr, data);
+    }
+    else if (mbc == MBC2) {
+        mbc3_write(addr, data);
+    }
+    else if (mbc == MBC5) {
+        mbc5_write(addr, data);
+    }
+}
+
+u8 mbc1_read(u16 addr) 
+{
+    if (addr <= 0x3fff) {
+        if (mode == 0) {
+            return read_only_mem[addr];
+        }
+        else {
+            u8 bank_no = current_rom_bank & 0x60; // 2 msb
+            return read_only_mem[addr + (bank_no & mask_ignore_bits) * rom_bank_size];
+        }
+    }
+    else if (addr >= 0x4000 && addr <= 0x7fff) {
+        return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits)-1) * rom_bank_size];
+    }
+    else if (addr >= 0xa000 && addr <= 0xbfff) {
+        addr -= 0xa000;
+        if (!enable_ram || num_ram_banks == 0) {
+            return 0xff;
+        }
+        if (mode == 1) {
+            addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+        }
+        return random_access_mem[addr];
+    }
+    else {
+        assert(false);
+    }
+}
+ 
 
 void Cartridge::write(u16 addr, u8 val)
 {
