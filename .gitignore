@@ -2,6 +2,10 @@ old/
 bin/
 obj/
 build/
+Release/
+Debug/
+roms/
+test/
 *~
 *.o
 gb_emulator
