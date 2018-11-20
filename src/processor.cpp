@@ -9,7 +9,7 @@
 #include <cassert>
 
 Processor::Processor(Memory *mem) : 
-    A(), F(), B(), C(), D(), E(), H(), L(), AF(&A, &F), BC(&B, &C),	DE(&D, &E), HL(&H, &L),
+    A(AF.low), F(AF.high), B(BC.high), C(BC.low), D(DE.high), E(DE.low), H(HL.high), L(HL.low)
     memory(mem), internal_timer(), div_reg(mem->get_mem_reference(reg::DIV)),
     IME_flag(0), ei_count(0), cond_taken(false), timer_count(0), halted(0), halt_bug(false)
 {}
@@ -59,8 +59,8 @@ void Processor::init_state()
 
 u8 Processor::fetch_byte()
 {
-    u8 data = memory->read(PC.value());
-    PC.increment();
+    u8 data = memory->read(PC.value);
+    PC.value++;
     return data;
 }
 
@@ -75,9 +75,9 @@ u16 Processor::fetch_word()
 void Processor::set_flags(u8 mask, bool b)
 {
     if (b) {
-        F.set(F.value() | mask);
+        F |= mask;
     } else {
-        F.set(F.value() & ~mask);
+        F &= (~mask);
     }
 }
 
@@ -87,7 +87,7 @@ int Processor::step(bool print)
 
     int cycles;
     if (!halted) {
-        u16 prev_pc = PC.value();
+        u16 prev_pc = PC.value;
         u8 instr = fetch_byte();
         bool cb = instr == 0xcb;
 
@@ -126,21 +126,21 @@ int Processor::step(bool print)
         cycles = 1;
     }
     update_timer(cycles);
-    return internal_timer.value();
+    return internal_timer.value;
 }
 
 void Processor::update_timer(int cycles)
 {
     // If any value was written to DIV, reset timer
     if (memory->reset_clock) {
-        internal_timer.set(0);
+        internal_timer.value = 0;
         div_reg = 0;
         memory->reset_clock = false;    
     }
     else {
 
-        internal_timer.add(4 * cycles);
-        div_reg = internal_timer.value_high();
+        internal_timer.value += 4 * cycles;
+        div_reg = internal_timer.high;
 
         u8 timer_ctrl = memory->read(reg::TAC);
         if (utils::bit(timer_ctrl, 2)) {
@@ -178,9 +178,9 @@ void Processor::process_interrupts()
                         memory->write(reg::IF, utils::reset(int_request, i));
                         // Jump to interrupt routine
                         op::PUSH(this, PC);
-                        PC.set(interrupt_addr[i]);
+                        PC.value = interrupt_addr[i];
                         //Dispatching an interrupt takes 20 clocks
-                        internal_timer.add(20);
+                        internal_timer.value += 20;
                         timer_count += 20;
                         break;
                     }
@@ -190,13 +190,13 @@ void Processor::process_interrupts()
     }
 }
 
-bool Processor::zero_flag() { return F.value() & ZERO; }
+bool Processor::zero_flag() { return F & ZERO; }
 
-bool Processor::subtract_flag() { return F.value() & SUBTRACT; }
+bool Processor::subtract_flag() { return F & SUBTRACT; }
 
-bool Processor::half_carry_flag() { return F.value() & HALF_CARRY; }
+bool Processor::half_carry_flag() { return F & HALF_CARRY; }
 
-bool Processor::carry_flag() { return F.value() & CARRY; }
+bool Processor::carry_flag() { return F & CARRY; }
 
 bool Processor::interrupt_pending() { 
     return (memory->read(reg::IF) & memory->read(reg::IE) & 0x1f) != 0; 
@@ -239,8 +239,8 @@ void Processor::execute(u8 instr)
         // LD (nn), SP
         // low byte -> (nn), high byte -> (nn + 1)
         addr = fetch_word();
-        memory->write(addr, SP.value_low());
-        memory->write(addr + 1, SP.value_high());
+        memory->write(addr, SP.low);
+        memory->write(addr + 1, SP.high);
         break;
     case 0x09:
         op::ADD(this, HL, BC);                 
@@ -326,7 +326,7 @@ void Processor::execute(u8 instr)
     case 0x22:
         // LD (HL+), A
         op::LD_mem(this, HL, A);
-        HL.increment();
+        HL.value++;
         break;
     case 0x23:
         op::INC(HL);
@@ -353,7 +353,7 @@ void Processor::execute(u8 instr)
     case 0x2a:
         // LD A, (HL+)
         op::LD_mem(this, A, HL);
-        HL.increment();
+        HL.value++;
         break;
     case 0x2b:
         op::DEC(this, HL);                     
@@ -380,7 +380,7 @@ void Processor::execute(u8 instr)
     case 0x32:
         // LD (HL-), A
         op::LD_mem(this, HL, A);
-        HL.decrement();
+        HL.value--;
         break;
     case 0x33:
         op::INC(SP);
@@ -409,7 +409,7 @@ void Processor::execute(u8 instr)
     case 0x3a:
         // LD A, (HL-)
         op::LD_mem(this, A, HL);
-        HL.decrement();
+        HL.value--;
         break;
     case 0x3b:
         op::DEC(this, SP);                     
@@ -965,7 +965,7 @@ void Processor::execute(u8 instr)
     case 0xea:
         // LD (nn), A
         addr = fetch_word();
-        memory->write(addr, A.value());
+        memory->write(addr, A);
         break;
     case 0xeb:
         op::INVALID();                         
@@ -984,16 +984,16 @@ void Processor::execute(u8 instr)
         break;
     case 0xf0:
         // LD A, (0xff00 + n)
-        A.set(memory->read(0xff00 + fetch_byte()));
+        A = memory->read(0xff00 + fetch_byte());
         break;
     case 0xf1:
         op::POP(this, AF); 
         // Lower four bits of F masked out
-        F.set(F.value() & 0xf0);                    
+        F &= 0xf0;                    
         break;
     case 0xf2:
         // LD A, (0xff00 + C)
-        A.set(memory->read(0xff00 + C.value()));
+        A = (memory->read(0xff00 + C);
         break;
     case 0xf3:
         // DI - disable interrupts
@@ -1016,10 +1016,10 @@ void Processor::execute(u8 instr)
         // LD HL, SP + n - signed operand
         i8 op = (i8)fetch_byte();
         // immediate operand must be treated as unsigned for carry checks
-        set_flags(Processor::CARRY, utils::full_carry_add(SP.value(), op));
-        set_flags(Processor::HALF_CARRY, utils::half_carry_add(SP.value(), op));
+        set_flags(Processor::CARRY, utils::full_carry_add(SP.value, op));
+        set_flags(Processor::HALF_CARRY, utils::half_carry_add(SP.value, op));
         set_flags(ZERO | SUBTRACT, 0);
-        HL.set(SP.value() + op);
+        HL.set(SP.value + op);
         break;
     }
     case 0xf9:
@@ -1028,7 +1028,7 @@ void Processor::execute(u8 instr)
     case 0xfa:
         // LD A, (nn)
         addr = fetch_word();
-        A.set(memory->read(addr));
+        A = memory->read(addr);
         break;
     case 0xfb:
         // EI - enable interrupts

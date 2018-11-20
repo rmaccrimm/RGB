@@ -8,7 +8,7 @@ typedef int32_t i32;
 
 union reg16 
 {
-    u16 val;
+    u16 value;
     struct {
         u8 low;
         u8 high;

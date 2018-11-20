@@ -30,35 +30,27 @@ public:
     bool carry_flag();        // C
 
     bool interrupt_pending();
-
-    Register8bit A;
-    Register8bit F;
-    Register8bit B;
-    Register8bit C;
-    Register8bit D;
-    Register8bit E;
-    Register8bit H;
-    Register8bit L;
     
-    Register16bit AF;
-    Register16bit BC;
-    Register16bit DE;	
-    Register16bit HL;
-    Register16bit SP;
-    Register16bit PC;
+    reg16 AF;
+    reg16 BC;
+    reg16 DE;	
+    reg16 HL;
+    reg16 SP;
+    reg16 PC;
+
+    u8 &A;
+    u8 &F;
+    u8 &B;
+    u8 &C;
+    u8 &D;
+    u8 &E;
+    u8 &H;
+    u8 &L;
 
     Memory *memory; 
 
-    // F register flags
-    static const u8 ZERO = 1 << 7;       
-    static const u8 SUBTRACT = 1 << 6;   
-    static const u8 HALF_CARRY = 1 << 5; 
-    static const u8 CARRY = 1 << 4;      
-
-private:
-
-    Register16bit internal_timer;
-    Register8bit timer_lsb;
+    reg16 internal_timer;
+    u8 timer_lsb;
 
     u8 &div_reg;
     
@@ -68,6 +60,11 @@ private:
     int timer_count;
     bool halted;
     bool halt_bug;
+
+    static const u8 ZERO = 1 << 7;       
+    static const u8 SUBTRACT = 1 << 6;   
+    static const u8 HALF_CARRY = 1 << 5; 
+    static const u8 CARRY = 1 << 4;      
 
     static const int instr_cycles[256];
     static const int instr_cycles_cond[256];
