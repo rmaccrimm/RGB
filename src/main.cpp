@@ -16,8 +16,6 @@
 #include "debug.h"
 #include "definitions.h"
 #include "registers.h"
-#include "register16bit.h"
-#include "register8bit.h"
 #include "processor.h"
 #include "gpu.h"
 #include "window.h"

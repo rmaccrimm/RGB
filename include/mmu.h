@@ -2,7 +2,6 @@
 #define MMU_H
 
 #include "definitions.h"
-#include "register8bit.h"
 #include "joypad.h"
 #include "cartridge.h"
 #include <unordered_map>

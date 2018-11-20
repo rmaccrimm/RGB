@@ -4,8 +4,6 @@
 #include <map>
 #include <cassert>
 
-typedef Register8bit r8;
-
 Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) : 
     joypad(pad), 
     cartridge(cart), 
