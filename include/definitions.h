@@ -1,3 +1,6 @@
+#ifndef DEFINITIONS_H
+#define DEFINITIONS_H
+
 #include <cstdint>
 
 typedef uint8_t u8;
@@ -14,3 +17,5 @@ union reg16
         u8 high;
     };
 };
+
+#endif

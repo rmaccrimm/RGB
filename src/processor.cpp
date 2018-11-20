@@ -9,19 +9,19 @@
 #include <cassert>
 
 Processor::Processor(Memory *mem) : 
-    A(AF.low), F(AF.high), B(BC.high), C(BC.low), D(DE.high), E(DE.low), H(HL.high), L(HL.low)
+    A(AF.low), F(AF.high), B(BC.high), C(BC.low), D(DE.high), E(DE.low), H(HL.high), L(HL.low),
     memory(mem), internal_timer(), div_reg(mem->get_mem_reference(reg::DIV)),
     IME_flag(0), ei_count(0), cond_taken(false), timer_count(0), halted(0), halt_bug(false)
 {}
 
 void Processor::init_state()
 {
-    AF.set(0x01b0);
-    BC.set(0x0013);
-    DE.set(0x00d8);
-    HL.set(0x014d);
-    PC.set(0x100);
-    SP.set(0xfffe);
+    AF.value = 0x01b0;
+    BC.value = 0x0013;
+    DE.value = 0x00d8;
+    HL.value = 0x014d;
+    PC.value = 0x100;
+    SP.value = 0xfffe;
     memory->write(reg::TIMA, 0);
     memory->write(reg::TMA, 0);
     memory->write(reg::TAC, 0);
@@ -54,7 +54,7 @@ void Processor::init_state()
     memory->write(reg::WX, 0x00);
     memory->write(reg::IE, 0x00);
     memory->write(0xff50, 0xff);
-    // internal_timer.set(0xabcc);
+    // internal_timer = 0xabcc;
 }
 
 u8 Processor::fetch_byte()
@@ -394,7 +394,7 @@ void Processor::execute(u8 instr)
     case 0x36:
         // LD (HL), n
         n = fetch_byte();
-        memory->write(HL.value(), n);
+        memory->write(HL.value, n);
         break;
     case 0x37:
         op::SCF(this);                         
@@ -932,14 +932,14 @@ void Processor::execute(u8 instr)
         break;
     case 0xe0:
         // LD (0xff00 + n), A
-        memory->write(0xff00 + (u16)fetch_byte(), A.value());
+        memory->write(0xff00 + (u16)fetch_byte(), A);
         break;
     case 0xe1:
         op::POP(this, HL);       
         break;
     case 0xe2:
         // LD (0xff00 + C), A
-        memory->write(0xff00 + (u16)C.value(), A.value());
+        memory->write(0xff00 + (u16)C, A);
         break;
     case 0xe3:
         op::INVALID();                         
@@ -993,7 +993,7 @@ void Processor::execute(u8 instr)
         break;
     case 0xf2:
         // LD A, (0xff00 + C)
-        A = (memory->read(0xff00 + C);
+        A = memory->read(0xff00 + C);
         break;
     case 0xf3:
         // DI - disable interrupts
@@ -1019,7 +1019,7 @@ void Processor::execute(u8 instr)
         set_flags(Processor::CARRY, utils::full_carry_add(SP.value, op));
         set_flags(Processor::HALF_CARRY, utils::half_carry_add(SP.value, op));
         set_flags(ZERO | SUBTRACT, 0);
-        HL.set(SP.value + op);
+        HL.value = SP.value + op;
         break;
     }
     case 0xf9:

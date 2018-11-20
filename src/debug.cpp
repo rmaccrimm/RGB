@@ -68,17 +68,17 @@ int debug::prompt(std::string msg)
 void debug::print_registers(Processor *cpu)
 {
     std::cout << "AF:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->AF.value() << "\n"
+              << std::hex << (int)cpu->AF.value << "\n"
               << "BC:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->BC.value() << "\n"
+              << std::hex << (int)cpu->BC.value << "\n"
               << "DE:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->DE.value() << "\n"
+              << std::hex << (int)cpu->DE.value << "\n"
               << "HL:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->HL.value() << "\n"
+              << std::hex << (int)cpu->HL.value << "\n"
               << "SP:\t"  <<  std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->SP.value() << "\n"
+              << std::hex << (int)cpu->SP.value << "\n"
               << "PC:\t"  << std::setw(4) << std::setfill('0')
-              << std::hex << (int)cpu->PC.value() << "\n";    
+              << std::hex << (int)cpu->PC.value << "\n";    
     if (EXTRA) {
         std::cout << "\nTIMA:\t" << (int)cpu->memory->read(reg::TIMA) << "\n"
                   << "DIV:\t" << (int)cpu->memory->read(reg::DIV) << "\n"
