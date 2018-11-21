@@ -10,6 +10,7 @@ typedef std::vector<u8>::iterator mem_iter;
 class Cartridge
 {
 public:
+    // Memory bank controller types
     enum MBCType {
         NONE,
         MBC1,
@@ -25,6 +26,10 @@ public:
 
     MBCType mbc;
     std::string title;
+    std::string type;
+
+    int num_rom_banks;
+    int num_ram_banks;
     
 private:
     // Specific MBC type read/write implementations
@@ -46,21 +51,18 @@ private:
 
     bool mode;
     bool enable_ram;
+    bool enable_rtc;
 
     const int rom_bank_size;
     const int ram_bank_size;
     int current_rom_bank;
     int current_ram_bank;
-    int num_rom_banks;
-    int num_ram_banks;
+    int current_rtc;
 
     std::vector<u8> read_only_mem;
     std::vector<u8> random_access_mem;
+    std::vector<u8> clock_registers;
 
-    std::vector<u8>::iterator fixed_read_only_bank;
-    std::vector<u8>::iterator current_read_only_bank;
-    std::vector<u8>::iterator current_random_access_bank;
-    
     u8 mask_ignore_bits;
     
 };

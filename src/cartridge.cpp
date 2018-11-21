@@ -19,6 +19,9 @@ Cartridge::Cartridge(std::string file_name) :
 {
     utils::load_file(read_only_mem, file_name);
     read_header();
+    if (mbc == MBC3) {
+        clock_registers.resize(5, 0);
+    }
 }
 
 u8 Cartridge::read(u16 addr)
@@ -153,13 +156,56 @@ void Cartridge::mbc2_write(u16 addr, u8 data)
 
 u8 Cartridge::mbc3_read(u16 addr)
 {
-    assert(false);
-    return 0;
+    if (addr <= 0x3fff) {
+        return mbc1_read(addr);
+        //return read_only_mem[addr];
+    }
+    else if (addr >= 0x4000 && addr <= 0x7fff) {
+        return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits) - 1) * rom_bank_size];
+    }
+    else if (addr >= 0xa000 && addr <= 0xbfff) {
+        if (!enable_ram) { // enables both RAM and RTC
+            return 0xff;
+        }
+        else if (current_ram_bank <= 3) { // Not sure if less than 4 ram banks possible
+            addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+            return random_access_mem[addr];
+        }
+        else if (current_ram_bank >= 8 && current_ram_bank <= 0xc) {
+            return clock_registers[current_rtc - 8];
+        }
+        else { // Not sure if bank number wraps around like MBC1
+            return 0xff;
+        }
+    }
 }
 
 void Cartridge::mbc3_write(u16 addr, u8 data)
 {
-    assert(false);
+    if (addr <= 0x1fff) {
+        enable_ram = (data & 0xf) == 0xa;
+    }
+    else if (addr >= 0x2000 && addr <= 0x3fff) {
+        data &= 0x7f;
+        current_rom_bank = (data == 0) ? 1 : data;
+    }
+    else if (addr >= 0x4000 && addr <= 0x5fff) {
+        current_ram_bank = data;
+    }
+    else if (addr >= 0x6000 && addr <= 0x7fff) {
+        // Latch clock
+    }
+    else if (addr >= 0xa000 && addr <= 0xbfff) {
+        if (enable_ram) {
+            if (current_ram_bank <= 3) {
+                addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+                random_access_mem[addr] = data;
+            }
+            else if (current_ram_bank >= 8 && current_ram_bank <= 0xc) {
+                clock_registers[current_ram_bank - 8] = data;
+            }
+        }
+    }
 }
 
 u8 Cartridge::mbc5_read(u16 addr)
@@ -208,15 +254,18 @@ void Cartridge::set_type(u8 data)
     case 0x00: 
     case 0x08:
     case 0x09:
+        type = "NONE";
         mbc = NONE;
         break;
     case 0x01: 
     case 0x02:
     case 0x03: 
+        type = "MBC1";
         mbc = MBC1;
         break;
     case 0x05:
     case 0x06:
+        type = "MBC2";
         mbc = MBC2;
         break;
     case 0x0f: 
@@ -224,6 +273,7 @@ void Cartridge::set_type(u8 data)
     case 0x11: 
     case 0x12: 
     case 0x13: 
+        type = "MBC3";
         mbc = MBC3;
         break;
     case 0x19: 
@@ -232,6 +282,7 @@ void Cartridge::set_type(u8 data)
     case 0x1c: 
     case 0x1d: 
     case 0x1e: 
+        type = "MBC5";
         mbc = MBC5;
         break;
     default:
