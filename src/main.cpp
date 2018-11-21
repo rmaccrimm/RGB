@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     
     Joypad gb_pad;
     Cartridge game_cart(cartridge_filename);
-    GameWindow window(&gb_pad, 5, !unlock_framerate, game_cart.title());
+    GameWindow window(&gb_pad, 5, !unlock_framerate, game_cart.title);
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
