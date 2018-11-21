@@ -79,6 +79,10 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
 
+    std::cout << game_cart.title << std::endl << game_cart.type << std::endl
+              << game_cart.num_ram_banks << " RAM banks" << std::endl
+              << game_cart.num_rom_banks << " ROM banks" << std::endl;
+
     if (enable_boot_rom) {
         gb_mem.load_boot(boot_rom_filename.c_str());
     } 

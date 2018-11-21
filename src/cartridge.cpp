@@ -35,7 +35,7 @@ u8 Cartridge::read(u16 addr)
     else if (mbc == MBC2) {
         return mbc2_read(addr);
     }
-    else if (mbc == MBC2) {
+    else if (mbc == MBC3) {
         return mbc3_read(addr);
     }
     else if (mbc == MBC5) {
@@ -54,7 +54,7 @@ void Cartridge::write(u16 addr, u8 data)
     else if (mbc == MBC2) {
         mbc2_write(addr, data);
     }
-    else if (mbc == MBC2) {
+    else if (mbc == MBC3) {
         mbc3_write(addr, data);
     }
     else if (mbc == MBC5) {
@@ -157,13 +157,13 @@ void Cartridge::mbc2_write(u16 addr, u8 data)
 u8 Cartridge::mbc3_read(u16 addr)
 {
     if (addr <= 0x3fff) {
-        return mbc1_read(addr);
-        //return read_only_mem[addr];
+        return read_only_mem[addr];
     }
     else if (addr >= 0x4000 && addr <= 0x7fff) {
         return read_only_mem[addr + ((current_rom_bank & mask_ignore_bits) - 1) * rom_bank_size];
     }
     else if (addr >= 0xa000 && addr <= 0xbfff) {
+        addr -= 0xa000;
         if (!enable_ram) { // enables both RAM and RTC
             return 0xff;
         }
@@ -190,12 +190,13 @@ void Cartridge::mbc3_write(u16 addr, u8 data)
         current_rom_bank = (data == 0) ? 1 : data;
     }
     else if (addr >= 0x4000 && addr <= 0x5fff) {
-        current_ram_bank = data;
+        current_ram_bank = data % 0xd;
     }
     else if (addr >= 0x6000 && addr <= 0x7fff) {
         // Latch clock
     }
     else if (addr >= 0xa000 && addr <= 0xbfff) {
+        addr -= 0xa000;
         if (enable_ram) {
             if (current_ram_bank <= 3) {
                 addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
