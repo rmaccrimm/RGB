@@ -71,7 +71,7 @@ u8 Cartridge::none_read(u16 addr)
 
 void Cartridge::none_write(u16 addr, u8 data)
 {
-
+    return;
 }
 
 u8 Cartridge::mbc1_read(u16 addr) 
@@ -138,6 +138,39 @@ void Cartridge::mbc1_write(u16 addr, u8 data)
             random_access_mem[addr] = data;
         }
     }
+}
+
+u8 Cartridge::mbc2_read(u16 addr)
+{
+    assert(false);
+    return 0;
+}
+
+void Cartridge::mbc2_write(u16 addr, u8 data)
+{
+    assert(false);
+}
+
+u8 Cartridge::mbc3_read(u16 addr)
+{
+    assert(false);
+    return 0;
+}
+
+void Cartridge::mbc3_write(u16 addr, u8 data)
+{
+    assert(false);
+}
+
+u8 Cartridge::mbc5_read(u16 addr)
+{
+    assert(false);
+    return 0;
+}
+
+void Cartridge::mbc5_write(u16 addr, u8 data)
+{
+    assert(false);
 }
  
 void Cartridge::read_header()
