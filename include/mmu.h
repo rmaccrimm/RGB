@@ -58,8 +58,6 @@ private:
 
     void init_registers();
 
-    void map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val);
-
     void write_reg(u16 addr, u8 data);
 
     u8 read_reg(u16 addr);

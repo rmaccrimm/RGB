@@ -23,9 +23,39 @@ Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) :
 
 u8 Memory::read(u16 addr) 
 {
-    u8 r;
-    map_memory(addr, 0, false, r);
-    return r;
+    if (enable_boot_rom && addr <= 0xff) { 
+        return boot_ROM[addr];
+    }
+    else if (addr <= 0x7fff) {
+        return cartridge->read(addr);
+    }
+    else if (addr >= 0x8000 && addr <= 0x9fff) {
+        return video_RAM[addr - 0x8000];
+    }
+    else if (addr >= 0xa000 && addr <= 0xbfff) {
+        return cartridge->read(addr);
+    }
+    else if (addr >= 0xc000 && addr <= 0xdfff) {
+        return internal_RAM[addr - 0xc000];
+    }
+    else if (addr >= 0xe000 && addr <= 0xfdff) {
+        return read(addr - 0x2000);
+    }
+    else if (addr >= 0xfe00 && addr <= 0xfe9f) {
+        return sprite_attribute_table[addr - 0xfe00];
+    }
+    else if (addr >= 0xfea0 && addr <= 0xfeff) {
+        return 0xff;
+    }
+    else if (addr >= 0xff00 && addr <= 0xff7f) {
+        return read_reg(addr);
+    }
+    else if (addr >= 0xff80 && addr <= 0xfffe) {
+        return high_RAM[addr - 0xff80];
+    }
+    else if (addr == 0xffff) {
+        return ie_reg;
+    }
 }
 
 void Memory::write(u16 addr, u8 data)
@@ -33,96 +63,35 @@ void Memory::write(u16 addr, u8 data)
     if (enable_break_pt && addr == break_pt) 
         paused = true; 
 
-    u8 r;
-    map_memory(addr, data, true, r);
-}
-
-void Memory::map_memory(u16 addr, u8 data, bool write_operation, u8 &return_val)
-{
-    if (enable_boot_rom && addr <= 0xff) { 
-    // Boot ROM
-
-        if (!write_operation)
-            return_val = boot_ROM[addr];
-    }
-    else if (addr <= 0x7fff) {
-    // External ROM
-
-        if (write_operation) 
-            cartridge->write(addr, data);
-        else
-            return_val = cartridge->read(addr);
+    if (addr <= 0x7fff) {
+        cartridge->write(addr, data);
     }
     else if (addr >= 0x8000 && addr <= 0x9fff) {
-    // VRAM
-
-        if (write_operation) {
-            vram_updated = true;
-            video_RAM[addr - 0x8000] = data;
-        }
-        else 
-            return_val = video_RAM[addr - 0x8000];
+        video_RAM[addr - 0x8000] = data;
     }
     else if (addr >= 0xa000 && addr <= 0xbfff) {
-    // External RAM
-
-        if (write_operation) 
-            cartridge->write(addr, data);
-        else 
-            return_val = cartridge->read(addr);
+        cartridge->write(addr, data);
     }
     else if (addr >= 0xc000 && addr <= 0xdfff) {
-    // Internal RAM
-
-        if (write_operation)
-            internal_RAM[addr - 0xc000] = data;
-        else
-            return_val = internal_RAM[addr - 0xc000];
-
+        internal_RAM[addr - 0xc000] = data;
     }
     else if (addr >= 0xe000 && addr <= 0xfdff) {
-    // Echo RAM
-
-        map_memory(addr - 0x2000, data, write_operation, return_val);
+        write(addr - 0x2000, data);
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
-    // OAM
-
-        if (write_operation)
-            sprite_attribute_table[addr - 0xfe00] = data;
-        else
-            return_val = sprite_attribute_table[addr - 0xfe00];
+        sprite_attribute_table[addr - 0xfe00] = data;
     }
     else if (addr >= 0xfea0 && addr <= 0xfeff) {
-    // Unusable 
-
-        if (!write_operation)
-            return_val = 0xff;
+        return;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
-    // IO registers
-
-        if (write_operation) {
-            write_reg(addr, data);
-        }
-        else 
-            return_val = read_reg(addr);
+        write_reg(addr, data);
     }
     else if (addr >= 0xff80 && addr <= 0xfffe) {
-    // High RAM
-
-        if (write_operation) 
-            high_RAM[addr - 0xff80] = data;
-        else
-            return_val = high_RAM[addr - 0xff80];
+        high_RAM[addr - 0xff80] = data;
     }
     else if (addr == 0xffff) {
-    // IE register
-
-        if (write_operation)
-            ie_reg = data;
-        else
-            return_val = ie_reg;
+        ie_reg = data;
     }
 }
 
