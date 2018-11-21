@@ -46,8 +46,8 @@ public:
 
     const int rom_bank_size;
     const int ram_bank_size;
-    int current_rom_bank_index;
-    int current_ram_bank_index;
+    int current_rom_bank;
+    int current_ram_bank;
 
     int num_rom_banks;
     int num_ram_banks;

@@ -87,81 +87,44 @@ u8 mbc1_read(u16 addr)
         assert(false);
     }
 }
- 
 
-void Cartridge::write(u16 addr, u8 val)
+void mbc1_write(u16 addr, u8 data)
 {
-    switch (cartridge_type)
-    {
-    case MBC1:
-    case MBC1_RAM:
-    case MBC1_RAM_BATTERY:
-        switch (addr / 0x1000)
-        {
-        // enable/disable RAM
-        case 0x0:
-        case 0x1:
-            if ((val & 0xf) == 0xa) {
-                enable_ram = true;
-            }
-            else {
-                enable_ram = false;
-            }
-            break;
-        // set 5lsb of ROM bank
-        case 0x2:
-        case 0x3:
-        {
-            current_rom_bank &= (7 << 5);
-            current_rom_bank |= (0x1f & val);
-            if ((current_rom_bank & 0x1f) == 0)
-                current_rom_bank++;
-            break;
+    if (addr <= 0x1fff) {
+        enable_ram = (val & 0xf) == 0xa;
+    }
+    else if (addr >= 0x2000 && addr <= 0x3fff) {
+        current_rom_bank &= (7 << 5);
+        current_rom_bank |= (0x1f & val);
+        if ((current_rom_bank & 0x1f) == 0) {
+            current_rom_bank++;
         }
-        // set RAM bank/2 msb of ROM bank
-        case 0x4:
-        case 0x5:
-                current_ram_bank = val & 0x3;
-                current_rom_bank &= (0x1f);
-                current_rom_bank |= (val & 3) << 5;
-                if ((current_rom_bank & 0x1f) == 0)
-                    current_rom_bank++;
-            break;
-        // select mode
-        case 0x6:
-        case 0x7:
-            if (val == 0)
-                mode = MODE0;
-            else
-                mode = MODE1;
-            break;
-        // access RAM
-        case 0xa:
-        case 0xb:
-        {
-            addr -= 0xa000;
-            if (!enable_ram || num_ram_banks == 0) {
-                return;
-            }
-            else {
-                if (mode == MODE1) {
-                    addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
-                }
-                random_access_mem[addr] = val;
-            }
-            break;
+    }
+    else if (addr >= 0x4000 && addr <= 0x5fff) {
+        current_ram_bank = val & 0x3;
+        current_rom_bank &= (0x1f);
+        current_rom_bank |= (val & 3) << 5;
+        if ((current_rom_bank & 0x1f) == 0) {
+            current_rom_bank++;
         }
-        default:
-            std::cout << enable_ram << std::endl;
-            std::cout << "Addr " << std::hex << addr << " fell through write" << std::endl;
-            assert(false);
+    }
+    else if (addr >= 0x6000 && addr <= 0x7fff) {
+        mode = (bool)val;
+    }
+    else if (addr >= 0xa000 && addr <= 0xbfff) {
+        addr -= 0xa000;
+        if (!enable_ram || num_ram_banks == 0) {
+            return;
         }
-        break;
-    default:
-        break;
+        else {
+            if (mode == MODE1) {
+                addr += (current_ram_bank % num_ram_banks) * ram_bank_size;
+            }
+            random_access_mem[addr] = val;
+        }
     }
 }
-
+ 
 void Cartridge::read_header()
 {
     u16 MBC_TYPE = 0x147;
