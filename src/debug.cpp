@@ -87,30 +87,6 @@ void debug::print_registers(Processor *cpu)
     }
 }
 
-void debug::setup_gradient_tile(u8 *memory)
-{
-    u8 tile[] = {0xaf, 0x05, 0xaf, 0x05, 0xaf, 0x05, 0xaf, 0x05,
-                 0xff, 0xff, 0xaa, 0xaa, 0x55, 0x55, 0x00, 0x00};
-    memcpy(&memory[GPU::TILE_DATA_0], tile, 16);
-}
-
-void debug::print_tile_map(u8 *memory, bool map)
-{
-    u16 tile_map;
-    if (map) {
-        tile_map = GPU::TILE_MAP_1;
-    }
-    else {
-        tile_map = GPU::TILE_MAP_0;
-    }
-    for (int i = 0; i < 32; i++) {
-        for (int j = 0; j < 32; j++) {
-            std::cout << std::dec << (int)(i8)memory[tile_map + 32*i + j] << ' ';
-        }
-        std::cout << std::endl;
-    }   
-}
-
 void debug::print_boot_rom(Memory *mem)
 {
     for (int i = 0; i < 0x100; i++) {
@@ -120,24 +96,4 @@ void debug::print_boot_rom(Memory *mem)
         std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)mem->read(i) << ' ';
     }
     std::cout << std::endl;
-}
-
-void debug::print_tile_data(Processor *cpu) 
-{
-    debug::print_registers(cpu);
-    for (int i = 0; i < 1024; i++) {
-        if (i != 0 && (i % 32) == 0) {
-            std::cout << std::endl;
-        }
-        std::cout << std::setw(2) << std::setfill('0') << std::hex 
-                  << (int)cpu->memory->read(GPU::TILE_MAP_0 + i) << " ";
-    }
-    std::cout << std::endl;
-    for (int i = 0; i < 16 * 0x18; i++) {
-        if (i != 0 && (i % 16) == 0) {
-            std::cout << std::endl;
-        }
-        std::cout << std::setw(2) << std::setfill('0') << std::hex 
-                  << (int)cpu->memory->read(GPU::TILE_DATA_1 + i) << " ";
-    }
 }

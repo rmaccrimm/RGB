@@ -9,18 +9,22 @@
 class GPU 
 {
 public:
-
     enum Mode { HBLANK, VBLANK, OAM, VRAM };
+
+    struct {
+        bool enable_display;
+        bool win_tile_map;
+        bool win_enable;
+        bool tile_data_table;
+        bool bg_tile_map;
+        bool double_sprite_height;
+        bool enable_sprites;
+        bool bg_priority;
+    } LCD_control;
 
     GPU(Memory *mem, GameWindow *win);
     void build_framebuffer();
     void step(unsigned int cpu_clock);
-
-    static const u16 TILE_MAP_0     = 0x9800; // unsigned
-    static const u16 TILE_MAP_1     = 0x9c00; // signed
-    static const u16 TILE_DATA_0    = 0x9000; // signed tile index
-    static const u16 TILE_DATA_1    = 0x8000; // unsigned tile index
-    static const u16 OAM_data       = 0xfe00; // sprites
 
 private:
     Memory *memory;
@@ -34,7 +38,7 @@ private:
 
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
 
-    u8 &stat_reg;
+    u8 &STAT_reg;
 
     int prev_cpu_clock;
     
@@ -47,18 +51,10 @@ private:
     void change_mode(Mode m);
     void increment_line();
     void set_bg_palette();
-    void update_stat_register();
+    void update_STAT_register();
+    void update_LCD_control();
 
     u8 color_palette[4];
-
-    const u8 LCD_ENABLE = 1 << 7;
-    const u8 WIN_TILE_MAP_SELECT = 1 << 6;
-    const u8 WIN_ENABLE = 1 << 5;
-    const u8 TILE_DATA_SELECT = 1 << 4;
-    const u8 BG_TILE_MAP_SELECT = 1 << 3;
-    const u8 SPRITE_SIZE_SELECT = 1 << 2;
-    const u8 SPRITE_ENABLE = 1 << 1;
-    const u8 BG_ENABLE = 1;    
 
     const u8 COLORS[4] = { 
         0xff,   // 00 white
@@ -66,10 +62,6 @@ private:
         0x66,   // 10 light gray
         0x00    // 11 black
     };
-
-    // opengl expects framebuffer drawn from bottom up
-    const bool INVERT_MAP = true;
-    const bool INVERT_TILES = true;
 };
 
 #endif
