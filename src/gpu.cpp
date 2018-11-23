@@ -42,6 +42,7 @@ void GPU::step(unsigned int cpu_clock)
     case VRAM:
         if (clock >= 172) {
             clock -= 172;
+            draw_scanline();
             change_mode(HBLANK);
         }
         break;
@@ -52,15 +53,9 @@ void GPU::step(unsigned int cpu_clock)
             increment_line();
             
             if (line == 143) {
-                change_mode(VBLANK);
-                // Draw screen
-				set_bg_palette();
-                build_framebuffer();
-                window->update_background(
-                    framebuffer.data(), memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
-                window->update_sprites(sprite_texture.data());
                 window->draw_frame();
                 memory->set_interrupt(interrupt::VBLANK_bit);
+                change_mode(VBLANK);
             } else {
                 change_mode(OAM);
             }
@@ -135,6 +130,11 @@ void GPU::set_bg_palette()
     color_palette[1] = COLORS[(bgp >> 2) & 3];
     color_palette[2] = COLORS[(bgp >> 4) & 3];
     color_palette[3] = COLORS[(bgp >> 6) & 3];
+}
+
+void draw_scanline()
+{
+    
 }
 
 void GPU::read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src)

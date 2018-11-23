@@ -38,6 +38,7 @@ private:
 
     int prev_cpu_clock;
     
+    void draw_scanline();
     void read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src);
     void read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src,
         bool flip_x, bool flip_y);
