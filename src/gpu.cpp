@@ -13,7 +13,7 @@ GPU::GPU(Memory *mem, GameWindow *win):
     clock(0), 
     line(0),
     mode(OAM), 
-    stat_reg(mem->get_mem_reference(reg::STAT)),
+    STAT_reg(mem->get_mem_reference(reg::STAT)),
     prev_cpu_clock(0)
 {
     framebuffer.resize(256 * 256, 0);
@@ -22,6 +22,8 @@ GPU::GPU(Memory *mem, GameWindow *win):
 
 void GPU::step(unsigned int cpu_clock)
 {
+    update_LCD_control();
+
     if (cpu_clock < prev_cpu_clock) {
         clock += ((1 << 16) - prev_cpu_clock) + cpu_clock;
     }
@@ -77,10 +79,10 @@ void GPU::step(unsigned int cpu_clock)
         }
         break;    
     }
-    update_stat_register();
+    update_STAT_register();
 }
 
-void GPU::update_stat_register()
+void GPU::update_STAT_register()
 {
     // set LCDSTAT interrupt request if internal signal goes from 0 to 1
     bool prev_sig = stat_irq_signal;
@@ -106,7 +108,7 @@ void GPU::change_mode(Mode m)
 {
     mode = m;
     // TODO - If LCD is off, set to 0
-    stat_reg = (stat_reg & ~3) | (int)mode;
+    STAT_reg = (STAT_reg & ~3) | (int)mode;
 }
 
 void GPU::increment_line()
@@ -114,7 +116,7 @@ void GPU::increment_line()
     line++;
     memory->write(reg::LY, line);
     bool coincidence_flag = memory->read(reg::LYC) == memory->read(reg::LY);
-    stat_reg = utils::set_cond(stat_reg, 2, coincidence_flag);
+    STAT_reg = utils::set_cond(STAT_reg, 2, coincidence_flag);
 }
 
 void GPU::build_framebuffer()
@@ -171,71 +173,48 @@ void GPU::read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iter
 
 void GPU::render_background()
 {
-    u8 lcd_control = memory->read(reg::LCDC);
-    u16 tile_map;
-    u16 tile_data; 
-    bool signed_map;
+    if (!LCD_control.enable_display) 
+        return;
 
-    if (lcd_control & BG_ENABLE) {
-        if (lcd_control & BG_TILE_MAP_SELECT) {
-            tile_map = TILE_MAP_1;
-        }
-        else {
-            tile_map = TILE_MAP_0;
-        }
-        if (lcd_control & TILE_DATA_SELECT) {
-            tile_data = TILE_DATA_1;
-            signed_map = false;
-        }
-        else {
-            tile_data = TILE_DATA_0;
-            signed_map = true;
-        }  
+    u16 tile_map = LCD_control.bg_tile_map ? 0x9c00 : 0x9800;
+    u16 tile_data = LCD_control.tile_data_table ? 0x8000 : 0x9000;
+    bool signed_map = !LCD_control.tile_data_table;
 
-        for (int tile_i = 0; tile_i < 32; tile_i++) {
-            for (int tile_j = 0; tile_j < 32; tile_j++) {
+    for (int tile_i = 0; tile_i < 32; tile_i++) {
+        for (int tile_j = 0; tile_j < 32; tile_j++) {
+            // locate the tiles in memory
+            int map_index = 32 * tile_i + tile_j;
 
-                // locate the tiles in memory
-                int map_index = 32 * tile_i + tile_j;
-
-                // read the tile map and determine address of tile
-                u16 tile_addr;
-                int tile_num;
-                if (signed_map) {
-                    tile_num = (i8)memory->read(tile_map + map_index);
-                    tile_addr = tile_data + (16 * tile_num);
-                }
-                else {
-                    tile_num = memory->read(tile_map + map_index);
-                    tile_addr = tile_data + (16 * tile_num);
-                }
-
-                int pixel_y = 256 - 8 * (tile_i + 1);
-                int pixel_x = 8 * tile_j;
-                int pixel_index = 256 * pixel_y + pixel_x;
-                
-                read_tile(framebuffer.begin() + pixel_index, 
-                    memory->video_RAM.begin() + (tile_data - 0x8000) + 16*tile_num);
+            // read the tile map and determine address of tile
+            u16 tile_addr;
+            if (signed_map) {
+                int tile_num = (i8)memory->read(tile_map + map_index);
+                tile_addr = tile_data + (16 * tile_num);
             }
-        }        
+            else {
+                int tile_num = memory->read(tile_map + map_index);
+                tile_addr = tile_data + (16 * tile_num);
+            }
+            // relative to start of VRAM
+            tile_addr -= 0x8000;
+
+            int pixel_y = 256 - 8 * (tile_i + 1);
+            int pixel_x = 8 * tile_j;
+            int pixel_index = 256 * pixel_y + pixel_x;
+            
+            read_tile(framebuffer.begin() + pixel_index, memory->video_RAM.begin() + tile_addr);
+        }
     }
 }
 
 void GPU::render_sprites()
 {
-    u8 lcd_control = memory->read(reg::LCDC);
-    u8 scroll_y = memory->read(reg::SCROLLY);
-    u8 scroll_x = memory->read(reg::SCROLLX);
-
-    bool enable_sprites = utils::bit(lcd_control, 1);
-    bool double_height = utils::bit(lcd_control, 2);
-    
-    std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
-    sprite_texture.assign(sprite_texture.size(), 0);
-
-    if (!enable_sprites) {
+    if (!LCD_control.enable_sprites) {
         return;
     }
+
+    std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
+    sprite_texture.assign(sprite_texture.size(), 0);
 
     for (int i = 39; i >= 0; i--) {
         int byte_ind = 4 * i;
@@ -245,8 +224,6 @@ void GPU::render_sprites()
         if (xpos == 0 || xpos >= 168 || ypos == 0 || ypos >= 160) { // sprite hidden
             continue;
         }
-        // ypos += scroll_y + 16;
-        // xpos += scroll_x + 8;
 
         int tile_num = sprite_data[byte_ind + 2];
         int flags = sprite_data[byte_ind + 3];
@@ -256,8 +233,7 @@ void GPU::render_sprites()
         bool flip_x = utils::bit(flags, 5);
         bool palette_num = utils::bit(flags, 4);
 
-        u16 obp_addr[2] = { reg::OBP0, reg::OBP1 };
-        u8 obp = memory->read(obp_addr[palette_num]);
+        u8 obp = palette_num ? memory->read(reg::OBP1) : memory->read(reg::OBP0);
 
         color_palette[0] = COLORS[obp & 3];
         color_palette[1] = COLORS[(obp >> 2) & 3];
@@ -266,20 +242,21 @@ void GPU::render_sprites()
 
         // position of lower left corner in framebuffer
         int pixel_index = 176 * (160 - ypos) + xpos;
-        u16 tile_addr = TILE_DATA_1 + (16 * tile_num);
+        // always taken from first tile data table
+        u16 tile_addr = 16 * tile_num;
         
-        if (double_height) {
+        if (LCD_control.double_sprite_height) {
             u8 upper = tile_num & 0xfe;
             read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
-                memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*upper, flip_x, flip_y);
+                memory->video_RAM.begin() + 16*upper, flip_x, flip_y);
             u8 lower = tile_num | 1;                
             pixel_index = 176 * (160 - ypos - 8) + xpos;
             read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
-                memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*lower, flip_x, flip_y);
+                memory->video_RAM.begin() + 16*lower, flip_x, flip_y);
         }
         else {
             read_sprite_tile(sprite_texture.begin() + 2 * pixel_index, 
-                memory->video_RAM.begin() + (TILE_DATA_1 - 0x8000) + 16*tile_num, flip_x, flip_y);
+                memory->video_RAM.begin() + 16*tile_num, flip_x, flip_y);
         }
     }
 }
@@ -287,4 +264,17 @@ void GPU::render_sprites()
 void GPU::render_window()
 {
 
+}
+
+void GPU::update_LCD_control()
+{
+    u8 byte = memory->read(reg::LCDC);
+    LCD_control.enable_display = (byte >> 7) & 1;
+    LCD_control.win_tile_map = (byte >> 6) & 1;
+    LCD_control.win_enable = (byte >> 5) & 1;
+    LCD_control.tile_data_table = (byte >> 4) & 1;
+    LCD_control.bg_tile_map = (byte >> 3) & 1;
+    LCD_control.double_sprite_height = (byte >> 2) & 1;
+    LCD_control.enable_sprites = (byte >> 1) & 1;
+    LCD_control.bg_priority = byte & 1;
 }
