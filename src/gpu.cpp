@@ -68,6 +68,11 @@ void GPU::step(unsigned int cpu_clock)
             
             if (line == 143) {
                 // On last line, update the screen and switch to vertical blank mode 
+                set_bg_palette();
+                build_framebuffer();
+                window->update_background(framebuffer.data(),
+                    memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
+                window->update_sprites(sprite_texture.data());
                 window->draw_frame();
                 memory->set_interrupt(interrupt::VBLANK_bit);
                 change_mode(VBLANK);
@@ -200,15 +205,11 @@ void GPU::render_background()
             int map_index = 32 * tile_i + tile_j;
 
             // read the tile map and determine address of tile
-            u16 tile_addr;
+            int tile_num = memory->read(LCD_control.bg_tile_map_addr + map_index);
             if (LCD_control.signed_tile_map) {
-                int tile_num = (i8)memory->read(LCD_control.bg_tile_map_addr + map_index);
-                tile_addr =  (16 * tile_num);
+                tile_num = (i8)tile_num;
             }
-            else {
-                int tile_num = memory->read(LCD_control.bg_tile_map_addr + map_index);
-                tile_addr =  (16 * tile_num);
-            }
+            u16 tile_addr = LCD_control.tile_data_addr + (16 * tile_num) -  VRAM_ADDR;
 
             int pixel_y = 256 - 8 * (tile_i + 1);
             int pixel_x = 8 * tile_j;
@@ -287,12 +288,11 @@ void GPU::update_LCD_control()
 {
     u8 byte = memory->read(reg::LCDC);
     LCD_control.enable_display = (byte >> 7) & 1;
-    LCD_control.win_tile_map_addr = ((byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR);
-    LCD_control.win_tile_map_addr = ((byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR);
+    LCD_control.win_tile_map_addr = (byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
     LCD_control.win_enable = (byte >> 5) & 1;
-    LCD_control.tile_data_addr = ((byte >> 4) & 1 ? TILE_DATA_1_ADDR : TILE_DATA_0_ADDR);
-    LCD_control.signed_tile_map = !((byte >> 4 & 1));
-    LCD_control.bg_tile_map_addr = ((byte >> 3) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR);
+    LCD_control.tile_data_addr = (byte >> 4) & 1 ? TILE_DATA_1_ADDR : TILE_DATA_0_ADDR;
+    LCD_control.signed_tile_map = !((byte >> 4) & 1);
+    LCD_control.bg_tile_map_addr = (byte >> 3) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
     LCD_control.double_sprite_height = (byte >> 2) & 1;
     LCD_control.enable_sprites = (byte >> 1) & 1;
     LCD_control.bg_priority = byte & 1;    
