@@ -225,7 +225,7 @@ void GPU::draw_sprites()
         int byte_ind = 4 * i;
         int y_pos = sprite_data[byte_ind] - 16;
         int x_pos = sprite_data[byte_ind + 1] - 8;
-        if (x_pos < 0 || x_pos >= 160 || !(line >= y_pos && line < y_pos + sprite_size)) {
+        if (x_pos == -8 || x_pos >= 160 || !(line >= y_pos && line < y_pos + sprite_size)) {
             continue;
         }
         sprites.emplace_back(x_pos, i);
@@ -249,10 +249,7 @@ void GPU::draw_sprites()
         bool flip_x = utils::bit(flags, 5);
         bool palette_num = utils::bit(flags, 4);
 
-        for (int i = x_pos; i < x_pos + TILE_DIM; i++) {
-            if (x_pos < 0 || x_pos >= LCD_WIDTH) {
-                continue;
-            }
+        for (int i = std::max(0, x_pos); i < std::min(LCD_WIDTH, x_pos + TILE_DIM); i++) {
             int color = read_pixel(memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num), 
                 i - x_pos, line - y_pos, flip_y, flip_x);
             if (color == 0) {

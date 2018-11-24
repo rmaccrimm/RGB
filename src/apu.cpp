@@ -6,7 +6,7 @@ void APU::play()
 {
     SDL_AudioSpec spec, obtained;
     SDL_AudioDeviceID device;
-
+    SDL_zero(spec);
     spec.freq = 48000;
     spec.format = AUDIO_F32;
     spec.channels = 2;
