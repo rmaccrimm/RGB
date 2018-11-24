@@ -24,7 +24,6 @@ public:
     } LCD_control;
 
     GPU(Memory *mem, GameWindow *win);
-    void build_framebuffer();
     void step(unsigned int cpu_clock);
 
     static const int LCD_WIDTH;
@@ -40,29 +39,25 @@ private:
     int clock;
     int line;
     Mode mode;
-
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
-
     u8 &STAT_reg;
-
     int prev_cpu_clock;
     
     void draw_scanline();
-    void read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src);
-    void read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src,
-        bool flip_x, bool flip_y);
-    void render_background();
-    void render_window();
-    void render_sprites();
+    void draw_background(int x, int y);
+    void draw_sprites();
+    void draw_window();
     void change_mode(Mode m);
     void increment_line();
-    void set_bg_palette();
+    void update_color_palettes();
     void update_STAT_register();
     void update_LCD_control();
+
     u8 GPU::read_pixel(
         std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x);
 
-    u8 color_palette[4];
+    u8 bg_palette[4];
+    u8 sprite_palette[2][4];
 
     const u8 COLORS[4] = { 
         0xff,   // 00 white
