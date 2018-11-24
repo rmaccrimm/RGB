@@ -250,8 +250,27 @@ void GPU::draw_sprites()
         bool palette_num = utils::bit(flags, 4);
 
         for (int i = std::max(0, x_pos); i < std::min(LCD_WIDTH, x_pos + TILE_DIM); i++) {
-            int color = read_pixel(memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num), 
-                i - x_pos, line - y_pos, flip_y, flip_x);
+            int pixel_x = i - x_pos;
+            int pixel_y = line - y_pos;
+            int color;
+            if (LCD_control.double_sprite_height) {
+                u8 upper_tile_index = tile_num & 0xfe;
+                u8 lower_tile_index = tile_num | 1;
+                bool upper = pixel_y < 8;
+                if (upper) {
+                    tile_num = flip_y ? lower_tile_index : upper_tile_index;
+                }
+                else {
+                    tile_num = flip_y ? upper_tile_index : lower_tile_index;
+                    pixel_y -= 8;
+                }
+                auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
+                color = read_pixel(tile_addr, pixel_x, pixel_y, flip_y, flip_x);
+            }
+            else {
+                auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
+                color = read_pixel(tile_addr, pixel_x, pixel_y, flip_y, flip_x);
+            }
             if (color == 0) {
                 continue;
             }
