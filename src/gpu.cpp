@@ -12,6 +12,7 @@ const int GPU::LCD_HEIGHT = 144;
 const int GPU::BACKGROUND_DIM = 256; // background is 256x256 pixels
 const int GPU::TILE_MAP_DIM = 32; // tile map is 32x32
 const int GPU::TILE_DIM = 8; // tile are 8x8 pixels
+const int GPU::BYTES_PER_TILE = 16;
 const u16 GPU::TILE_MAP_0_ADDR = 0x9800;
 const u16 GPU::TILE_MAP_1_ADDR = 0x9c00;
 const u16 GPU::TILE_DATA_0_ADDR = 0x9000;
@@ -60,7 +61,8 @@ void GPU::step(unsigned int cpu_clock)
         if (clock >= 172) {
             clock -= 172;
             // At end of scanline, draw and switch to horizontal blank mode
-            //draw_scanline();
+            set_bg_palette();
+            draw_scanline();
             change_mode(HBLANK);
         }
         break;
@@ -72,12 +74,7 @@ void GPU::step(unsigned int cpu_clock)
             
             if (line == 143) {
                 // On last line, update the screen and switch to vertical blank mode 
-                set_bg_palette();
-                build_framebuffer();
-                window->update_background(framebuffer.data(),
-                    memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
-                window->update_sprites(sprite_texture.data());
-                window->draw_frame();
+                window->draw_frame(screen_texture.data());
                 memory->set_interrupt(interrupt::VBLANK_bit);
                 change_mode(VBLANK);
             } else {
@@ -158,7 +155,7 @@ void GPU::set_bg_palette()
 
 u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x)
 {
-    int byte_ind = 2 * (invert_y ? y : TILE_DIM - 1 - y);
+    int byte_ind = 2 * (invert_y ? TILE_DIM - 1 - y : y);
     u8 lsb = (tile_data[byte_ind] >> (invert_x ? x : TILE_DIM - 1 - x)) & 1;
     u8 msb = (tile_data[byte_ind + 1] >> (invert_x ? x: TILE_DIM - 1 - x)) & 1;
     return ((msb << 1) | lsb) & 3;
@@ -170,17 +167,16 @@ void GPU::draw_scanline()
     int scroll_y = memory->read(reg::SCROLLY);
 
     auto vram = memory->video_RAM.begin() + LCD_control.tile_data_addr - VRAM_ADDR;
-
-
     for (int i = 0; i < LCD_WIDTH; i++) {
+        
         int pixel_bg_coord_x = (scroll_x + i) % BACKGROUND_DIM;
         int pixel_bg_coord_y = (scroll_y + line) % BACKGROUND_DIM;        
 
-        int tile_map_x = pixel_bg_coord_x / TILE_MAP_DIM;
-        int tile_map_y = pixel_bg_coord_y / TILE_MAP_DIM;
+        int tile_map_x = pixel_bg_coord_x / TILE_DIM;
+        int tile_map_y = pixel_bg_coord_y / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
-        int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);
+        int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;
         }
@@ -191,6 +187,33 @@ void GPU::draw_scanline()
         int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
         // opengl texture coordinates are inverted relative to screen
         screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - line)) + i] = color_palette[color];
+    }
+}
+
+void GPU::render_background()
+{
+    if (!LCD_control.enable_display) 
+        return;
+
+    for (int tile_i = 0; tile_i < 32; tile_i++) {
+        for (int tile_j = 0; tile_j < 32; tile_j++) {
+            // locate the tiles in memory
+            int map_index = 32 * tile_i + tile_j;
+
+            // read the tile map and determine address of tile
+            int tile_num = memory->read(LCD_control.bg_tile_map_addr + map_index);
+            if (LCD_control.signed_tile_map) {
+                tile_num = (i8)tile_num;
+            }
+            u16 tile_addr = LCD_control.tile_data_addr + (16 * tile_num) -  VRAM_ADDR;
+
+            int pixel_y = 256 - 8 * (tile_i + 1);
+            int pixel_x = 8 * tile_j;
+            int pixel_index = 256 * pixel_y + pixel_x;
+            
+            read_tile(framebuffer.begin() + pixel_index, memory->video_RAM.begin() + tile_addr);
+            // memory->video_RAM.begin() + LCD_control.tile_data_addr + (16 * tile_num) -  VRAM_ADDR;
+        }
     }
 }
 
@@ -226,31 +249,7 @@ void GPU::read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iter
     }
 }
 
-void GPU::render_background()
-{
-    if (!LCD_control.enable_display) 
-        return;
 
-    for (int tile_i = 0; tile_i < 32; tile_i++) {
-        for (int tile_j = 0; tile_j < 32; tile_j++) {
-            // locate the tiles in memory
-            int map_index = 32 * tile_i + tile_j;
-
-            // read the tile map and determine address of tile
-            int tile_num = memory->read(LCD_control.bg_tile_map_addr + map_index);
-            if (LCD_control.signed_tile_map) {
-                tile_num = (i8)tile_num;
-            }
-            u16 tile_addr = LCD_control.tile_data_addr + (16 * tile_num) -  VRAM_ADDR;
-
-            int pixel_y = 256 - 8 * (tile_i + 1);
-            int pixel_x = 8 * tile_j;
-            int pixel_index = 256 * pixel_y + pixel_x;
-            
-            read_tile(framebuffer.begin() + pixel_index, memory->video_RAM.begin() + tile_addr);
-        }
-    }
-}
 
 void GPU::render_sprites()
 {

@@ -27,6 +27,9 @@ public:
     void build_framebuffer();
     void step(unsigned int cpu_clock);
 
+    static const int LCD_WIDTH;
+    static const int LCD_HEIGHT;
+
 private:
     Memory *memory;
     GameWindow *window;
@@ -67,9 +70,7 @@ private:
         0x66,   // 10 light gray
         0x00    // 11 black
     };
-
-    static const int LCD_WIDTH;
-    static const int LCD_HEIGHT;
+    
     static const int BACKGROUND_DIM;
     static const int TILE_MAP_DIM;
     static const int TILE_DIM;
