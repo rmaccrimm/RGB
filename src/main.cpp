@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
         ("boot-rom,b", po::value<std::string>(), "provide boot rom")
         ("debug,d", "enable debug mode")
         ("unlock,u", "unlock framerate")
+        ("scale,s", po::value<int>(), "resolution scale")
         ("input-file", po::value<std::string>(), "rom file to load");
     po::positional_options_description p_desc;
     p_desc.add("input-file", -1);
@@ -55,9 +56,10 @@ int main(int argc, char *argv[])
     std::string cartridge_filename = var_map["input-file"].as<std::string>();
     std::string boot_rom_filename;
     bool enable_boot_rom = false;
-    int enable_debug_mode = false;
+    bool enable_debug_mode = false;
     bool step_instr = false;
     bool unlock_framerate = false;
+    int scale = 5;
 
     if (var_map.count("boot-rom")) {
         enable_boot_rom = true;
@@ -66,15 +68,17 @@ int main(int argc, char *argv[])
     if (var_map.count("debug")) {
         enable_debug_mode = true;
         step_instr = true;
-
     }
     if (var_map.count("unlock")) {                  
         unlock_framerate = true;
     }
+    if(var_map.count("scale")) {
+        scale = var_map["scale"].as<int>();
+    }
     
     Joypad gb_pad;
     Cartridge game_cart(cartridge_filename);
-    GameWindow window(&gb_pad, 5, !unlock_framerate, game_cart.title);
+    GameWindow window(&gb_pad, scale, !unlock_framerate, game_cart.title);
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
