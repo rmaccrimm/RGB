@@ -30,6 +30,8 @@ public:
 
     void draw_frame();
 
+    void draw_frame(u8 pixel_buffer[]);
+
 	void set_bg_palette(u8 palette[]);
 
     bool draw;

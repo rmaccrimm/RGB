@@ -65,61 +65,23 @@ bool GameWindow::paused()
     }
 }
 
-void GameWindow::update_background(u8 background[], int x, int y)
-{  
-    glUniform1i(scrollx, x);
-    glUniform1i(scrolly, y);
+void GameWindow::draw_frame(u8 pixel_buffer[])
+{
     glActiveTexture(GL_TEXTURE0);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
         0,
         0,
         0, 
-        256,
-        256, 
+        160,
+        144,
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE, 
-        background
+        pixel_buffer
     );
-}
-
-void GameWindow::update_sprites(u8 sprites[])
-{
-    glActiveTexture(GL_TEXTURE1);
-    glTexSubImage2D(
-        GL_TEXTURE_2D, 
-        0,
-        0,
-        0, 
-        176,
-        176, 
-        GL_RG_INTEGER,
-        GL_UNSIGNED_BYTE, 
-        sprites
-    );
-}
-
-void GameWindow::draw_frame()
-{
     glDrawArrays(GL_TRIANGLES, 0, 6); 
     SDL_GL_SwapWindow(sdl_window);
     draw = true;
-}
-
-void GameWindow::set_bg_palette(u8 palette[])
-{
-    glActiveTexture(GL_TEXTURE1);
-    glTexSubImage2D(
-        GL_TEXTURE_RECTANGLE,
-        0,
-        0,
-        0,
-        4,
-        1,
-        GL_RED_INTEGER,
-        GL_UNSIGNED_BYTE,
-        palette
-    );
 }
 
 void GameWindow::init_window(std::string title) 
@@ -187,35 +149,15 @@ void GameWindow::init_screen_texture()
         GL_TEXTURE_2D, 
         0, 
         GL_R8UI, 
-        256,
-        256,
+        160,
+        144,
         0, 
         GL_RED_INTEGER,
         GL_UNSIGNED_BYTE, 
         0
     );
 
-    check_glError("Background Texture:");
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, sprite_tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexImage2D(
-        GL_TEXTURE_2D, 
-        0, 
-        GL_RG8UI, 
-        176,
-        176,
-        0, 
-        GL_RG_INTEGER,
-        GL_UNSIGNED_BYTE, 
-        0
-    );
-
-	check_glError("Sprite Texture:");
+	check_glError("Screen Texture:");
     
     GLuint screen_vao;
     GLuint screen_vbo;
@@ -232,10 +174,7 @@ void GameWindow::init_screen_texture()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glUseProgram(shader_id);
-    glUniform1i(get_uniform("background_texture"), 0);
-    glUniform1i(get_uniform("sprite_texture"), 1);
-    glUniform1i(scrollx = get_uniform("scrollx"), 0);
-    glUniform1i(scrolly = get_uniform("scrolly"), 0);
+    glUniform1i(get_uniform("screen_texture"), 0);
 
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR) {
