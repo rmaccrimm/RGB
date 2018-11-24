@@ -14,7 +14,7 @@ public:
     struct {
         bool enable_display;
         u16 win_tile_map_addr;
-        bool win_enable;
+        bool enable_window;
         u16 tile_data_addr;
         u16 bg_tile_map_addr;
         bool double_sprite_height;
@@ -32,8 +32,6 @@ public:
 private:
     Memory *memory;
     GameWindow *window;
-    std::vector<u8> framebuffer;
-    std::vector<u8> sprite_texture;
     std::vector<u8> screen_texture;
 
     int clock;
@@ -44,7 +42,8 @@ private:
     int prev_cpu_clock;
     
     void draw_scanline();
-    void draw_background(int x, int y);
+    void draw_pixel(int x, int y, int color);
+    void draw_background();
     void draw_sprites();
     void draw_window();
     void change_mode(Mode m);
@@ -52,20 +51,13 @@ private:
     void update_color_palettes();
     void update_STAT_register();
     void update_LCD_control();
-
     u8 GPU::read_pixel(
         std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x);
 
     u8 bg_palette[4];
     u8 sprite_palette[2][4];
 
-    const u8 COLORS[4] = { 
-        0xff,   // 00 white
-        0xb2,   // 01 dark gray
-        0x66,   // 10 light gray
-        0x00    // 11 black
-    };
-    
+    static const u8 COLORS[4];
     static const int BACKGROUND_DIM;
     static const int TILE_MAP_DIM;
     static const int TILE_DIM;

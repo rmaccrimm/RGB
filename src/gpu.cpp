@@ -20,6 +20,13 @@ const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
 const u16 GPU::VRAM_ADDR = 0x8000;
 const u16 GPU::OAM_ADDR = 0xfe00;
 
+const u8 GPU::COLORS[4] = { 
+        0xff,   // 00 white
+        0xb2,   // 01 dark gray
+        0x66,   // 10 light gray
+        0x00    // 11 black
+};
+
 GPU::GPU(Memory *mem, GameWindow *win): 
     memory(mem), 
     window(win), 
@@ -166,12 +173,21 @@ u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool inve
 
 void GPU::draw_scanline()
 {
-    draw_background(memory->read(reg::SCROLLX), memory->read(reg::SCROLLY));
+    draw_background();
     draw_sprites();
+    draw_window();
 }
 
-void GPU::draw_background(int x, int y)
+void GPU::draw_pixel(int x, int y, int color)
 {
+    // opengl texture coordinates are inverted relative to screen
+    screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x] = color;
+}
+
+void GPU::draw_background()
+{
+    int x = memory->read(reg::SCROLLX);
+    int y = memory->read(reg::SCROLLY);
     auto vram = memory->video_RAM.begin() + LCD_control.tile_data_addr - VRAM_ADDR;
     for (int i = 0; i < LCD_WIDTH; i++) {
         int pixel_bg_coord_x = (x + i) % BACKGROUND_DIM;
@@ -190,8 +206,7 @@ void GPU::draw_background(int x, int y)
 
         auto tile_data = vram + (BYTES_PER_TILE * tile_index);
         int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
-        // opengl texture coordinates are inverted relative to screen
-        screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - line)) + i] = bg_palette[color];
+        draw_pixel(i, line, bg_palette[color]);
     }
 }
 
@@ -205,6 +220,7 @@ void GPU::draw_sprites()
     int sprite_size = (LCD_control.double_sprite_height ? 2 : 1) * TILE_DIM;
 
     std::vector<std::pair<int, int>> sprites;
+    // Figure out which sprites are on the current scan line
     for (int i = 0; i < 40; i++) {
         int byte_ind = 4 * i;
         int y_pos = sprite_data[byte_ind] - 16;
@@ -214,11 +230,12 @@ void GPU::draw_sprites()
         }
         sprites.emplace_back(x_pos, i);
     }
+    // Sort sprites by x position
     sort(sprites.begin(), sprites.end());
 
+    // Draw only first 10 sprites 
     int s = std::max((int)(sprites.size() - 10), 0);
     for (auto it = sprites.rbegin() + s; it < sprites.rend(); it++) {
-
         int byte_ind = it->second * 4;
 
         int y_pos = sprite_data[byte_ind] - 16;
@@ -232,8 +249,6 @@ void GPU::draw_sprites()
         bool flip_x = utils::bit(flags, 5);
         bool palette_num = utils::bit(flags, 4);
 
-        
-
         for (int i = x_pos; i < x_pos + TILE_DIM; i++) {
             if (x_pos < 0 || x_pos >= LCD_WIDTH) {
                 continue;
@@ -243,8 +258,37 @@ void GPU::draw_sprites()
             if (color == 0) {
                 continue;
             }
-            screen_texture[LCD_WIDTH * (LCD_HEIGHT - 1 - line) + i] = sprite_palette[palette_num][color];
+            draw_pixel(i, line, sprite_palette[palette_num][color]);
         }        
+    }
+}
+
+void GPU::draw_window()
+{
+    if (!LCD_control.enable_window) {
+        return;
+    }
+    int window_x = memory->read(reg::WX) - 7;
+    int window_y = line - memory->read(reg::WY);
+    if (window_y < 0) {
+        return;
+    }
+    auto vram = memory->video_RAM.begin() + LCD_control.tile_data_addr - VRAM_ADDR;
+    for (int i = std::max(window_x, 0); i < LCD_WIDTH; i++) {
+        int tile_map_x = (i - window_x) / TILE_DIM;
+        int tile_map_y = window_y / TILE_DIM;
+        int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
+
+        int tile_index = memory->read(LCD_control.win_tile_map_addr + tile_map_index);        
+        if (LCD_control.signed_tile_map) {
+            tile_index = (i8)tile_index;
+        }
+        int pixel_tile_coord_x = (i - window_x) % TILE_DIM;
+        int pixel_tile_coord_y = window_y % TILE_DIM;
+
+        auto tile_data = vram + (BYTES_PER_TILE * tile_index);
+        int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
+        draw_pixel(i, line, bg_palette[color]);
     }
 }
 
@@ -263,7 +307,7 @@ void GPU::update_LCD_control()
     u8 byte = memory->read(reg::LCDC);
     LCD_control.enable_display = (byte >> 7) & 1;
     LCD_control.win_tile_map_addr = (byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
-    LCD_control.win_enable = (byte >> 5) & 1;
+    LCD_control.enable_window = (byte >> 5) & 1;
     LCD_control.tile_data_addr = (byte >> 4) & 1 ? TILE_DATA_1_ADDR : TILE_DATA_0_ADDR;
     LCD_control.signed_tile_map = !((byte >> 4) & 1);
     LCD_control.bg_tile_map_addr = (byte >> 3) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
