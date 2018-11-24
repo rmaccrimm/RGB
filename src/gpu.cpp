@@ -29,8 +29,6 @@ GPU::GPU(Memory *mem, GameWindow *win):
     STAT_reg(mem->get_mem_reference(reg::STAT)),
     prev_cpu_clock(0)
 {
-    framebuffer.resize(256 * 256, 0);
-    sprite_texture.resize(176 * 176 * 2, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
 }
 
@@ -137,8 +135,6 @@ void GPU::increment_line()
     bool coincidence_flag = memory->read(reg::LYC) == memory->read(reg::LY);
     STAT_reg = utils::set_cond(STAT_reg, 2, coincidence_flag);
 }
-
-
 
 void GPU::update_color_palettes()
 {
