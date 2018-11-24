@@ -9,6 +9,9 @@
 
 const int GPU::LCD_WIDTH = 160;
 const int GPU::LCD_HEIGHT = 144;
+const int GPU::BACKGROUND_DIM = 256; // background is 256x256 pixels
+const int GPU::TILE_MAP_DIM = 32; // tile map is 32x32
+const int GPU::TILE_DIM = 8; // tile are 8x8 pixels
 const u16 GPU::TILE_MAP_0_ADDR = 0x9800;
 const u16 GPU::TILE_MAP_1_ADDR = 0x9c00;
 const u16 GPU::TILE_DATA_0_ADDR = 0x9000;
@@ -27,6 +30,7 @@ GPU::GPU(Memory *mem, GameWindow *win):
 {
     framebuffer.resize(256 * 256, 0);
     sprite_texture.resize(176 * 176 * 2, 0);
+    screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
 }
 
 void GPU::step(unsigned int cpu_clock)
@@ -56,7 +60,7 @@ void GPU::step(unsigned int cpu_clock)
         if (clock >= 172) {
             clock -= 172;
             // At end of scanline, draw and switch to horizontal blank mode
-            draw_scanline();
+            //draw_scanline();
             change_mode(HBLANK);
         }
         break;
@@ -152,13 +156,41 @@ void GPU::set_bg_palette()
     color_palette[3] = COLORS[(bgp >> 6) & 3];
 }
 
+u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x)
+{
+    int byte_ind = 2 * (invert_y ? y : TILE_DIM - 1 - y);
+    u8 lsb = (tile_data[byte_ind] >> (invert_x ? x : TILE_DIM - 1 - x)) & 1;
+    u8 msb = (tile_data[byte_ind + 1] >> (invert_x ? x: TILE_DIM - 1 - x)) & 1;
+    return ((msb << 1) | lsb) & 3;
+}
+
 void GPU::draw_scanline()
 {
-    int x = memory->read(reg::SCROLLX);
-    int y = line + memory->read(reg::SCROLLY);
+    int scroll_x = memory->read(reg::SCROLLX);
+    int scroll_y = memory->read(reg::SCROLLY);
 
-    for (int i = 0; i < 160; i++) {
+    auto vram = memory->video_RAM.begin() + LCD_control.tile_data_addr - VRAM_ADDR;
 
+
+    for (int i = 0; i < LCD_WIDTH; i++) {
+        int pixel_bg_coord_x = (scroll_x + i) % BACKGROUND_DIM;
+        int pixel_bg_coord_y = (scroll_y + line) % BACKGROUND_DIM;        
+
+        int tile_map_x = pixel_bg_coord_x / TILE_MAP_DIM;
+        int tile_map_y = pixel_bg_coord_y / TILE_MAP_DIM;
+        int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
+
+        int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);
+        if (LCD_control.signed_tile_map) {
+            tile_index = (i8)tile_index;
+        }
+        int pixel_tile_coord_x = pixel_bg_coord_x % TILE_DIM;
+        int pixel_tile_coord_y = pixel_bg_coord_y % TILE_DIM;
+
+        auto tile_data = vram + (BYTES_PER_TILE * tile_index);
+        int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
+        // opengl texture coordinates are inverted relative to screen
+        screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - line)) + i] = color_palette[color];
     }
 }
 
@@ -182,7 +214,7 @@ void GPU::read_sprite_tile(std::vector<u8>::iterator dest, std::vector<u8>::iter
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             // two bytes per line, contain lsb and msb of color
-            int byte_ind = 2 * (flip_y ? i : 7 - j);
+            int byte_ind = 2 * (flip_y ? j : 7 - j);
             u8 lsb = (src[byte_ind] >> (flip_x ? i : 7 - i)) & 1;
             u8 msb = (src[byte_ind + 1] >> (flip_x ? i: 7 - i)) & 1;
             int color = ((msb << 1) | lsb) & 3;

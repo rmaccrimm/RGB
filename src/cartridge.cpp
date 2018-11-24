@@ -54,7 +54,7 @@ void Cartridge::write(u16 addr, u8 data)
     else if (mbc == MBC2) {
         mbc2_write(addr, data);
     }
-    else if (mbc == MBC3) {
+    else if (mbc == MBC3) {  
         mbc3_write(addr, data);
     }
     else if (mbc == MBC5) {

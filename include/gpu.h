@@ -32,6 +32,7 @@ private:
     GameWindow *window;
     std::vector<u8> framebuffer;
     std::vector<u8> sprite_texture;
+    std::vector<u8> screen_texture;
 
     int clock;
     int line;
@@ -55,6 +56,8 @@ private:
     void set_bg_palette();
     void update_STAT_register();
     void update_LCD_control();
+    u8 GPU::read_pixel(
+        std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x);
 
     u8 color_palette[4];
 
@@ -67,6 +70,10 @@ private:
 
     static const int LCD_WIDTH;
     static const int LCD_HEIGHT;
+    static const int BACKGROUND_DIM;
+    static const int TILE_MAP_DIM;
+    static const int TILE_DIM;
+    static const int BYTES_PER_TILE;
     static const u16 TILE_MAP_0_ADDR;
     static const u16 TILE_MAP_1_ADDR;
     static const u16 TILE_DATA_0_ADDR;
