@@ -51,8 +51,7 @@ private:
     void update_color_palettes();
     void update_STAT_register();
     void update_LCD_control();
-    u8 GPU::read_pixel(
-        std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x);
+    u8 read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x);
 
     u8 bg_palette[4];
     u8 sprite_palette[2][4];
