@@ -13,13 +13,14 @@ public:
 
     struct {
         bool enable_display;
-        bool win_tile_map;
+        u16 win_tile_map_addr;
         bool win_enable;
-        bool tile_data_table;
-        bool bg_tile_map;
+        u16 tile_data_addr;
+        u16 bg_tile_map_addr;
         bool double_sprite_height;
         bool enable_sprites;
         bool bg_priority;
+        bool signed_tile_map;
     } LCD_control;
 
     GPU(Memory *mem, GameWindow *win);
@@ -63,6 +64,15 @@ private:
         0x66,   // 10 light gray
         0x00    // 11 black
     };
+
+    static const int LCD_WIDTH;
+    static const int LCD_HEIGHT;
+    static const u16 TILE_MAP_0_ADDR;
+    static const u16 TILE_MAP_1_ADDR;
+    static const u16 TILE_DATA_0_ADDR;
+    static const u16 TILE_DATA_1_ADDR;
+    static const u16 VRAM_ADDR;
+    static const u16 OAM_ADDR;
 };
 
 #endif

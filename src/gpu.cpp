@@ -7,6 +7,15 @@
 #include <cassert>
 #include <algorithm>
 
+const int GPU::LCD_WIDTH = 160;
+const int GPU::LCD_HEIGHT = 144;
+const u16 GPU::TILE_MAP_0_ADDR = 0x9800;
+const u16 GPU::TILE_MAP_1_ADDR = 0x9c00;
+const u16 GPU::TILE_DATA_0_ADDR = 0x9000;
+const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
+const u16 GPU::VRAM_ADDR = 0x8000;
+const u16 GPU::OAM_ADDR = 0xfe00;
+
 GPU::GPU(Memory *mem, GameWindow *win): 
     memory(mem), 
     window(win), 
@@ -35,6 +44,7 @@ void GPU::step(unsigned int cpu_clock)
     switch (mode)
     {
     case OAM:
+    // First step in drawing scanline, OAM being scanned and not accessible by CPU
         if (clock >= 80) {
             clock -= 80;
             change_mode(VRAM);
@@ -42,8 +52,10 @@ void GPU::step(unsigned int cpu_clock)
         break;
 
     case VRAM:
+    // Second step of drawing a scanline, VRAM not accessible by CPU
         if (clock >= 172) {
             clock -= 172;
+            // At end of scanline, draw and switch to horizontal blank mode
             draw_scanline();
             change_mode(HBLANK);
         }
@@ -55,6 +67,7 @@ void GPU::step(unsigned int cpu_clock)
             increment_line();
             
             if (line == 143) {
+                // On last line, update the screen and switch to vertical blank mode 
                 window->draw_frame();
                 memory->set_interrupt(interrupt::VBLANK_bit);
                 change_mode(VBLANK);
@@ -71,10 +84,10 @@ void GPU::step(unsigned int cpu_clock)
 
             if (line == 154) {
                 line = 0;
-                change_mode(OAM);
                 // Clear bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
                 memory->write(reg::IF, utils::reset(int_request, interrupt::VBLANK_bit));
+                change_mode(OAM);
             }
         }
         break;    
@@ -134,9 +147,14 @@ void GPU::set_bg_palette()
     color_palette[3] = COLORS[(bgp >> 6) & 3];
 }
 
-void draw_scanline()
+void GPU::draw_scanline()
 {
-    
+    int x = memory->read(reg::SCROLLX);
+    int y = line + memory->read(reg::SCROLLY);
+
+    for (int i = 0; i < 160; i++) {
+
+    }
 }
 
 void GPU::read_tile(std::vector<u8>::iterator dest, std::vector<u8>::iterator src)
@@ -176,10 +194,6 @@ void GPU::render_background()
     if (!LCD_control.enable_display) 
         return;
 
-    u16 tile_map = LCD_control.bg_tile_map ? 0x9c00 : 0x9800;
-    u16 tile_data = LCD_control.tile_data_table ? 0x8000 : 0x9000;
-    bool signed_map = !LCD_control.tile_data_table;
-
     for (int tile_i = 0; tile_i < 32; tile_i++) {
         for (int tile_j = 0; tile_j < 32; tile_j++) {
             // locate the tiles in memory
@@ -187,16 +201,14 @@ void GPU::render_background()
 
             // read the tile map and determine address of tile
             u16 tile_addr;
-            if (signed_map) {
-                int tile_num = (i8)memory->read(tile_map + map_index);
-                tile_addr = tile_data + (16 * tile_num);
+            if (LCD_control.signed_tile_map) {
+                int tile_num = (i8)memory->read(LCD_control.bg_tile_map_addr + map_index);
+                tile_addr =  (16 * tile_num);
             }
             else {
-                int tile_num = memory->read(tile_map + map_index);
-                tile_addr = tile_data + (16 * tile_num);
+                int tile_num = memory->read(LCD_control.bg_tile_map_addr + map_index);
+                tile_addr =  (16 * tile_num);
             }
-            // relative to start of VRAM
-            tile_addr -= 0x8000;
 
             int pixel_y = 256 - 8 * (tile_i + 1);
             int pixel_x = 8 * tile_j;
@@ -261,20 +273,27 @@ void GPU::render_sprites()
     }
 }
 
-void GPU::render_window()
-{
-
-}
-
+/*  From Pan Docs:
+        Bit 7 - LCD Display Enable             (0=Off, 1=On)
+        Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+        Bit 5 - Window Display Enable          (0=Off, 1=On)
+        Bit 4 - BG & Window Tile Data Select   (0=8800-97FF, 1=8000-8FFF)
+        Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+        Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
+        Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
+        Bit 0 - BG/Window Display/Priority     (0=Off, 1=On) 
+*/
 void GPU::update_LCD_control()
 {
     u8 byte = memory->read(reg::LCDC);
     LCD_control.enable_display = (byte >> 7) & 1;
-    LCD_control.win_tile_map = (byte >> 6) & 1;
+    LCD_control.win_tile_map_addr = ((byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR);
+    LCD_control.win_tile_map_addr = ((byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR);
     LCD_control.win_enable = (byte >> 5) & 1;
-    LCD_control.tile_data_table = (byte >> 4) & 1;
-    LCD_control.bg_tile_map = (byte >> 3) & 1;
+    LCD_control.tile_data_addr = ((byte >> 4) & 1 ? TILE_DATA_1_ADDR : TILE_DATA_0_ADDR);
+    LCD_control.signed_tile_map = !((byte >> 4 & 1));
+    LCD_control.bg_tile_map_addr = ((byte >> 3) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR);
     LCD_control.double_sprite_height = (byte >> 2) & 1;
     LCD_control.enable_sprites = (byte >> 1) & 1;
-    LCD_control.bg_priority = byte & 1;
+    LCD_control.bg_priority = byte & 1;    
 }
