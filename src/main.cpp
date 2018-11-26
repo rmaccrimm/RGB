@@ -12,6 +12,7 @@
 #include <chrono>
 #include <boost/program_options.hpp>
 
+#include "apu.h"
 #include "cartridge.h"
 #include "debug.h"
 #include "definitions.h"
@@ -82,6 +83,8 @@ int main(int argc, char *argv[])
     Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
+    APU gb_apu(&gb_mem);
+    gb_apu.play();
 
     std::cout << game_cart.title << std::endl << game_cart.type << std::endl
               << game_cart.num_ram_banks << " RAM banks" << std::endl

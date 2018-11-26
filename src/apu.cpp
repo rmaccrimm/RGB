@@ -1,26 +1,65 @@
 #include "apu.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_Audio.h>
+#include "registers.h"
+#include <iostream>
+#include <cmath>
+
+int v = 0;
+const Sint16 AMPLITUDE = 6000;
+const int FREQUENCY1 = 300;
+const int FREQUENCY2 = 60;
+
+
+int per_s = 48000;
+int per_call = 1024;
+double call_freq = (double)per_s / (double)per_call;
+double dt = 1.0f / call_freq/ (double)1024.0f;
+double t = 0;
+
+APU::APU(Memory *mem) : 
+    memory{mem},
+    channel_1{
+        mem->get_mem_reference(reg::NR10),
+        mem->get_mem_reference(reg::NR11),
+        mem->get_mem_reference(reg::NR12),
+        mem->get_mem_reference(reg::NR13),
+        mem->get_mem_reference(reg::NR14)
+    }
+{
+    SDL_AudioSpec spec, obtained;
+    SDL_zero(spec);
+
+    spec.freq = per_s;
+    spec.format = AUDIO_S16SYS;
+    spec.channels = 2;
+    spec.samples = per_call;
+    spec.callback = audio_callback;
+    spec.userdata = NULL;
+
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
+        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
+    }
+    audio_device = SDL_OpenAudioDevice(NULL, 0, &spec, &obtained, 0);
+    if (audio_device == 0) {
+        SDL_Log("Failed to open audio: %s", SDL_GetError());
+    }
+ }
+
+APU::~APU() {
+    SDL_CloseAudioDevice(audio_device);
+    SDL_Quit();
+}
+
+void audio_callback(void *userdata, Uint8 *stream, int len)
+{
+    Sint16* _stream = (Sint16*)stream;
+    for (int i = 0; i < len/4; i++) {
+        _stream[2*i] = AMPLITUDE * std::sin(t * 2.0f * 3.14159f * FREQUENCY1);
+        _stream[2*i + 1] = AMPLITUDE * std::sin(t * 2.0f * 3.14159f * FREQUENCY2);
+        t += dt;
+    }
+}
 
 void APU::play()
 {
-    SDL_AudioSpec spec, obtained;
-    SDL_AudioDeviceID device;
-    SDL_zero(spec);
-    spec.freq = 48000;
-    spec.format = AUDIO_F32;
-    spec.channels = 2;
-    spec.samples = 4096;
-
-    device = SDL_OpenAudioDevice(NULL, 0, &spec, &obtained, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-    if (device == 0) {
-        SDL_Log("Failed to open audio: %s", SDL_GetError());
-    } else {
-        if (obtained.format != spec.format) { /* we let this one thing change. */
-            SDL_Log("We didn't get Float32 audio format.");
-        }
-        SDL_PauseAudioDevice(device, 0); 
-        SDL_Delay(5000); 
-        SDL_CloseAudioDevice(device);
-    }
+        SDL_PauseAudioDevice(audio_device, 0); 
 }
