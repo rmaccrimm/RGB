@@ -146,21 +146,13 @@ void GPU::increment_line()
 void GPU::update_color_palettes()
 {
     u8 bgp = memory->read(reg::BGP);
-    bg_palette[0] = COLORS[bgp & 3];
-    bg_palette[1] = COLORS[(bgp >> 2) & 3];
-    bg_palette[2] = COLORS[(bgp >> 4) & 3];
-    bg_palette[3] = COLORS[(bgp >> 6) & 3];
-
     u8 obp1 = memory->read(reg::OBP1);
     u8 obp0 = memory->read(reg::OBP0);
-    sprite_palette[0][0] = COLORS[obp0 & 3];
-    sprite_palette[0][1] = COLORS[(obp0 >> 2) & 3];
-    sprite_palette[0][2] = COLORS[(obp0 >> 4) & 3];
-    sprite_palette[0][3] = COLORS[(obp0 >> 6) & 3];
-    sprite_palette[1][0] = COLORS[obp1 & 3];
-    sprite_palette[1][1] = COLORS[(obp1 >> 2) & 3];
-    sprite_palette[1][2] = COLORS[(obp1 >> 4) & 3];
-    sprite_palette[1][3] = COLORS[(obp1 >> 6) & 3];
+    for (int i = 0; i < 4; i++) {
+        bg_palette[i] = (bgp >> (2*i)) & 3;
+        sprite_palette[0][i] = (obp0 >> (2*i)) & 3;
+        sprite_palette[1][i] = (obp1 >> (2*i)) & 3;
+    }
 }
 
 u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x)

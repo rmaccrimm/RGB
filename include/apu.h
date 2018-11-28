@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_Audio.h>
+#include <SDL2/SDL_audio.h>
 #include "definitions.h"
 #include "mmu.h"
 
