@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
     APU gb_apu(&gb_mem);
-    gb_apu.play();
+    gb_apu.start();
 
     std::cout << game_cart.title << std::endl << game_cart.type << std::endl
               << game_cart.num_ram_banks << " RAM banks" << std::endl
@@ -115,13 +115,7 @@ int main(int argc, char *argv[])
         }
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
-		/*if (window.frame_drawn()) {
-            window.draw = false;
-			if (window.closed()) {
-				break;
-			}
-			window.process_input();
-		}*/
+        gb_apu.step(cycles);
     }
     if (enable_debug_mode) {
         debug::print_registers(&gb_cpu);

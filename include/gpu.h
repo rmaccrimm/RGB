@@ -56,7 +56,6 @@ private:
     u8 bg_palette[4];
     u8 sprite_palette[2][4];
 
-    static const u8 COLORS[4];
     static const int BACKGROUND_DIM;
     static const int TILE_MAP_DIM;
     static const int TILE_DIM;

@@ -26,7 +26,7 @@ const float SCREEN_QUAD[] = {
 };
 
 GameWindow::GameWindow(Joypad *pad, int scale, bool limit_framerate, std::string title) :
-    joypad(pad), window_scale(scale), key_pressed{0}, draw(0)
+    joypad(pad), window_scale(scale), key_pressed{0}, draw(0), quit(false)
 {
     init_window(title);
     init_glcontext(limit_framerate);
@@ -45,7 +45,7 @@ bool GameWindow::frame_drawn() { return draw; }
 bool GameWindow::closed() 
 {
     SDL_PollEvent(&event);
-    if (event.type == SDL_QUIT) {
+    if (event.type == SDL_QUIT || quit) {
         return true;
     }
     else {
@@ -110,6 +110,7 @@ void GameWindow::init_glcontext(bool limit_framerate)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
     gl_context = SDL_GL_CreateContext(sdl_window);
     SDL_GL_SetSwapInterval(limit_framerate);
     if (gl_context == nullptr) {
@@ -239,6 +240,10 @@ void GameWindow::process_input()
 {
     int key;
     if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+            quit = true;
+            return;
+        }
         // TODO - define a map with reconfigurable keys, just do keymap[event.key...]
         switch (event.key.keysym.sym)
         {

@@ -6,19 +6,21 @@
 #include <cmath>
 
 int v = 0;
-const Sint16 AMPLITUDE = 6000;
+const Sint16 AMPLITUDE = 600;
 const int FREQUENCY1 = 300;
-const int FREQUENCY2 = 70;
+const int FREQUENCY2 = 60;
 int per_s = 48000;
 int per_call = 1024;
 double call_freq = (double)per_s / (double)per_call;
 double dt = 1.0f / call_freq/ (double)1024.0f;
 double t = 0;
 
-int square_wave(double t, double freq, int amp, int duty)
+int APU::square_wave(double t, double freq, int amp, int duty)
 {
-    double T = 1.0 / (2.0 * freq);
-    return (static_cast<int>(t / T) % duty == 0 ? amp : -amp);
+    double D = duty == 0 ? 0.5 : duty;
+    double T = 1.0 / (4.0 * freq);
+    t -= 4 * T * std::floor(t / (4 * T));
+    return t <= (D * T) ? amp : -amp;
 }
 
 APU::APU(Memory *mem) : 
@@ -29,6 +31,25 @@ APU::APU(Memory *mem) :
         mem->get_mem_reference(reg::NR12),
         mem->get_mem_reference(reg::NR13),
         mem->get_mem_reference(reg::NR14)
+    },
+    channel_2{
+        mem->get_mem_reference(reg::NR21),
+        mem->get_mem_reference(reg::NR22),
+        mem->get_mem_reference(reg::NR23),
+        mem->get_mem_reference(reg::NR24)
+    },
+    channel_3{
+        mem->get_mem_reference(reg::NR30),
+        mem->get_mem_reference(reg::NR31),
+        mem->get_mem_reference(reg::NR32),
+        mem->get_mem_reference(reg::NR33),
+        mem->get_mem_reference(reg::NR34)
+    },
+    channel_4{
+        mem->get_mem_reference(reg::NR41),
+        mem->get_mem_reference(reg::NR42),
+        mem->get_mem_reference(reg::NR43),
+        mem->get_mem_reference(reg::NR44)
     }
 {
     for (int i = 0; i < SDL_GetNumAudioDevices(0); i++) {
@@ -42,46 +63,68 @@ APU::APU(Memory *mem) :
     spec.format = AUDIO_S16SYS;
     spec.channels = 2;
     spec.samples = per_call;
-    spec.callback = audio_callback;
-    spec.userdata = NULL;
+    spec.callback = APU::forward_callback;
+    spec.userdata = this;
 
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
     }
-    audio_device = SDL_OpenAudioDevice(NULL, 0, &spec, &obtained, 0);
-    if (audio_device == 0) {
+    device_id = SDL_OpenAudioDevice(NULL, 0, &spec, &obtained, 0);
+    if (device_id == 0) {
         SDL_Log("Failed to open audio: %s", SDL_GetError());
     }
  }
 
 APU::~APU() {
-    SDL_CloseAudioDevice(audio_device);
+    SDL_CloseAudioDevice(device_id);
     SDL_Quit();
 }
 
-void audio_callback(void *userdata, Uint8 *stream, int len)
+void APU::step(int cycles)
+{
+    clock += cycles;
+    // Audio control registers update at 256 Hz, which means 1 tick per 2^14 cpu cycles 
+
+    if (clock >= 0x4000) {
+        clock -= 0x4000; 
+
+        u8 len_ch2 = channel_1.length_duty & 0x1f;
+        if (len_ch2 > 0) {
+            len_ch2--;
+            channel_2.length_duty = (channel_1.length_duty & (~0x1f)) | (len_ch2 & 0x1f);
+        }
+    }
+}
+
+void APU::start()
+{
+    SDL_PauseAudioDevice(device_id, 0); 
+}
+
+void APU::forward_callback(void *userdata, Uint8 *stream, int len)
+{
+    static_cast<APU*>(userdata)->audio_callback(stream, len);
+}
+
+void APU::audio_callback(Uint8 *stream, int len)
 {
     Sint16* _stream = (Sint16*)stream;
     for (int i = 0; i < len/4; i++) {
-        // _stream[2*i] = AMPLITUDE * std::sin(t * 2.0f * 3.14159f * FREQUENCY1);
-        // _stream[2*i + 1] = AMPLITUDE * std::sin(t * 2.0f * 3.14159f * FREQUENCY2);
-        // _stream[2*i] = std::sin(t * 2.0f * M_PI * FREQUENCY1) >= 0 ? AMPLITUDE : -AMPLITUDE;
-        // _stream[2*i + 1] = std::sin(t * 2.0f * M_PI * FREQUENCY2) >= 0 ? AMPLITUDE : -AMPLITUDE;
-        _stream[2*i] = square_wave(t, FREQUENCY1, AMPLITUDE, 2); 
-        _stream[2*i + 1] = square_wave(t, FREQUENCY2, AMPLITUDE, 2); 
+        _stream[2*i] = sample_channel_2();
+        _stream[2*i + 1] = sample_channel_2();
         t += dt;
     }
 }
 
-int APU::channel_1_sample()
+int APU::sample_channel_1()
 {
-    double sweep_time = ((channel_1.sweep >> 4) & 7) / 128.0;
-    if (sweep_time != 0) {
-        double df = 1.0 / std::pow(2, (channel_1.sweep & 3));
-    }
+
 }
 
-void APU::play()
+int APU::sample_channel_2()
 {
-    SDL_PauseAudioDevice(audio_device, 0); 
+    int f = (channel_2.frequency_high & 7) | channel_2.frequency_low;
+    double freq = 131072.0 / (2048.0 - f);
+    int duty = (channel_2.length_duty >> 6) & 3;
+    return square_wave(t, freq, AMPLITUDE, duty);
 }

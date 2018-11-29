@@ -41,6 +41,7 @@ private:
     int key_pressed[8];
     
     bool pause;
+    bool quit;
     // shader uniforms
     bool background;
     int scrollx;
