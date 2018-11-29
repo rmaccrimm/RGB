@@ -7,18 +7,20 @@
 #include "definitions.h"
 #include "mmu.h"
 
-void audio_callback(void *data, u8 *stream, int len);
-
 class APU
 {
 public:
     APU(Memory *mem);
     ~APU();
 
-    void play();
+    void step(int cycles);
 
-private:
+    void start();
+
+// private:
     const Memory* memory;
+
+    SDL_AudioDeviceID device_id;
 
     struct {
         u16 sweep;
@@ -28,7 +30,7 @@ private:
         u16 frequency_high;
     } channel_1;
 
-    /*struct {
+    struct {
         u16 sound_length_and_duty_cycle;
         u16 volume_envelope;
         u16 frequency_low;
@@ -48,10 +50,23 @@ private:
         u16 volume_envelope;
         u16 polynomial_counter;
         u16 counter;
-    } channel_4;*/
+    } channel_4;
 
+    // SDL audio callback function. Forwards call to APU object pointed ot by userdata
+    static void forward_callback(void *APU_obj, Uint8 *stream, int len);
 
-    SDL_AudioDeviceID audio_device;
+    // Actual function to fill audio buffer
+    void audio_callback(Uint8 *stream, int len);
+
+    int square_wave(double t, double freq, int amplitude, int duty);
+
+    int sample_channel_1();
+
+    int sample_channel_2();
+
+    int sample_channel_3();
+
+    int sample_channel_4();
 };
 
 

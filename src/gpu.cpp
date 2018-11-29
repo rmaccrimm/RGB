@@ -20,13 +20,6 @@ const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
 const u16 GPU::VRAM_ADDR = 0x8000;
 const u16 GPU::OAM_ADDR = 0xfe00;
 
-const u8 GPU::COLORS[4] = { 
-        0xff,   // 00 white
-        0xb2,   // 01 dark gray
-        0x66,   // 10 light gray
-        0x00    // 11 black
-};
-
 GPU::GPU(Memory *mem, GameWindow *win): 
     memory(mem), 
     window(win), 
