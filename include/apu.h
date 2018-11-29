@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_Audio.h>
+#include <SDL2/SDL_audio.h>
 #include "definitions.h"
 #include "mmu.h"
 
@@ -18,7 +18,12 @@ public:
     void play();
 
 private:
+
+    int channel_1_sample();
+
     const Memory* memory;
+
+    SDL_AudioDeviceID audio_device;
 
     struct {
         u16 sweep;
@@ -50,8 +55,7 @@ private:
         u16 counter;
     } channel_4;*/
 
-
-    SDL_AudioDeviceID audio_device;
+    
 };
 
 

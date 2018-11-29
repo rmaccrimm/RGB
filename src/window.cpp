@@ -86,7 +86,7 @@ void GameWindow::draw_frame(u8 pixel_buffer[])
 
 void GameWindow::init_window(std::string title) 
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
         std::cout << "Initialization failed. SDL Error: " << SDL_GetError() << std::endl;
     }
     else {
