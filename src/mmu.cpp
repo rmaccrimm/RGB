@@ -130,9 +130,6 @@ void Memory::write_reg(u16 addr, u8 data)
     case 0xff50:
         enable_boot_rom = false;
         break;
-    case reg::NR21:
-        io_read_masks[addr - 0xff00] = (data & 0xc) | 0x3f;
-        break;
     default:
         io_registers[addr - 0xff00] = data;
     }

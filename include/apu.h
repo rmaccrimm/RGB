@@ -7,6 +7,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
 #include <map>
+#include <vector>
+#include <iterator>
 
 class APU
 {
@@ -38,13 +40,21 @@ private:
 
     void init_reg_references();
 
-    void update_registers();
+    void read_registers();
+
+    void clock_length_counters();
+
+    void clock_freq_sweep();
+
+    void clock_vol_envelope();
 
     const Memory* memory;
 
     SDL_AudioDeviceID device_id;
 
-    int clock;
+    unsigned int clock;
+
+    unsigned int frame_step;
 
     struct {
         int counter;
@@ -61,14 +71,17 @@ private:
     } channel_1;
 
     struct {
+        bool enable;
         int counter;
-        bool stop;
+        bool decrement_counter;
         bool restart;
         int frequency;
         int duty;
-        int envelope_init;
-        bool envelope_direction;
-        int envelope_sweep;
+        int initial_volume;
+        bool increase_volume;
+        int volume_sweep;
+        int volume;
+        int volume_clock;
     } channel_2;
 
     struct {
@@ -109,9 +122,29 @@ private:
         bool channel_4_right;
     } sound_control;
 
-    std::map<u16, u8&> audio_reg;
+    u8 &reg_nr10;
+    u8 &reg_nr11;
+    u8 &reg_nr12;
+    u8 &reg_nr13;
+    u8 &reg_nr14;
+    u8 &reg_nr21;
+    u8 &reg_nr22;
+    u8 &reg_nr23;
+    u8 &reg_nr24;
+    u8 &reg_nr30;
+    u8 &reg_nr31;
+    u8 &reg_nr32;
+    u8 &reg_nr33;
+    u8 &reg_nr34;
+    u8 &reg_nr41;
+    u8 &reg_nr42;
+    u8 &reg_nr43;
+    u8 &reg_nr44;
+    u8 &reg_nr50;
+    u8 &reg_nr51;
+    u8 &reg_nr52;
+    
+    std::map<u16, u8*> audio_reg;
 };
-
-
 
 #endif
