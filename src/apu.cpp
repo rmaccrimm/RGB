@@ -130,6 +130,7 @@ void APU::clock_length_counters()
 
 int APU::square_wave(double t, double freq, int amp, int duty)
 {
+    freq = 131072.0 / freq;
     double D = duty == 0 ? 0.5 : duty;
     double T = 1.0 / (4.0 * freq);
     t -= 4 * T * std::floor(t / (4 * T));
@@ -177,8 +178,8 @@ void APU::read_registers()
 
     u8 freq_lo = reg_nr23;
     u8 freq_hi = reg_nr24 & 7;
-    int x = (freq_hi << 8) | freq_lo;
-    channel_2.frequency = x;//(32 * (2048.0 - (double)x));
+    int x = (freq_hi << 8) | freq_lo & 0x7ff;
+    channel_2.frequency = 0x800 - x;//(32 * (2048.0 - (double)x));
     // std::cout << channel_2.frequency << std::endl;
     channel_2.decrement_counter = utils::bit(reg_nr24, 6);
     channel_2.duty = (reg_nr21 >> 6) & 3;
