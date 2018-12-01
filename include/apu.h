@@ -38,8 +38,6 @@ private:
 
     int sample_channel_4();
 
-    void init_reg_references();
-
     void read_registers();
 
     void clock_length_counters();
@@ -104,8 +102,6 @@ private:
 
     struct {
         bool master_enable;
-        bool enable_left;
-        bool enable_right;
         int volume_left;
         int volume_right;
         bool enable_channel_1;

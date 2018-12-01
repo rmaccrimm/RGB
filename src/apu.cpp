@@ -7,7 +7,7 @@
 #include <cmath>
 
 int v = 0;
-const Sint16 AMPLITUDE = 50;
+const Sint16 AMPLITUDE = 100;
 const int FREQUENCY1 = 300;
 const int FREQUENCY2 = 60;
 int per_s = 48000;
@@ -63,8 +63,6 @@ APU::APU(Memory *mem) :
     if (device_id == 0) {
         SDL_Log("Failed to open audio: %s", SDL_GetError());
     }
-
-    init_reg_references();
     read_registers();  
 
     channel_2.volume_clock = 0;
@@ -151,15 +149,23 @@ void APU::audio_callback(Uint8 *stream, int len)
 {
     Sint16* _stream = (Sint16*)stream;
     for (int i = 0; i < len/4; i++) {
-        _stream[2*i] = sample_channel_2();
-        _stream[2*i + 1] = sample_channel_2();
+        _stream[2*i] = 0;
+        _stream[2*i + 1] = 0;
+        _stream[2*i] += sound_control.channel_1_left ?  sample_channel_1() : 0;
+        _stream[2*i] += sound_control.channel_2_left ?  sample_channel_2() : 0;
+        _stream[2*i] += sound_control.channel_3_left ?  sample_channel_3() : 0;
+        _stream[2*i] += sound_control.channel_4_left ?  sample_channel_4() : 0;
+        _stream[2*i + 1] += sound_control.channel_1_right ? sample_channel_1() : 0;
+        _stream[2*i + 1] += sound_control.channel_2_right ? sample_channel_2() : 0;
+        _stream[2*i + 1] += sound_control.channel_3_right ? sample_channel_3() : 0;
+        _stream[2*i + 1] += sound_control.channel_4_right ? sample_channel_4() : 0;
         t += dt;
     }
 }
 
 int APU::sample_channel_1()
 {
-
+    return 0;
 }
 
 int APU::sample_channel_2()
@@ -172,45 +178,40 @@ int APU::sample_channel_2()
     }
 }
 
+int APU::sample_channel_3()
+{
+    return 0;
+}
+
+int APU::sample_channel_4()
+{
+    return 0;
+}
+
 void APU::read_registers()
 {
     sound_control.master_enable = utils::bit(reg_nr52, 7);
+    sound_control.volume_left = (reg_nr50 >> 4) & 7;
+    sound_control.volume_right = reg_nr50 &  7;
+    
+    sound_control.channel_1_right = utils::bit(reg_nr51, 0);
+    sound_control.channel_2_right = utils::bit(reg_nr51, 1);
+    sound_control.channel_3_right = utils::bit(reg_nr51, 2);
+    sound_control.channel_4_right = utils::bit(reg_nr51, 3);
+    sound_control.channel_1_left = utils::bit(reg_nr51, 4);
+    sound_control.channel_2_left = utils::bit(reg_nr51, 5);
+    sound_control.channel_3_left = utils::bit(reg_nr51, 6);
+    sound_control.channel_4_left = utils::bit(reg_nr51, 7);
+    
 
     u8 freq_lo = reg_nr23;
     u8 freq_hi = reg_nr24 & 7;
     int x = (freq_hi << 8) | freq_lo & 0x7ff;
-    channel_2.frequency = 0x800 - x;//(32 * (2048.0 - (double)x));
-    // std::cout << channel_2.frequency << std::endl;
+    channel_2.frequency = 0x800 - x;
     channel_2.decrement_counter = utils::bit(reg_nr24, 6);
     channel_2.duty = (reg_nr21 >> 6) & 3;
     channel_2.initial_volume = (reg_nr22 >> 4 ) & 0xf;
     channel_2.increase_volume = utils::bit(reg_nr22, 3);
     channel_2.volume_sweep = reg_nr22 & 7;
     channel_2.restart = utils::bit(reg_nr24, 7);
-}
-
-void APU::init_reg_references()
-{
-    /*u16 io_base_addr = 0xff00;
-    audio_reg[reg::NR10] = memory->get_mem_reference(reg::NR10);
-    audio_reg[reg::NR11] = &memory->io_registers[reg::NR11 - io_base_addr];
-    audio_reg[reg::NR12] = &memory->io_registers[reg::NR12 - io_base_addr];
-    audio_reg[reg::NR13] = &memory->io_registers[reg::NR13 - io_base_addr];
-    audio_reg[reg::NR14] = &memory->io_registers[reg::NR14 - io_base_addr];
-    audio_reg[reg::NR21] = &memory->io_registers[reg::NR21 - io_base_addr];
-    audio_reg[reg::NR22] = &memory->io_registers[reg::NR22 - io_base_addr];
-    audio_reg[reg::NR23] = memory->io_registers[reg::NR23 - io_base_addr];
-    audio_reg[reg::NR24] = memory->io_registers[reg::NR24 - io_base_addr];
-    audio_reg[reg::NR30] = memory->io_registers[reg::NR30 - io_base_addr];
-    audio_reg[reg::NR31] = memory->io_registers[reg::NR31 - io_base_addr];
-    auxdio_reg[reg::NR32] = memory->io_registers[reg::NR32 - io_base_addr];
-    audio_reg[reg::NR33] = memory->io_registers[reg::NR33 - io_base_addr];
-    audio_reg[reg::NR34] = memory->io_registers[reg::NR34 - io_base_addr];
-    audio_reg[reg::NR41] = memory->io_registers[reg::NR41 - io_base_addr];
-    audio_reg[reg::NR42] = memory->io_registers[reg::NR42 - io_base_addr];
-    audio_reg[reg::NR43] = memory->io_registers[reg::NR43 - io_base_addr];
-    audio_reg[reg::NR44] = memory->io_registers[reg::NR44 - io_base_addr];
-    audio_reg[reg::NR50] = memory->io_registers[reg::NR50 - io_base_addr];
-    audio_reg[reg::NR51] = memory->io_registers[reg::NR51 - io_base_addr];
-    audio_reg[reg::NR52] = memory->io_registers[reg::NR52 - io_base_addr];*/
 }
