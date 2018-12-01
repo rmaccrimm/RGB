@@ -1,5 +1,6 @@
 #include "apu.h"
 #include "registers.h"
+#include "util.h"
 #include <iostream>
 
 #define _USE_MATH_DEFINES
@@ -15,42 +16,7 @@ double call_freq = (double)per_s / (double)per_call;
 double dt = 1.0f / call_freq/ (double)1024.0f;
 double t = 0;
 
-int APU::square_wave(double t, double freq, int amp, int duty)
-{
-    double D = duty == 0 ? 0.5 : duty;
-    double T = 1.0 / (4.0 * freq);
-    t -= 4 * T * std::floor(t / (4 * T));
-    return t <= (D * T) ? amp : -amp;
-}
-
-APU::APU(Memory *mem) : 
-    memory{mem},
-    channel_1{
-        mem->get_mem_reference(reg::NR10),
-        mem->get_mem_reference(reg::NR11),
-        mem->get_mem_reference(reg::NR12),
-        mem->get_mem_reference(reg::NR13),
-        mem->get_mem_reference(reg::NR14)
-    },
-    channel_2{
-        mem->get_mem_reference(reg::NR21),
-        mem->get_mem_reference(reg::NR22),
-        mem->get_mem_reference(reg::NR23),
-        mem->get_mem_reference(reg::NR24)
-    },
-    channel_3{
-        mem->get_mem_reference(reg::NR30),
-        mem->get_mem_reference(reg::NR31),
-        mem->get_mem_reference(reg::NR32),
-        mem->get_mem_reference(reg::NR33),
-        mem->get_mem_reference(reg::NR34)
-    },
-    channel_4{
-        mem->get_mem_reference(reg::NR41),
-        mem->get_mem_reference(reg::NR42),
-        mem->get_mem_reference(reg::NR43),
-        mem->get_mem_reference(reg::NR44)
-    }
+APU::APU(Memory *mem) : memory{mem}
 {
     for (int i = 0; i < SDL_GetNumAudioDevices(0); i++) {
         SDL_Log("%s", SDL_GetAudioDeviceName(i, 0));
@@ -73,6 +39,9 @@ APU::APU(Memory *mem) :
     if (device_id == 0) {
         SDL_Log("Failed to open audio: %s", SDL_GetError());
     }
+
+    init_reg_references();
+    update_registers();
  }
 
 APU::~APU() {
@@ -87,13 +56,15 @@ void APU::step(int cycles)
 
     if (clock >= 0x4000) {
         clock -= 0x4000; 
-
-        u8 len_ch2 = channel_1.length_duty & 0x1f;
-        if (len_ch2 > 0) {
-            len_ch2--;
-            channel_2.length_duty = (channel_1.length_duty & (~0x1f)) | (len_ch2 & 0x1f);
-        }
     }
+}
+
+int APU::square_wave(double t, double freq, int amp, int duty)
+{
+    double D = duty == 0 ? 0.5 : duty;
+    double T = 1.0 / (4.0 * freq);
+    t -= 4 * T * std::floor(t / (4 * T));
+    return t <= (D * T) ? amp : -amp;
 }
 
 void APU::start()
@@ -108,10 +79,19 @@ void APU::forward_callback(void *userdata, Uint8 *stream, int len)
 
 void APU::audio_callback(Uint8 *stream, int len)
 {
+    if (!utils::bit(sound_control.on_off, 7)) {
+        // return;
+    }
     Sint16* _stream = (Sint16*)stream;
     for (int i = 0; i < len/4; i++) {
-        _stream[2*i] = sample_channel_2();
-        _stream[2*i + 1] = sample_channel_2();
+        _stream[2*i] = 0;
+        _stream[2*i + 1] = 0;
+        // if (utils::bit(sound_control.mix, 1)) {
+            _stream[2*i] = sample_channel_2();
+        // }
+        if (utils::bit(sound_control.mix, 5)) {
+            _stream[2*i + 1] = sample_channel_2();
+        }
         t += dt;
     }
 }
@@ -123,8 +103,36 @@ int APU::sample_channel_1()
 
 int APU::sample_channel_2()
 {
-    int f = (channel_2.frequency_high & 7) | channel_2.frequency_low;
-    double freq = 131072.0 / (2048.0 - f);
-    int duty = (channel_2.length_duty >> 6) & 3;
-    return square_wave(t, freq, AMPLITUDE, duty);
+
+}
+
+void APU::update_registers()
+{
+    
+}
+
+void APU::init_reg_references()
+{
+    u16 io_base_addr = 0xff00;
+    audio_reg[reg::NR10] = memory->io_registers[reg::NR10 - io_base_addr];
+    audio_reg[reg::NR11] = memory->io_registers[reg::NR11 - io_base_addr];
+    audio_reg[reg::NR12] = memory->io_registers[reg::NR12 - io_base_addr];
+    audio_reg[reg::NR13] = memory->io_registers[reg::NR13 - io_base_addr];
+    audio_reg[reg::NR14] = memory->io_registers[reg::NR14 - io_base_addr];
+    audio_reg[reg::NR21] = memory->io_registers[reg::NR21 - io_base_addr];
+    audio_reg[reg::NR22] = memory->io_registers[reg::NR22 - io_base_addr];
+    audio_reg[reg::NR23] = memory->io_registers[reg::NR23 - io_base_addr];
+    audio_reg[reg::NR24] = memory->io_registers[reg::NR24 - io_base_addr];
+    audio_reg[reg::NR30] = memory->io_registers[reg::NR30 - io_base_addr];
+    audio_reg[reg::NR31] = memory->io_registers[reg::NR31 - io_base_addr];
+    audio_reg[reg::NR32] = memory->io_registers[reg::NR32 - io_base_addr];
+    audio_reg[reg::NR33] = memory->io_registers[reg::NR33 - io_base_addr];
+    audio_reg[reg::NR34] = memory->io_registers[reg::NR34 - io_base_addr];
+    audio_reg[reg::NR41] = memory->io_registers[reg::NR41 - io_base_addr];
+    audio_reg[reg::NR42] = memory->io_registers[reg::NR42 - io_base_addr];
+    audio_reg[reg::NR43] = memory->io_registers[reg::NR43 - io_base_addr];
+    audio_reg[reg::NR44] = memory->io_registers[reg::NR44 - io_base_addr];
+    audio_reg[reg::NR50] = memory->io_registers[reg::NR50 - io_base_addr];
+    audio_reg[reg::NR51] = memory->io_registers[reg::NR51 - io_base_addr];
+    audio_reg[reg::NR52] = memory->io_registers[reg::NR52 - io_base_addr];
 }
