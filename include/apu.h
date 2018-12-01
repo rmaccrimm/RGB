@@ -55,17 +55,20 @@ private:
     unsigned int frame_step;
 
     struct {
+        bool enable;
         int counter;
-        bool stop;
+        bool decrement_counter;
         bool restart;
         int frequency;
         int duty;
         int sweep_time;
         bool sweep_direction;
         int sweep_shift;
-        int envelope_init;
-        bool envelope_direction;
-        int envelope_sweep;
+        int initial_volume;
+        bool increase_volume;
+        int volume_sweep;
+        int volume;
+        int volume_clock;
     } channel_1;
 
     struct {
