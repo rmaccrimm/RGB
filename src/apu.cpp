@@ -5,6 +5,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <algorithm>
 
 int v = 0;
 const Sint16 AMPLITUDE = 100;
