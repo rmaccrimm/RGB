@@ -1,5 +1,20 @@
 configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h)
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET(GCC_DEBUG_COMPILE_FLAGS "-fsanitize=address -Og -pg -ggdb -Wall -Wextra -Wshadow \
+        -Wduplicated-cond -Wfatal-errors -Wlogical-op -Wnull-dereference -Wuseless-cast")
+    SET(GCC_DEBUG_LINK_FLAGS "-fsanitize=address")
+
+    SET(GCC_RELEASE_COMPILE_FLAGS "-O3")
+
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CC_FLAGS_DEBUG} ${GCC_DEBUG_COMPILE_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${GCC_DEBUG_COMPILE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${GCC_DEBUG_LINK_FLAGS}")
+
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${GCC_RELEASE_COMPILE_FLAGS}")
+    
+endif()
+
 include_directories(
     ${PROJECT_SOURCE_DIR}/include 
     ${PROJECT_SOURCE_DIR} 
