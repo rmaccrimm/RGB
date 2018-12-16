@@ -137,12 +137,10 @@ void Memory::write_reg(u16 addr, u8 data)
 
 u8& Memory::get_mem_reference(u16 addr)
 {
-    switch (addr)
-    {
-    case reg::STAT:
-    case reg::DIV:
+    if (addr >= 0xff00 && addr <= 0xff7f) {
         return io_registers[addr - 0xff00];
-    default:
+    }
+    else {
         assert(false);
     }
 }
@@ -185,7 +183,7 @@ void Memory::init_registers()
     io[reg::SB] = 0;
     io[reg::SC] = 0b01111110;
     // hidden lower byte of timer
-    io[0xff03] = 0b11111111;//, 0b11111111);
+    io[0xff03] = 0b11111111;
     io[reg::DIV] = 0;
     io[reg::TIMA] = 0;
     io[reg::TMA] = 0;
@@ -231,9 +229,6 @@ void Memory::init_registers()
     io_read_masks.resize(0x80, 0);
     io_write_masks.resize(0x80, 0);
 
-    io_write_masks[0xff03 - 0xff00] = 0xff;
-    io_write_masks[reg::STAT - 0xff00] = 0x7;
-
     for (int i = 0xff00; i < 0xff80; i++) {
         auto p = io.begin();
         if ((p = io.find(i)) != io.end()) {
@@ -243,4 +238,9 @@ void Memory::init_registers()
             io_read_masks[i - 0xff00] = 0xff;
         }
     }
+
+    // Read - only bits
+    io_write_masks[0xff03 - 0xff00] = 0xff;
+    io_write_masks[reg::STAT - 0xff00] = 0x7;
+    io_write_masks[reg::NR52 - 0xff00] = 0b00001111;
 }

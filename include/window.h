@@ -24,15 +24,7 @@ public:
 
     void process_input();
 
-    void update_background(u8 background[], int x, int y);
-
-    void update_sprites(u8 sprites[]);
-
-    void draw_frame();
-
     void draw_frame(u8 pixel_buffer[]);
-
-	void set_bg_palette(u8 palette[]);
 
     bool draw;
 
@@ -49,6 +41,7 @@ private:
     int key_pressed[8];
     
     bool pause;
+    bool quit;
     // shader uniforms
     bool background;
     int scrollx;

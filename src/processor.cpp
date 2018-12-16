@@ -126,7 +126,7 @@ int Processor::step(bool print)
         cycles = 1;
     }
     update_timer(cycles);
-    return internal_timer.value;
+    return 4 * cycles;
 }
 
 void Processor::update_timer(int cycles)
