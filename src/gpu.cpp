@@ -41,8 +41,6 @@ GPU::GPU(Memory *mem, GameWindow *win):
 
 void GPU::step(unsigned int cpu_clock)
 {
-    update_LCD_control();
-
     if (cpu_clock < prev_cpu_clock) {
         clock += ((1 << 16) - prev_cpu_clock) + cpu_clock;
     }
@@ -173,6 +171,7 @@ u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool inve
 
 void GPU::draw_scanline()
 {
+    update_LCD_control();
     draw_background();
     draw_sprites();
     draw_window();
