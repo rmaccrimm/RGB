@@ -109,9 +109,8 @@ void APU::step(int cycles)
             // clock_freq_sweep();
         }
         if (frame_step == 7) {
-            // clock_vol_envelope();
+            clock_vol_envelope();
         }
-
     }
 }
 
@@ -120,21 +119,25 @@ void APU::clock_vol_envelope()
     channel_1.volume_clock++;
     channel_2.volume_clock++;
 
-    if (channel_1.volume_clock % channel_1.volume_sweep == 0) {
-        if (channel_1.increase_volume) {
-            channel_1.volume = std::min(15, channel_1.volume - 1);
-        }
-        else {
-            channel_1.volume = std::max(0, channel_1.volume - 1);
+    if (channel_1.volume_sweep != 0) {
+        if (channel_1.volume_clock % channel_1.volume_sweep == 0) {
+            if (channel_1.increase_volume) {
+                channel_1.volume = std::min(15, channel_1.volume - 1);
+            }
+            else {
+                channel_1.volume = std::max(0, channel_1.volume - 1);
+            }
         }
     }
 
-    if (channel_2.volume_clock % channel_2.volume_sweep == 0) {
-        if (channel_2.increase_volume) {
-            channel_2.volume = std::min(15, channel_2.volume - 1);
-        }
-        else {
-            channel_2.volume = std::max(0, channel_2.volume - 1);
+    if (channel_2.volume_sweep != 0) {
+        if (channel_2.volume_clock % channel_2.volume_sweep == 0) {
+            if (channel_2.increase_volume) {
+                channel_2.volume = std::min(15, channel_2.volume - 1);
+            }
+            else {
+                channel_2.volume = std::max(0, channel_2.volume - 1);
+            }
         }
     }
 }
@@ -248,7 +251,7 @@ void APU::read_registers()
     channel_1.duty = (reg_nr11 >> 6) & 3;
     channel_1.initial_volume = (reg_nr12 >> 4 ) & 0xf;
     channel_1.increase_volume = utils::bit(reg_nr12, 3);
-    channel_1.volume_sweep = reg_nr12 & 7;
+    channel_1.volume_sweep = reg_nr12 & 7; 
     channel_1.restart = utils::bit(reg_nr14, 7);
 
     freq_lo = reg_nr23;
