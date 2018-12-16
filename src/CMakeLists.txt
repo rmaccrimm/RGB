@@ -1,5 +1,3 @@
-configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h)
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET(GCC_DEBUG_COMPILE_FLAGS "-fsanitize=address -Og -pg -ggdb -Wall -Wextra -Wshadow \
         -Wduplicated-cond -Wfatal-errors -Wlogical-op -Wnull-dereference -Wuseless-cast")
@@ -14,6 +12,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${GCC_RELEASE_COMPILE_FLAGS}")
     
 endif()
+
+configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/include 
