@@ -68,6 +68,7 @@ APU::APU(Memory *mem) :
 
     channel_1.volume_clock = 0;
     channel_1.volume = channel_2.initial_volume;
+    channel_1.freq_clock = 0;
 
     channel_2.volume_clock = 0;
     channel_2.volume = channel_2.initial_volume;
@@ -84,16 +85,15 @@ void APU::step(int cycles)
     read_registers();
 
     if (channel_1.restart) {
+        channel_1.freq_sweep_enable = true;
         channel_1.volume = channel_1.initial_volume;
-        // channel_1.restart = false;
-        // reg_nr14 = utils::reset(reg_nr14, 7);
+        reg_nr14 = utils::reset(reg_nr14, 7);
     }
     if (channel_2.restart) {
         channel_2.volume = channel_2.initial_volume;
         // channel_2.restart = false;
         // reg_nr14 = utils::reset(reg_nr24, 7);
     }
-
 
     // Frame sequencer updates at 2^9 Hz, which means 1 tick per 2^13 cpu cycles 
     if (clock >= 0x2000) {
@@ -103,15 +103,54 @@ void APU::step(int cycles)
         frame_step %= 8;
 
         if ((frame_step & 1) == 0) {
+        // Length counter clocked at 256 Hz
             clock_length_counters();
         }
         if ((frame_step == 2 || frame_step == 6)) {
-            // clock_freq_sweep();
-        }
+        // Frequency counter clocked at 128 Hz
+            clock_freq_sweep();
+        } 
         if (frame_step == 7) {
+        // Volume counter clocked at 64 Hz
             clock_vol_envelope();
         }
+
+        channel_1.enable = channel_1.counter != 0 && channel_1.freq_sweep_enable;
+        reg_nr52 = utils::set_cond(reg_nr52, 0, channel_1.enable);
+
+        channel_2.enable = channel_2.counter != 0;
+        reg_nr52 = utils::set_cond(reg_nr52, 1, channel_2.enable);
     }
+}
+
+void APU::clock_freq_sweep()
+{
+    channel_1.freq_clock++;
+    
+    if (!channel_1.freq_sweep_enable) {
+        return;
+    }
+    channel_1.enable = false;
+
+    if (channel_1.freq_sweep_time != 0 && channel_1.freq_shift != 0) {
+
+        if (channel_1.freq_clock % channel_1.freq_sweep_time == 0) {
+            int df = (channel_1.freq >> channel_1.freq_shift) & 0x7ff;
+            channel_1.freq += (channel_1.increase_freq ? df : -df);
+            
+            if (channel_1.freq < 0) {
+                channel_1.freq += df;
+            }
+            else if (channel_1.freq >= 0x800) {
+                channel_1.freq_sweep_enable = false;
+            }
+            else {
+                reg_nr13 = channel_1.freq & 0xff;
+                reg_nr14 = (reg_nr14 & (0x1f << 3)) | ((channel_1.freq >> 8) & 7);
+            }
+        }
+    }
+    channel_1.enable = true;
 }
 
 void APU::clock_vol_envelope()
@@ -119,8 +158,8 @@ void APU::clock_vol_envelope()
     channel_1.volume_clock++;
     channel_2.volume_clock++;
 
-    if (channel_1.volume_sweep != 0) {
-        if (channel_1.volume_clock % channel_1.volume_sweep == 0) {
+    if (channel_1.volume_sweep_time != 0) {
+        if (channel_1.volume_clock % channel_1.volume_sweep_time == 0) {
             if (channel_1.increase_volume) {
                 channel_1.volume = std::min(15, channel_1.volume - 1);
             }
@@ -130,8 +169,8 @@ void APU::clock_vol_envelope()
         }
     }
 
-    if (channel_2.volume_sweep != 0) {
-        if (channel_2.volume_clock % channel_2.volume_sweep == 0) {
+    if (channel_2.volume_sweep_time != 0) {
+        if (channel_2.volume_clock % channel_2.volume_sweep_time == 0) {
             if (channel_2.increase_volume) {
                 channel_2.volume = std::min(15, channel_2.volume - 1);
             }
@@ -153,15 +192,12 @@ void APU::clock_length_counters()
         channel_2.counter = reg_nr21;
     }
 
-    channel_1.enable = channel_1.counter != 0;
-    channel_2.enable = channel_2.counter != 0;
-    reg_nr52 = utils::set_cond(reg_nr52, 0, channel_1.enable);
-    reg_nr52 = utils::set_cond(reg_nr52, 1, channel_2.enable);
+
 }
 
 int APU::square_wave(double t, double freq, int amp, int duty)
 {
-    freq = 131072.0 / freq;
+    freq = 131072.0 / (0x800 - freq);
     double D = duty == 0 ? 0.5 : duty;
     double T = 1.0 / (4.0 * freq);
     t -= 4 * T * std::floor(t / (4 * T));
@@ -201,7 +237,7 @@ void APU::audio_callback(Uint8 *stream, int len)
 int APU::sample_channel_1()
 {
     if (channel_1.enable) {
-        return square_wave(t, channel_1.frequency, channel_1.volume * AMPLITUDE, channel_1.duty);
+        return square_wave(t, channel_1.freq, channel_1.volume * AMPLITUDE, channel_1.duty);
     }
     else {
         return 0;
@@ -245,23 +281,29 @@ void APU::read_registers()
     
     u8 freq_lo = reg_nr13;
     u8 freq_hi = reg_nr14 & 7;
-    int x = (freq_hi << 8) | freq_lo & 0x7ff;
-    channel_1.frequency = 0x800 - x;
+
+    channel_1.enable = false;
+    channel_1.freq = ((freq_hi << 8) | freq_lo) & 0x7ff;
+    channel_1.enable = true;
+
+    channel_1.freq_shift = reg_nr10 & 7;
+    channel_1.increase_freq = !utils::bit(reg_nr10, 3);
+    channel_1.freq_sweep_time = (reg_nr10 >> 4) & 7;
+
     channel_1.decrement_counter = utils::bit(reg_nr14, 6);
     channel_1.duty = (reg_nr11 >> 6) & 3;
     channel_1.initial_volume = (reg_nr12 >> 4 ) & 0xf;
     channel_1.increase_volume = utils::bit(reg_nr12, 3);
-    channel_1.volume_sweep = reg_nr12 & 7; 
+    channel_1.volume_sweep_time = reg_nr12 & 7; 
     channel_1.restart = utils::bit(reg_nr14, 7);
 
     freq_lo = reg_nr23;
     freq_hi = reg_nr24 & 7;
-    x = (freq_hi << 8) | freq_lo & 0x7ff;
-    channel_2.frequency = 0x800 - x;
+    channel_2.frequency = (freq_hi << 8) | freq_lo & 0x7ff;
     channel_2.decrement_counter = utils::bit(reg_nr24, 6);
     channel_2.duty = (reg_nr21 >> 6) & 3;
     channel_2.initial_volume = (reg_nr22 >> 4 ) & 0xf;
     channel_2.increase_volume = utils::bit(reg_nr22, 3);
-    channel_2.volume_sweep = reg_nr22 & 7;
+    channel_2.volume_sweep_time = reg_nr22 & 7;
     channel_2.restart = utils::bit(reg_nr24, 7);
 }

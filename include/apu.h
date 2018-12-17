@@ -10,6 +10,7 @@
 #include <vector>
 #include <iterator>
 
+
 class APU
 {
 public:
@@ -59,16 +60,21 @@ private:
         int counter;
         bool decrement_counter;
         bool restart;
-        int frequency;
         int duty;
-        int sweep_time;
-        bool sweep_direction;
-        int sweep_shift;
+
         int initial_volume;
         bool increase_volume;
-        int volume_sweep;
+        int volume_sweep_time;
         int volume;
         int volume_clock;
+
+        int initial_freq;
+        bool increase_freq;
+        int freq_sweep_enable;
+        int freq_sweep_time;
+        int freq;
+        int freq_shift;
+        int freq_clock;
     } channel_1;
 
     struct {
@@ -78,9 +84,10 @@ private:
         bool restart;
         int frequency;
         int duty;
+
         int initial_volume;
         bool increase_volume;
-        int volume_sweep;
+        int volume_sweep_time;
         int volume;
         int volume_clock;
     } channel_2;
