@@ -31,6 +31,8 @@ namespace utils
     // Set or reset bit depending on cond
     u8 set_cond(u8 x, int bit, bool cond);
 
+    u8 copy_bits(int src, u8 dest, int offset, int len);
+
     // Check if bit is set in x
     bool bit(int x, int bit);
 
