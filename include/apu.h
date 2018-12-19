@@ -10,7 +10,6 @@
 #include <vector>
 #include <iterator>
 
-
 class APU
 {
 public:

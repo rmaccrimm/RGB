@@ -88,6 +88,7 @@ void APU::step(int cycles)
         channel_1.freq_sweep_enable = true;
         channel_1.volume = channel_1.initial_volume;
         reg_nr14 = utils::reset(reg_nr14, 7);
+        channel_1.enable = true;
     }
     if (channel_2.restart) {
         channel_2.volume = channel_2.initial_volume;
@@ -108,14 +109,14 @@ void APU::step(int cycles)
         }
         if ((frame_step == 2 || frame_step == 6)) {
         // Frequency counter clocked at 128 Hz
-            clock_freq_sweep();
+            // clock_freq_sweep();
         } 
         if (frame_step == 7) {
         // Volume counter clocked at 64 Hz
             clock_vol_envelope();
         }
 
-        channel_1.enable = channel_1.counter != 0 && channel_1.freq_sweep_enable;
+        channel_1.enable = (channel_1.counter != 0) && channel_1.freq_sweep_enable;
         reg_nr52 = utils::set_cond(reg_nr52, 0, channel_1.enable);
 
         channel_2.enable = channel_2.counter != 0;
@@ -130,11 +131,9 @@ void APU::clock_freq_sweep()
     if (!channel_1.freq_sweep_enable) {
         return;
     }
-    channel_1.enable = false;
 
-    if (channel_1.freq_sweep_time != 0 && channel_1.freq_shift != 0) {
-
-        if (channel_1.freq_clock % channel_1.freq_sweep_time == 0) {
+    if ((channel_1.freq_sweep_time != 0) && (channel_1.freq_shift != 0)) {
+        if ((channel_1.freq_clock % channel_1.freq_sweep_time) == 0) {
             int df = (channel_1.freq >> channel_1.freq_shift) & 0x7ff;
             channel_1.freq += (channel_1.increase_freq ? df : -df);
             
@@ -150,7 +149,6 @@ void APU::clock_freq_sweep()
             }
         }
     }
-    channel_1.enable = true;
 }
 
 void APU::clock_vol_envelope()
@@ -184,15 +182,13 @@ void APU::clock_vol_envelope()
 void APU::clock_length_counters()
 {
     if (channel_1.decrement_counter && channel_1.counter > 0) {
-        reg_nr11 = (reg_nr11 && (7 << 5)) && ((reg_nr11 - 1) & 0x1f);
-        channel_1.counter = reg_nr11;
+        channel_1.counter--;
+        reg_nr11 = utils::copy_bits(channel_1.counter, reg_nr11, 0, 6);
     }
     if (channel_2.decrement_counter && channel_2.counter > 0) {
-        reg_nr21 = (reg_nr21 && (7 << 5)) && ((reg_nr21 - 1) & 0x1f);
-        channel_2.counter = reg_nr21;
+        channel_2.counter--;
+        reg_nr21 = utils::copy_bits(channel_1.counter, reg_nr21, 0, 6);
     }
-
-
 }
 
 int APU::square_wave(double t, double freq, int amp, int duty)
@@ -278,19 +274,21 @@ void APU::read_registers()
     sound_control.channel_2_left = utils::bit(reg_nr51, 5);
     sound_control.channel_3_left = utils::bit(reg_nr51, 6);
     sound_control.channel_4_left = utils::bit(reg_nr51, 7);
-    
+
+    channel_1.counter = reg_nr11 & 0x3f;
+    channel_2.counter = reg_nr21 & 0x3f;
+
+    channel_1.decrement_counter = utils::bit(reg_nr14, 6);
+    channel_2.decrement_counter = utils::bit(reg_nr24, 6);
+
     u8 freq_lo = reg_nr13;
     u8 freq_hi = reg_nr14 & 7;
-
-    channel_1.enable = false;
     channel_1.freq = ((freq_hi << 8) | freq_lo) & 0x7ff;
-    channel_1.enable = true;
-
     channel_1.freq_shift = reg_nr10 & 7;
     channel_1.increase_freq = !utils::bit(reg_nr10, 3);
     channel_1.freq_sweep_time = (reg_nr10 >> 4) & 7;
 
-    channel_1.decrement_counter = utils::bit(reg_nr14, 6);
+    
     channel_1.duty = (reg_nr11 >> 6) & 3;
     channel_1.initial_volume = (reg_nr12 >> 4 ) & 0xf;
     channel_1.increase_volume = utils::bit(reg_nr12, 3);
@@ -300,7 +298,7 @@ void APU::read_registers()
     freq_lo = reg_nr23;
     freq_hi = reg_nr24 & 7;
     channel_2.frequency = (freq_hi << 8) | freq_lo & 0x7ff;
-    channel_2.decrement_counter = utils::bit(reg_nr24, 6);
+    
     channel_2.duty = (reg_nr21 >> 6) & 3;
     channel_2.initial_volume = (reg_nr22 >> 4 ) & 0xf;
     channel_2.increase_volume = utils::bit(reg_nr22, 3);
