@@ -159,8 +159,15 @@ void APU::update_reg_NRx1(int channel_num, u8 data)
     if (channel_num <= 1) {
         ch.duty = (data >> 6) & 3;
     }
-    ch.sound_length = channel_num == 2 ? data : data & 0x3f;
-    ch.length_counter = (channel_num == 2 ? 256 : 64) - ch.sound_length;
+    if (channel_num == 2) {
+        ch.sound_length = data;
+        ch.length_counter = 256 - data;
+    }
+    else {
+        data &= 0x3f;
+        ch.sound_length = data;
+        ch.length_counter = 64 - data;
+    }
     ch.playing = true;
 }
 
@@ -235,7 +242,7 @@ void APU::clock_vol_envelope()
                 }
             }
         }
-        if (ch.volume = 0) {
+        if (ch.volume == 0) {
             ch.playing = false;
         }
     }
