@@ -5,7 +5,6 @@
 #include "joypad.h"
 #include "cartridge.h"
 #include "apu.h"
-#include <unordered_map>
 #include <iterator>
 #include <string>
 

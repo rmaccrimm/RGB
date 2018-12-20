@@ -29,9 +29,8 @@ link_libraries(${GLEW_LIBRARIES})
 
 add_library(funcs util.cpp)
 add_library(proc processor.cpp)
-add_library(mem mmu.cpp joypad.cpp cartridge.cpp)
+add_library(mem mmu.cpp joypad.cpp cartridge.cpp apu.cpp)
 add_library(ops operations.cpp)
-add_library(apu apu.cpp)
 
 add_executable(main 
     definitions.cpp
@@ -42,4 +41,4 @@ add_executable(main
 )
 target_link_libraries(mem funcs)
 target_link_libraries(ops funcs)
-target_link_libraries(main funcs proc mem ops apu SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY} ${Boost_LIBRARIES})
+target_link_libraries(main funcs proc mem ops SDL2::SDL2 GLEW::GLEW ${OPENGL_gl_LIBRARY} ${Boost_LIBRARIES})
