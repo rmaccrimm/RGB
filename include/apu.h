@@ -14,14 +14,64 @@ class APU
 {
 public:
 
-    APU(Memory *mem);
+    APU();
     ~APU();
 
     void step(int cycles);
 
     void start();
 
+    u8 read(u16 addr);
+    
+    void write(u16 addr, u8 data);
+
 private:
+
+    struct Channel
+    {
+        // Common to all channels
+        bool trigger;
+        bool playing;
+        bool enable;
+        bool output_left;
+        bool output_right;
+        int length_counter;
+        int sound_length;
+        bool decrement_counter;
+        bool trigger;
+        int duty;
+        // Used by channels 1 and 2
+        int initial_volume;
+        bool increase_volume;
+        int volume_sweep_time;
+        int volume;
+        int volume_clock;
+        // Used by channel 1
+        int initial_freq;
+        bool increase_freq;
+        int freq_sweep_enable;
+        int freq_sweep_time;
+        int freq;
+        int freq_shift;
+        int freq_clock;
+    } channels[4];
+
+    bool master_enable;
+    int volume_left;
+    int volume_right;
+
+    std::map<u16, u8> registers;
+    std::map<u16, u8> read_masks;
+    std::vector<u8> wave_pattern_RAM;
+    std::vector<bool> unused_addr;
+
+    unsigned int clock;
+    unsigned int frame_step;
+
+    SDL_AudioDeviceID device_id;
+
+    void reset();
+
     // SDL audio callback function. Forwards call to APU object pointed ot by userdata
     static void forward_callback(void *APU_obj, Uint8 *stream, int len);
 
@@ -38,7 +88,7 @@ private:
 
     int sample_channel_4();
 
-    void read_registers();
+    // void read_registers();
 
     void clock_length_counters();
 
@@ -46,19 +96,16 @@ private:
 
     void clock_vol_envelope();
 
-    const Memory* memory;
+    void init_registers();
 
-    SDL_AudioDeviceID device_id;
-
-    unsigned int clock;
-
-    unsigned int frame_step;
+    void init_SDL();
 
     struct {
-        bool enable;
-        int counter;
+        bool enabled;
+        int length_counter;
+        int sound_length;
         bool decrement_counter;
-        bool restart;
+        bool trigger;
         int duty;
 
         int initial_volume;
@@ -77,10 +124,11 @@ private:
     } channel_1;
 
     struct {
-        bool enable;
-        int counter;
+        bool enabled;
+        int length_counter;
+        int sound_length;
         bool decrement_counter;
-        bool restart;
+        bool trigger;
         int frequency;
         int duty;
 
@@ -92,14 +140,21 @@ private:
     } channel_2;
 
     struct {
-        bool enable;
-        int counter;
+        bool enabled;
+        int length_counter;
+        int sound_length;
+        bool decrement_counter;
         bool stop;
         int frequency;
         int volume;
+        
     } channel_3;
 
     struct {
+        bool enabled;
+        int length_counter;
+        int sound_length;
+        bool decrement_counter;
         int counter;
         int envelope_init;
         bool envelope_direction;
@@ -110,9 +165,6 @@ private:
     } channel_4;
 
     struct {
-        bool master_enable;
-        int volume_left;
-        int volume_right;
         bool enable_channel_1;
         bool enable_channel_2;
         bool enable_channel_3;
@@ -126,6 +178,8 @@ private:
         bool channel_4_left;
         bool channel_4_right;
     } sound_control;
+
+
 
     u8 &reg_nr10;
     u8 &reg_nr11;
@@ -149,7 +203,7 @@ private:
     u8 &reg_nr51;
     u8 &reg_nr52;
     
-    std::map<u16, u8*> audio_reg;
+    
 };
 
 #endif

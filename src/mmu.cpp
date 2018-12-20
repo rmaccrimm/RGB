@@ -50,7 +50,7 @@ u8 Memory::read(u16 addr)
         return 0xff;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
-        if (addr >= 0xff10 && addr <= 0xff26) {
+        if (addr >= 0xff10 && addr <= 0xff3f) {
             return apu->read(addr);
         }
         else {
@@ -92,7 +92,7 @@ void Memory::write(u16 addr, u8 data)
         return;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
-        if (addr >= 0xff10 && addr <= 0xff26) {
+        if (addr >= 0xff10 && addr <= 0xff3f) {
             apu->write(addr, data);
         }
         else {
@@ -197,27 +197,7 @@ void Memory::init_registers()
     io[reg::TMA] = 0;
     io[reg::TAC] = 0b11111000;
     io[reg::IF] = 0b11100000;
-    io[reg::NR10] = 0b10000000;
-    io[reg::NR11] = 0b00111111;
-    io[reg::NR12] = 0;
-    io[reg::NR13] = 0;
-    io[reg::NR14] = 0b10111111;
-    io[reg::NR21] = 0b00111111;
-    io[reg::NR22] = 0;
-    io[reg::NR23] = 0;
-    io[reg::NR24] = 0b10111111;
-    io[reg::NR30] = 0b01111111;
-    io[reg::NR31] = 0;
-    io[reg::NR32] = 0b10011111;
-    io[reg::NR33] = 0;
-    io[reg::NR34] = 0b10111111;
-    io[reg::NR41] = 0b11000000;
-    io[reg::NR42] = 0;
-    io[reg::NR43] = 0;
-    io[reg::NR44] = 0b10111111;
-    io[reg::NR50] = 0;
-    io[reg::NR51] = 0;
-    io[reg::NR52] = 0b01110000;
+    
     io[reg::LCDC] = 0;
     io[reg::SCROLLY] = 0;
     io[reg::SCROLLX] = 0;

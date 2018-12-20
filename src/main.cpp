@@ -79,11 +79,12 @@ int main(int argc, char *argv[])
     
     Joypad gb_pad;
     Cartridge game_cart(cartridge_filename);
+    APU gb_apu;
     GameWindow window(&gb_pad, scale, !unlock_framerate, game_cart.title);
-    Memory gb_mem(&game_cart, &gb_pad, enable_boot_rom);
+    Memory gb_mem(&game_cart, &gb_pad, &gb_apu, enable_boot_rom);
     Processor gb_cpu(&gb_mem);
     GPU gb_gpu(&gb_mem, &window);
-    APU gb_apu(&gb_mem);
+    
     gb_apu.start();
 
     std::cout << game_cart.title << std::endl << game_cart.type << std::endl
