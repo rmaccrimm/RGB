@@ -64,7 +64,7 @@ private:
     std::map<u16, u8> registers;
     std::map<u16, u8> read_masks;
     std::vector<u8> wave_pattern_RAM;
-    std::vector<bool> unused_addr;
+    std::map<u16, bool> unused_addr;
 
     unsigned int clock;
     unsigned int frame_step;
@@ -86,7 +86,7 @@ private:
     void clock_vol_envelope();
 
     void init_registers();
-    void init_SDL();
+    void setup_sdl();
 
     void update_reg_NRx0(int channel, u8 data);
     void update_reg_NRx1(int channel, u8 data);

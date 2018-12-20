@@ -22,9 +22,7 @@ APU::APU() :
     frame_step{0}, 
     master_enable{0}, 
     volume_left{0}, 
-    volume_right{0}, 
-    volume_clock{0},
-    freq_clock{0}
+    volume_right{0}
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
@@ -36,11 +34,12 @@ APU::APU() :
         channel.output_left = false;
         channel.output_right = false;
         channel.initial_volume = 0;
-        channel.length_counter = 64;
+        channel.length_counter = 0;
+        channel.volume_clock = 0;
+        channel.freq_clock = 0;
     }
-    channels[2].length_counter = 256;
 
-    init_SDL();
+    setup_sdl();
 }
 
 APU::~APU()
@@ -50,11 +49,12 @@ APU::~APU()
 }
 
 u8 APU::read(u16 addr) {
-    if (unused_addr[addr]) {
-        return 0xff;
-    }
-    if (addr >= 0x30) {
+
+    if (addr >= 0xff30) {
         return wave_pattern_RAM[addr - 0xff30];
+    }
+    else if (unused_addr[addr]) {
+        return 0xff;
     }
     else {
         return registers[addr] | read_masks[addr];
@@ -62,11 +62,11 @@ u8 APU::read(u16 addr) {
 }
 
 void APU::write(u16 addr, u8 data) {
-    if (unused_addr[addr]) {
+    if (addr >= 0xff30) {
+        wave_pattern_RAM[addr - 0xff30] = data;
         return;
     }
-    if (addr >= 0x30) {
-        wave_pattern_RAM[addr - 0xff30] = data;
+    else if (unused_addr[addr]) {
         return;
     }
 
@@ -89,23 +89,23 @@ void APU::write(u16 addr, u8 data) {
         }
     }
     else {
-        int register_num = ((addr & 0xff) - 0x10) % 5;
-        int channel_num = ((addr & 0xff) - 0x10) / 5;
+        int r = ((addr & 0xff) - 0x10) % 5;
+        int c = ((addr & 0xff) - 0x10) / 5;
 
-        if (register_num == 0) { 
-            update_reg_NRx0(channel_num, data);
+        if (r == 0) { 
+            update_reg_NRx0(c, data);
         }
-        else if (register_num == 1) {
-            update_reg_NRx1(channel_num, data);
+        else if (r == 1) {
+            update_reg_NRx1(c, data);
         }
-        else if (register_num == 2) {
-            update_reg_NRx2(channel_num, data);
+        else if (r == 2) {
+            update_reg_NRx2(c, data);
         }
-        else if (register_num == 3) {
-            update_reg_NRx3(channel_num, data);
+        else if (r == 3) {
+            update_reg_NRx3(c, data);
         }
-        else if (register_num == 4) {
-            update_reg_NRx4(channel_num, data);
+        else if (r == 4) {
+            update_reg_NRx4(c, data);
         }
     }
     registers[addr] = data;
@@ -155,16 +155,13 @@ void APU::update_reg_NRx0(int channel_num, u8 data)
 
 void APU::update_reg_NRx1(int channel_num, u8 data)
 {
+    Channel &ch = channels[channel_num];
     if (channel_num <= 1) {
-        channels[channel_num].duty = (data >> 6) & 3;
+        ch.duty = (data >> 6) & 3;
     }
-
-    if (channel_num == 2) {
-        channels[channel_num].sound_length = 256 - data;
-    }
-    else {
-        channels[channel_num].sound_length = 64 - (data & 0x1f);
-    }
+    ch.sound_length = channel_num == 2 ? data : data & 0x3f;
+    ch.length_counter = (channel_num == 2 ? 256 : 64) - ch.sound_length;
+    ch.playing = true;
 }
 
 void APU::update_reg_NRx2(int channel_num, u8 data)
@@ -178,7 +175,7 @@ void APU::update_reg_NRx2(int channel_num, u8 data)
 void APU::update_reg_NRx3(int channel_num, u8 data)
 {
     int freq = channels[channel_num].frequency;
-    freq = (freq & (~0xff)) | data;
+    freq = (freq & (7 << 8)) | data;
     channels[channel_num].frequency = freq;    
 }
 
@@ -202,13 +199,13 @@ void APU::trigger_channel(int channel_num)
 {
     Channel &ch = channels[channel_num];
     if (ch.length_counter == 0) {
-        ch.length_counter = (channel_num == 2 ? 256 : 64) - ch.sound_length;
+        ch.length_counter = channel_num == 2 ? 256 : 64;
     }
     if (channel_num <= 1) {
         ch.volume = ch.initial_volume;
     }
-    ch.volume_clock = 0;
-    ch.freq_clock = 0;
+    // ch.volume_clock = 0;
+    // ch.freq_clock = 0;
     ch.playing = true;
 }
 
@@ -229,9 +226,9 @@ void APU::clock_vol_envelope()
     for (auto &ch: channels) {
         ch.volume_clock++;
         if (ch.volume_sweep_time != 0) {
-            if (ch.volume_clock % ch.volume_sweep_time == 0) {
+            if ((ch.volume_clock % ch.volume_sweep_time) == 0) {
                 if (ch.increase_volume) {
-                    ch.volume = std::min(15, ch.volume - 1);
+                    ch.volume = std::min(15, ch.volume + 1);
                 }
                 else{
                     ch.volume = std::max(0, ch.volume - 1);
@@ -298,14 +295,13 @@ void APU::audio_callback(Uint8 *stream, int len)
 {
     Sint16 *_stream = (Sint16 *)stream;
     for (int i = 0; i < len / 4; i++)
-    {
+    {   
         _stream[2 * i] = 0;
         _stream[2 * i + 1] = 0;
-        if (master_enable)
-        {
-            for (int i = 0; i < 4; i++) {
-                _stream[2*i] += channels[i].output_left ? sample_channel(i) : 0;
-                _stream[2*i + 1] += channels[i].output_right ? sample_channel(i) : 0;
+        if (master_enable) {
+            for (int j = 0; j < 2; j++) {
+                _stream[2 * i] += channels[j].output_left ? sample_channel(j) : 0;
+                _stream[2 * i + 1] += channels[j].output_right ? sample_channel(j) : 0;
             }
         }
         t += dt;
@@ -354,11 +350,11 @@ void APU::init_registers()
 
     for (int i = 0xff10; i <= 0xff2f; i++)
     {
-        unused_addr[i] = read_masks.find(i) == read_masks.end();
+        unused_addr[i] = (read_masks.find(i) == read_masks.end());
     }
 }
 
-void APU::init_SDL()
+void APU::setup_sdl()
 {
     for (int i = 0; i < SDL_GetNumAudioDevices(0); i++)
     {
