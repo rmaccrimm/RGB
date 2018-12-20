@@ -211,8 +211,8 @@ void APU::trigger_channel(int channel_num)
     if (channel_num <= 1) {
         ch.volume = ch.initial_volume;
     }
-    // ch.volume_clock = 0;
-    // ch.freq_clock = 0;
+    ch.volume_clock = 0;
+    ch.freq_clock = 0;
     ch.playing = true;
 }
 
@@ -241,9 +241,6 @@ void APU::clock_vol_envelope()
                     ch.volume = std::max(0, ch.volume - 1);
                 }
             }
-        }
-        if (ch.volume == 0) {
-            ch.playing = false;
         }
     }
 }
