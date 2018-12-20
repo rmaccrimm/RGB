@@ -201,9 +201,15 @@ void APU::update_reg_NRx4(int channel_num, u8 data)
 void APU::trigger_channel(int channel_num)
 {
     Channel &ch = channels[channel_num];
-    if (channel_num != 2) {
+    if (ch.length_counter == 0) {
+        ch.length_counter = (channel_num == 2 ? 256 : 64) - ch.sound_length;
+    }
+    if (channel_num <= 1) {
         ch.volume = ch.initial_volume;
     }
+    ch.volume_clock = 0;
+    ch.freq_clock = 0;
+    ch.playing = true;
 }
 
 void APU::clock_length_counters()
@@ -220,11 +226,10 @@ void APU::clock_length_counters()
 
 void APU::clock_vol_envelope()
 {
-    volume_clock++;
-
     for (auto &ch: channels) {
+        ch.volume_clock++;
         if (ch.volume_sweep_time != 0) {
-            if (volume_clock % ch.volume_sweep_time == 0) {
+            if (ch.volume_clock % ch.volume_sweep_time == 0) {
                 if (ch.increase_volume) {
                     ch.volume = std::min(15, ch.volume - 1);
                 }
@@ -241,8 +246,6 @@ void APU::clock_vol_envelope()
 
 void APU::clock_freq_sweep()
 {
-    freq_clock++;
-
     /*if (!channel_1.freq_sweep_enable)
     {
         return;

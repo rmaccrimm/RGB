@@ -43,18 +43,17 @@ private:
         bool increase_volume;
         int volume_sweep_time;
         int volume;
+        int volume_clock;
         // Used by channel 1
         int initial_freq;
         bool increase_freq;
         int freq_sweep_enable;
         int freq_sweep_time;
         int freq_shift;
+        int freq_clock;
         // channel 3
         bool enable;
     } channels[4];
-
-    int volume_clock;
-    int freq_clock;
 
     bool master_enable;
     bool enable_left;
