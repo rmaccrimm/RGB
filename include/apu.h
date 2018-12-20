@@ -88,12 +88,12 @@ private:
     void init_registers();
     void setup_sdl();
 
+    void update_status();
     void update_reg_NRx0(int channel, u8 data);
     void update_reg_NRx1(int channel, u8 data);
     void update_reg_NRx2(int channel, u8 data);
     void update_reg_NRx3(int channel, u8 data);
     void update_reg_NRx4(int channel, u8 data);
-
     void trigger_channel(int channel);
 };
 

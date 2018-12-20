@@ -139,13 +139,17 @@ void APU::step(int cycles)
             // Volume counter clocked at 64 Hz
             clock_vol_envelope();
         }
-
-        u8 status = registers[reg::NR52];
-        for (int i = 0; i < 4; i++) {
-            status = utils::set_cond(status, i, channels[i].playing);
-        }
-        registers[reg::NR52] = status;
+        update_status();
     }
+}
+
+void APU::update_status()
+{
+    u8 status = registers[reg::NR52];
+    for (int i = 0; i < 4; i++) {
+        status = utils::set_cond(status, i, channels[i].playing);
+    }
+    registers[reg::NR52] = status;
 }
 
 void APU::update_reg_NRx0(int channel_num, u8 data)
@@ -168,7 +172,6 @@ void APU::update_reg_NRx1(int channel_num, u8 data)
         ch.sound_length = data;
         ch.length_counter = 64 - data;
     }
-    ch.playing = true;
 }
 
 void APU::update_reg_NRx2(int channel_num, u8 data)
@@ -177,6 +180,10 @@ void APU::update_reg_NRx2(int channel_num, u8 data)
     ch.initial_volume = (data >> 4) & 0xf;
     ch.increase_volume = utils::bit(data, 3);
     ch.volume_sweep_time = data & 7;
+    if (((data >> 3) & 0x1f) == 0) {
+        ch.playing = false;
+        update_status();
+    }
 }
 
 void APU::update_reg_NRx3(int channel_num, u8 data)
