@@ -69,12 +69,19 @@ void APU::write(u16 addr, u8 data) {
     else if (unused_addr[addr]) {
         return;
     }
+    
+    if (!master_enable && addr != reg::NR52) {
+        return;
+    }
 
     if (addr == reg::NR52) {
         master_enable = utils::bit(data, 7);
-        // Only write bit 7, rest are read-only
-        registers[addr] |= utils::set_cond(registers[addr], 7, master_enable);
-        return;
+        if (!master_enable) {
+            reset();
+        }
+        // bits 0 - 3 read-only
+        data &= 0xa0;
+        data |= (registers[addr] & 0xf);
     }
     else if (addr == reg::NR50) {
         enable_left = utils::bit(data, 7);
@@ -89,26 +96,40 @@ void APU::write(u16 addr, u8 data) {
         }
     }
     else {
-        int r = ((addr & 0xff) - 0x10) % 5;
-        int c = ((addr & 0xff) - 0x10) / 5;
-
-        if (r == 0) { 
-            update_reg_NRx0(c, data);
+        // Parse register address
+        int reg = ((addr & 0xff) - 0x10) % 5;
+        int ch = ((addr & 0xff) - 0x10) / 5;
+        if (reg == 0) { 
+            update_reg_NRx0(ch, data);
         }
-        else if (r == 1) {
-            update_reg_NRx1(c, data);
+        else if (reg == 1) {
+            update_reg_NRx1(ch, data);
         }
-        else if (r == 2) {
-            update_reg_NRx2(c, data);
+        else if (reg == 2) {
+            update_reg_NRx2(ch, data);
         }
-        else if (r == 3) {
-            update_reg_NRx3(c, data);
+        else if (reg == 3) {
+            update_reg_NRx3(ch, data);
         }
-        else if (r == 4) {
-            update_reg_NRx4(c, data);
+        else if (reg == 4) {
+            update_reg_NRx4(ch, data);
         }
     }
     registers[addr] = data;
+}
+
+void APU::reset()
+{
+    for (auto &p: registers) {
+        p.second = 0;
+    }
+    for (int i = 0; i < 4; i++) {
+        update_reg_NRx0(i, 0);
+        update_reg_NRx1(i, 0);
+        update_reg_NRx2(i, 0);
+        update_reg_NRx3(i, 0);
+        update_reg_NRx4(i, 0);
+    }
 }
 
 
@@ -154,7 +175,12 @@ void APU::update_status()
 
 void APU::update_reg_NRx0(int channel_num, u8 data)
 {
-
+    if (channel_num == 0) {
+        Channel &ch = channels[channel_num];
+        ch.freq_shift = data & 7;
+        ch.increase_freq = !utils::bit(data, 3);
+        ch.freq_sweep_time = (data >> 4) & 7;
+    }
 }
 
 void APU::update_reg_NRx1(int channel_num, u8 data)
@@ -337,27 +363,31 @@ int APU::sample_channel(int channel_num)
 
 void APU::init_registers()
 {
-    read_masks[reg::NR10] = 0b10000000;
-    read_masks[reg::NR11] = 0b00111111;
-    read_masks[reg::NR12] = 0;
-    read_masks[reg::NR13] = 0;
-    read_masks[reg::NR14] = 0b10111111;
-    read_masks[reg::NR21] = 0b00111111;
-    read_masks[reg::NR22] = 0;
-    read_masks[reg::NR23] = 0;
-    read_masks[reg::NR24] = 0b10111111;
-    read_masks[reg::NR30] = 0b01111111;
-    read_masks[reg::NR31] = 0;
-    read_masks[reg::NR32] = 0b10011111;
-    read_masks[reg::NR33] = 0;
-    read_masks[reg::NR34] = 0b10111111;
-    read_masks[reg::NR41] = 0b11000000;
-    read_masks[reg::NR42] = 0;
-    read_masks[reg::NR43] = 0;
-    read_masks[reg::NR44] = 0b10111111;
-    read_masks[reg::NR50] = 0;
-    read_masks[reg::NR51] = 0;
-    read_masks[reg::NR52] = 0b01110000;
+    read_masks[reg::NR10] = 0x80;
+    read_masks[reg::NR11] = 0x3f;
+    read_masks[reg::NR12] = 0x00;
+    read_masks[reg::NR13] = 0xff;
+    read_masks[reg::NR14] = 0xbf;
+
+    read_masks[reg::NR21] = 0x3f;
+    read_masks[reg::NR22] = 0x00;
+    read_masks[reg::NR23] = 0xff;
+    read_masks[reg::NR24] = 0xbf;
+
+    read_masks[reg::NR30] = 0x7f;
+    read_masks[reg::NR31] = 0xff;
+    read_masks[reg::NR32] = 0x9f;
+    read_masks[reg::NR33] = 0xff;
+    read_masks[reg::NR34] = 0xbf;
+
+    read_masks[reg::NR41] = 0xff;
+    read_masks[reg::NR42] = 0x00;
+    read_masks[reg::NR43] = 0x00;
+    read_masks[reg::NR44] = 0xbf;
+
+    read_masks[reg::NR50] = 0x00;
+    read_masks[reg::NR51] = 0x00;
+    read_masks[reg::NR52] = 0x70;
 
     for (int i = 0xff10; i <= 0xff2f; i++)
     {
