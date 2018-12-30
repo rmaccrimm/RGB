@@ -168,7 +168,7 @@ void GPU::draw_background()
 {
     int x = memory->read(reg::SCROLLX);
     int y = memory->read(reg::SCROLLY);
-    auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    auto vram = memory->video_RAM.begin() + LCD_control.tile_data_addr - VRAM_ADDR;
     for (int i = 0; i < LCD_WIDTH; i++) {
         int pixel_bg_coord_x = (x + i) % BACKGROUND_DIM;
         int pixel_bg_coord_y = (y + line) % BACKGROUND_DIM;
@@ -269,7 +269,7 @@ void GPU::draw_window()
     if (window_y < 0) {
         return;
     }
-    auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    auto vram = memory->video_RAM.begin() + LCD_control.tile_data_addr - VRAM_ADDR;
     for (int i = std::max(window_x, 0); i < LCD_WIDTH; i++) {
         int tile_map_x = (i - window_x) / TILE_DIM;
         int tile_map_y = window_y / TILE_DIM;
