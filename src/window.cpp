@@ -25,11 +25,11 @@ const float SCREEN_QUAD[] = {
      1,  1,  0,    SCREEN_W, SCREEN_H
 };
 
-GameWindow::GameWindow(Joypad *pad, int scale, bool limit_framerate, std::string title) :
+GameWindow::GameWindow(Joypad *pad, int scale, std::string title) :
     joypad(pad), window_scale(scale), key_pressed{0}, draw(0), quit(false)
 {
     init_window(title);
-    init_glcontext(limit_framerate);
+    init_glcontext();
     compile_shader();
     init_screen_texture();
 }
@@ -105,14 +105,13 @@ void GameWindow::init_window(std::string title)
     }  
 }
 
-void GameWindow::init_glcontext(bool limit_framerate)
+void GameWindow::init_glcontext()
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
     gl_context = SDL_GL_CreateContext(sdl_window);
-    SDL_GL_SetSwapInterval(limit_framerate);
+    SDL_GL_SetSwapInterval(0); // 0 = immediate updates
     if (gl_context == nullptr) {
         std::cout << "Creating OpenGL context failed. SDL Error: " << SDL_GetError() << std::endl;
     }
