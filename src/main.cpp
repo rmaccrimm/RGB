@@ -99,9 +99,19 @@ int main(int argc, char *argv[])
 
     int break_pt = -1;
     int access_break_pt = -1;
+
     
+
+    using namespace std::chrono;
+
+    double framerate = 60.0;
+    duration<double> T(1.0 / framerate);
+    duration<double> dt;
+    steady_clock::time_point t = steady_clock::now();
+
     while (!window.closed()) {
         window.process_input();
+
         if (enable_debug_mode) {
             if (gb_cpu.PC.value == break_pt || step_instr || gb_mem.pause() || window.paused()) {
                 debug::print_registers(&gb_cpu);
@@ -113,10 +123,23 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
         int cycles = gb_cpu.step(step_instr);
         gb_gpu.step(cycles);
         gb_apu.step(cycles);
+
+        if (gb_gpu.frame_drawn) {
+            auto t_draw = steady_clock::now();
+            dt = duration_cast<duration<double>>(t_draw - t);
+            if ((dt < T) && !unlock_framerate) {
+                milliseconds pause = duration_cast<milliseconds>(T - dt);
+                std::this_thread::sleep_for(pause);
+            } 
+            t = steady_clock::now();
+            gb_gpu.frame_drawn = false;
+        }
     }
+
     if (enable_debug_mode) {
         debug::print_registers(&gb_cpu);
     }

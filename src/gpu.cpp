@@ -27,7 +27,8 @@ GPU::GPU(Memory *mem, GameWindow *win):
     line(0),
     mode(OAM), 
     STAT_reg(mem->get_mem_reference(reg::STAT)),
-    prev_cpu_clock(0)
+    prev_cpu_clock(0),
+    frame_drawn(false)
 {
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
 }
@@ -67,6 +68,7 @@ void GPU::step(unsigned int cycles)
                 window->draw_frame(screen_texture.data());
                 memory->set_interrupt(interrupt::VBLANK_bit);
                 change_mode(VBLANK);
+                frame_drawn = true;
             } else {
                 change_mode(OAM);
             }
