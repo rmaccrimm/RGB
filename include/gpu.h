@@ -29,6 +29,8 @@ public:
     static const int LCD_WIDTH;
     static const int LCD_HEIGHT;
 
+    bool frame_drawn;
+
 private:
     Memory *memory;
     GameWindow *window;
