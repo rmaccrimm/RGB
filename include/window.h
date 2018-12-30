@@ -12,7 +12,7 @@
 class GameWindow 
 {
 public:
-    GameWindow(Joypad *pad, int scale = 4, bool limit_framerate = true, std::string title = "");
+    GameWindow(Joypad *pad, int scale = 4, std::string title = "");
 
     ~GameWindow();
 
@@ -53,7 +53,7 @@ private:
 
     void compile_shader();
     void init_window(std::string title);
-    void init_glcontext(bool limit_framerate);
+    void init_glcontext();
     void init_screen_texture();
     int get_uniform(std::string uniform_name);
 };
