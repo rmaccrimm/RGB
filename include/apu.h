@@ -68,6 +68,7 @@ private:
     std::map<u16, bool> unused_addr;
 
     unsigned int clock;
+    unsigned int frame_clock;
     unsigned int audio_sampling_clock;
     unsigned int frame_step;
 

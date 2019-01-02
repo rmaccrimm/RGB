@@ -2,6 +2,7 @@
 #include "registers.h"
 #include "util.h"
 #include <iostream>
+#include <cassert>
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -11,14 +12,15 @@ int v = 0;
 const Sint16 AMPLITUDE = 100;
 const int FREQUENCY1 = 300;
 const int FREQUENCY2 = 60;
-int per_s = 48000;
+int per_s = 96000;
 int per_call = 1024;
 double call_freq = (double)per_s / (double)per_call;
 double dt = 1.0f / call_freq / (double)1024.0f;
 double t = 0;
 
 APU::APU() : 
-    clock{0}, 
+    clock{0},
+    frame_clock{0},
     audio_sampling_clock{0},
     frame_step{0}, 
     master_enable{0}, 
@@ -26,25 +28,27 @@ APU::APU() :
     volume_right{0},
     SQUARE_WAVEFORM{0b00000001, 0b10000001, 0b10000111, 0b01111110},
     CPU_FREQUENCY{4194304},
-    AUDIO_SAMPLE_RATE{48000},
+    AUDIO_SAMPLE_RATE{96000},
     buffer_ind{0}
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
     audio_buffer.resize(1024, 0);
 
-    for (auto &channel : channels)
+    for (auto &ch: channels)
     {
-        channel.playing = false;
-        channel.enable = false;
-        channel.output_left = false;
-        channel.output_right = false;
-        channel.initial_volume = 0;
-        channel.length_counter = 0;
-        channel.volume_clock = 0;
-        channel.freq_clock = 0;
-        channel.waveform_clock = 0;
-        channel.waveform_step = 0;
+        ch.playing = false;
+        ch.enable = false;
+        ch.output_left = false;
+        ch.output_right = false;
+        ch.initial_volume = 0;
+        ch.length_counter = 0;
+        ch.volume_clock = 0;
+        ch.freq_clock = 0;
+        ch.frequency = 0;
+        ch.waveform_clock = 0;
+        ch.waveform_step = 0;
+        ch.duty = 0;
     }
 
     setup_sdl();
@@ -145,27 +149,31 @@ void APU::reset()
 void APU::step(int cycles)
 {
     clock += cycles;
+    frame_clock += cycles;
     audio_sampling_clock += cycles;
 
     for (auto &ch: channels) {
+        assert(ch.frequency < 0x800);
         int period = 4 * (0x800 - ch.frequency);
         ch.waveform_clock += cycles;
         while (ch.waveform_clock >= period) {
             ch.waveform_step++;
             ch.waveform_step %= 8;
             ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1;
+            ch.waveform_clock -= period;
         }
     }
 
     int clocks_per_sample = CPU_FREQUENCY / AUDIO_SAMPLE_RATE;
     if (audio_sampling_clock >= clocks_per_sample) {
         append_audio_sample();
+        audio_sampling_clock -= clocks_per_sample;
     }
 
     // Frame sequencer updates at 2^9 Hz, which means 1 tick per 2^13 cpu cycles
-    if (clock >= 0x2000)
+    if (frame_clock >= 0x2000)
     {
-        clock -= 0x2000;
+        frame_clock -= 0x2000;
 
         frame_step++;
         frame_step %= 8;
@@ -372,16 +380,21 @@ void APU::audio_callback(Uint8 *stream, int len)
 
 void APU::append_audio_sample()
 {
+    if (buffer_ind == audio_buffer.size()) {
+        return;
+    }
     audio_buffer[buffer_ind] = 0;
     for (int i = 0; i < 2; i++) {
-        audio_buffer[buffer_ind] += channels[i].current_sample;
+        audio_buffer[buffer_ind] += AMPLITUDE * channels[i].volume * channels[i].current_sample;
     }
     buffer_ind++;
 }
 
 void APU::flush_buffer()
 {
-    
+    SDL_QueueAudio(device_id, audio_buffer.data(), audio_buffer.size() * sizeof(i16));
+    audio_buffer.assign(audio_buffer.size(), 0);
+    buffer_ind = 0;
 }
 
 int APU::sample_channel(int channel_num)
@@ -448,7 +461,7 @@ void APU::setup_sdl()
     spec.format = AUDIO_S16SYS;
     spec.channels = 2;
     spec.samples = per_call;
-    spec.callback = APU::forward_callback;
+    spec.callback = NULL;
     spec.userdata = this;
 
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
