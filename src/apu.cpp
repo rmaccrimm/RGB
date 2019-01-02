@@ -19,13 +19,19 @@ double t = 0;
 
 APU::APU() : 
     clock{0}, 
+    audio_sampling_clock{0},
     frame_step{0}, 
     master_enable{0}, 
     volume_left{0}, 
-    volume_right{0}
+    volume_right{0},
+    SQUARE_WAVEFORM{0b00000001, 0b10000001, 0b10000111, 0b01111110},
+    CPU_FREQUENCY{4194304},
+    AUDIO_SAMPLE_RATE{48000},
+    buffer_ind{0}
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
+    audio_buffer.resize(1024, 0);
 
     for (auto &channel : channels)
     {
@@ -37,6 +43,8 @@ APU::APU() :
         channel.length_counter = 0;
         channel.volume_clock = 0;
         channel.freq_clock = 0;
+        channel.waveform_clock = 0;
+        channel.waveform_step = 0;
     }
 
     setup_sdl();
@@ -48,8 +56,8 @@ APU::~APU()
     SDL_Quit();
 }
 
-u8 APU::read(u16 addr) {
-
+u8 APU::read(u16 addr) 
+{
     if (addr >= 0xff30) {
         return wave_pattern_RAM[addr - 0xff30];
     }
@@ -61,7 +69,8 @@ u8 APU::read(u16 addr) {
     }
 }
 
-void APU::write(u16 addr, u8 data) {
+void APU::write(u16 addr, u8 data) 
+{
     if (addr >= 0xff30) {
         wave_pattern_RAM[addr - 0xff30] = data;
         return;
@@ -136,6 +145,22 @@ void APU::reset()
 void APU::step(int cycles)
 {
     clock += cycles;
+    audio_sampling_clock += cycles;
+
+    for (auto &ch: channels) {
+        int period = 4 * (0x800 - ch.frequency);
+        ch.waveform_clock += cycles;
+        while (ch.waveform_clock >= period) {
+            ch.waveform_step++;
+            ch.waveform_step %= 8;
+            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1;
+        }
+    }
+
+    int clocks_per_sample = CPU_FREQUENCY / AUDIO_SAMPLE_RATE;
+    if (audio_sampling_clock >= clocks_per_sample) {
+        append_audio_sample();
+    }
 
     // Frame sequencer updates at 2^9 Hz, which means 1 tick per 2^13 cpu cycles
     if (clock >= 0x2000)
@@ -153,7 +178,7 @@ void APU::step(int cycles)
         if ((frame_step == 2 || frame_step == 6))
         {
             // Frequency counter clocked at 128 Hz
-            // clock_freq_sweep();
+            clock_freq_sweep();
         }
         if (frame_step == 7)
         {
@@ -345,6 +370,20 @@ void APU::audio_callback(Uint8 *stream, int len)
     }
 }
 
+void APU::append_audio_sample()
+{
+    audio_buffer[buffer_ind] = 0;
+    for (int i = 0; i < 2; i++) {
+        audio_buffer[buffer_ind] += channels[i].current_sample;
+    }
+    buffer_ind++;
+}
+
+void APU::flush_buffer()
+{
+    
+}
+
 int APU::sample_channel(int channel_num)
 {
     Channel &ch = channels[channel_num];
@@ -405,7 +444,7 @@ void APU::setup_sdl()
     SDL_AudioSpec spec, obtained;
     SDL_zero(spec);
 
-    spec.freq = per_s;
+    spec.freq = AUDIO_SAMPLE_RATE;
     spec.format = AUDIO_S16SYS;
     spec.channels = 2;
     spec.samples = per_call;

@@ -24,11 +24,12 @@ public:
     
     void write(u16 addr, u8 data);
 
+    void flush_buffer();
+
 private:
 
     struct Channel
     {
-        // Common to all channels
         bool playing;
         bool output_left;
         bool output_right;
@@ -38,20 +39,20 @@ private:
         bool trigger;
         int duty;
         int frequency;
-        // Used by channels 1 and 2
         int initial_volume;
         bool increase_volume;
         int volume_sweep_time;
         int volume;
         int volume_clock;
-        // Used by channel 1
         int initial_freq;
         bool increase_freq;
         int freq_sweep_enable;
         int freq_sweep_time;
         int freq_shift;
         int freq_clock;
-        // channel 3
+        int waveform_clock;
+        int waveform_step;
+        bool current_sample;
         bool enable;
     } channels[4];
 
@@ -67,9 +68,13 @@ private:
     std::map<u16, bool> unused_addr;
 
     unsigned int clock;
+    unsigned int audio_sampling_clock;
     unsigned int frame_step;
 
     SDL_AudioDeviceID device_id;
+
+    std::vector<i16> audio_buffer;
+    unsigned int buffer_ind;
 
     void reset();
 
@@ -95,6 +100,12 @@ private:
     void update_reg_NRx3(int channel, u8 data);
     void update_reg_NRx4(int channel, u8 data);
     void trigger_channel(int channel);
+
+    void append_audio_sample();
+
+    const unsigned int CPU_FREQUENCY;
+    const unsigned int AUDIO_SAMPLE_RATE;
+    const u8 SQUARE_WAVEFORM[4];
 };
 
 #endif

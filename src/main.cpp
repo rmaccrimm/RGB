@@ -100,8 +100,6 @@ int main(int argc, char *argv[])
     int break_pt = -1;
     int access_break_pt = -1;
 
-    
-
     using namespace std::chrono;
 
     double framerate = 60.0;
@@ -137,6 +135,7 @@ int main(int argc, char *argv[])
             } 
             t = steady_clock::now();
             gb_gpu.frame_drawn = false;
+            gb_apu.flush_buffer();
         }
     }
 
