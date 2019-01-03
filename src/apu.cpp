@@ -13,7 +13,7 @@ int v = 0;
 const Sint16 AMPLITUDE = 100;
 const int FREQUENCY1 = 300;
 const int FREQUENCY2 = 60;
-int per_s = 44100;
+int per_s = 48000;
 int per_call = 1024;
 double call_freq = (double)per_s / (double)per_call;
 double dt = 1.0f / call_freq / (double)1024.0f;
@@ -29,11 +29,11 @@ APU::APU() :
     volume_right{0},
     SQUARE_WAVEFORM{0b00000001, 0b10000001, 0b10000111, 0b01111110},
     CPU_FREQUENCY{4194304},
-    AUDIO_SAMPLE_RATE{44100}
+    AUDIO_SAMPLE_RATE{48000}
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
-    audio_buffer.resize(0x8000, 0);
+    audio_buffer.resize(0x10000, 0);
     buffer_pos = audio_buffer.begin();
 
     for (auto &ch: channels)
@@ -198,10 +198,18 @@ void APU::clock_waveform_generators()
     }
 
     *buffer_pos = 0;
+    *(buffer_pos + 1) = 0;    
     for (int i = 0; i < 2; i++) {
-        *buffer_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+        if (master_enable) {
+            if (channels[i].output_left) {
+                *buffer_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+            }
+            if (channels[i].output_right) {
+                *(buffer_pos + 1) += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+            }
+        }
     }
-    buffer_pos++;
+    buffer_pos += 2;
 }
 
 void APU::clock_length_counters()
@@ -365,13 +373,23 @@ void APU::start()
 
 void APU::flush_buffer()
 {
-    SDL_ClearQueuedAudio(device_id);
+    
     std::vector<i16> output_buffer;
-    output_buffer.resize(800, 0);
+    output_buffer.resize(1600, 0);
     sig::downsample(audio_buffer, CPU_FREQUENCY / 4, output_buffer, AUDIO_SAMPLE_RATE);
-    SDL_QueueAudio(device_id, (void*)output_buffer.data(), output_buffer.size() * sizeof(i16));
+    SDL_QueueAudio(device_id, output_buffer.data(), output_buffer.size() * sizeof(i16));
+    int n;
+    /*while ((n = SDL_GetQueuedAudioSize(device_id)) >= (800 * sizeof(i16))) {
+        std::cout << n << std::endl;
+        SDL_Delay(1);
+    }*/
     audio_buffer.assign(audio_buffer.size(), 0);
     buffer_pos = audio_buffer.begin();
+}
+
+int APU::queued_samples()
+{
+    return SDL_GetQueuedAudioSize(device_id);
 }
 
 void APU::init_registers()
@@ -421,9 +439,9 @@ void APU::setup_sdl()
     spec.freq = AUDIO_SAMPLE_RATE;
     spec.format = AUDIO_S16SYS;
     spec.channels = 2;
-    spec.samples = per_call;
+    spec.samples = 800;
     spec.callback = NULL;
-    spec.userdata = this;
+    spec.userdata = NULL;
 
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
     {

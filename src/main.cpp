@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
     using namespace std::chrono;
 
-    double framerate = 60.0;
+    double framerate = 60;
     duration<double> T(1.0 / framerate);
     duration<double> dt;
     steady_clock::time_point t = steady_clock::now();
@@ -129,9 +129,8 @@ int main(int argc, char *argv[])
         gb_gpu.step(cycles);
         gb_apu.step(cycles);
 
-        using namespace std;
         if (gb_gpu.frame_drawn) {  
-            gb_apu.flush_buffer();
+            gb_apu.flush_buffer();            
             auto t_draw = steady_clock::now();
             dt = duration_cast<duration<double>>(t_draw - t);
             if ((dt < T) && !unlock_framerate) {

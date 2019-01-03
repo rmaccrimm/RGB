@@ -26,6 +26,8 @@ public:
 
     void flush_buffer();
 
+    int queued_samples();
+
 // private:
 
     struct Channel
