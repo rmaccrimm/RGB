@@ -12,6 +12,9 @@
 #include <chrono>
 #include <boost/program_options.hpp>
 
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_audio.h>
+
 #include "apu.h"
 #include "cartridge.h"
 #include "debug.h"
@@ -126,7 +129,9 @@ int main(int argc, char *argv[])
         gb_gpu.step(cycles);
         gb_apu.step(cycles);
 
-        if (gb_gpu.frame_drawn) {
+        using namespace std;
+        if (gb_gpu.frame_drawn) {  
+            gb_apu.flush_buffer();
             auto t_draw = steady_clock::now();
             dt = duration_cast<duration<double>>(t_draw - t);
             if ((dt < T) && !unlock_framerate) {
@@ -135,7 +140,6 @@ int main(int argc, char *argv[])
             } 
             t = steady_clock::now();
             gb_gpu.frame_drawn = false;
-            gb_apu.flush_buffer();
         }
     }
 

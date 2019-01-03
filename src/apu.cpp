@@ -1,6 +1,7 @@
 #include "apu.h"
 #include "registers.h"
 #include "util.h"
+#include "signal_processing.h"
 #include <iostream>
 #include <cassert>
 
@@ -12,7 +13,7 @@ int v = 0;
 const Sint16 AMPLITUDE = 100;
 const int FREQUENCY1 = 300;
 const int FREQUENCY2 = 60;
-int per_s = 96000;
+int per_s = 44100;
 int per_call = 1024;
 double call_freq = (double)per_s / (double)per_call;
 double dt = 1.0f / call_freq / (double)1024.0f;
@@ -28,12 +29,12 @@ APU::APU() :
     volume_right{0},
     SQUARE_WAVEFORM{0b00000001, 0b10000001, 0b10000111, 0b01111110},
     CPU_FREQUENCY{4194304},
-    AUDIO_SAMPLE_RATE{96000},
-    buffer_ind{0}
+    AUDIO_SAMPLE_RATE{44100}
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
-    audio_buffer.resize(1024, 0);
+    audio_buffer.resize(0x8000, 0);
+    buffer_pos = audio_buffer.begin();
 
     for (auto &ch: channels)
     {
@@ -145,56 +146,122 @@ void APU::reset()
     }
 }
 
-
 void APU::step(int cycles)
 {
-    clock += cycles;
-    frame_clock += cycles;
-    audio_sampling_clock += cycles;
+    for (int i = 0; i < (cycles / 4); i++) {
+        clock += 4;
+        frame_clock += 4;
+        audio_sampling_clock += 4;
 
+        clock_waveform_generators();
+
+        // Frame sequencer updates at 2^9 Hz, which means 1 tick per 2^13 cpu cycles
+        if (frame_clock >= 0x2000)
+        {
+            frame_clock -= 0x2000;
+
+            frame_step++;
+            frame_step %= 8;
+
+            if ((frame_step & 1) == 0)
+            {
+                // Length counter clocked at 256 Hz
+                clock_length_counters();
+            }
+            if ((frame_step == 2 || frame_step == 6))
+            {
+                // Frequency counter clocked at 128 Hz
+                clock_freq_sweep();
+            }
+            if (frame_step == 7)
+            {
+                // Volume counter clocked at 64 Hz
+                clock_vol_envelope();
+            }
+            update_status();
+        }
+    }
+}
+
+void APU::clock_waveform_generators()
+{
     for (auto &ch: channels) {
         assert(ch.frequency < 0x800);
         int period = 4 * (0x800 - ch.frequency);
-        ch.waveform_clock += cycles;
-        while (ch.waveform_clock >= period) {
+        ch.waveform_clock += 4;
+        if (ch.waveform_clock >= period) {
             ch.waveform_step++;
             ch.waveform_step %= 8;
-            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1;
+            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : -1;
             ch.waveform_clock -= period;
         }
     }
 
-    int clocks_per_sample = CPU_FREQUENCY / AUDIO_SAMPLE_RATE;
-    if (audio_sampling_clock >= clocks_per_sample) {
-        append_audio_sample();
-        audio_sampling_clock -= clocks_per_sample;
+    *buffer_pos = 0;
+    for (int i = 0; i < 2; i++) {
+        *buffer_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
     }
+    buffer_pos++;
+}
 
-    // Frame sequencer updates at 2^9 Hz, which means 1 tick per 2^13 cpu cycles
-    if (frame_clock >= 0x2000)
+void APU::clock_length_counters()
+{
+    for (auto & ch: channels) {
+        if (ch.decrement_counter && (ch.length_counter > 0)) {
+            ch.length_counter--;
+        }
+        if (ch.length_counter == 0) {
+            ch.playing = false;
+        }
+    }
+}
+
+void APU::clock_vol_envelope()
+{
+    for (auto &ch: channels) {
+        ch.volume_clock++;
+        if (ch.volume_sweep_time != 0) {
+            if ((ch.volume_clock % ch.volume_sweep_time) == 0) {
+                if (ch.increase_volume) {
+                    ch.volume = std::min(15, ch.volume + 1);
+                }
+                else{
+                    ch.volume = std::max(0, ch.volume - 1);
+                }
+            }
+        }
+    }
+}
+
+void APU::clock_freq_sweep()
+{
+    /*if (!channel_1.freq_sweep_enable)
     {
-        frame_clock -= 0x2000;
-
-        frame_step++;
-        frame_step %= 8;
-
-        if ((frame_step & 1) == 0)
-        {
-            // Length counter clocked at 256 Hz
-            clock_length_counters();
-        }
-        if ((frame_step == 2 || frame_step == 6))
-        {
-            // Frequency counter clocked at 128 Hz
-            clock_freq_sweep();
-        }
-        if (frame_step == 7)
-        {
-            // Volume counter clocked at 64 Hz
-            clock_vol_envelope();
-        }
-        update_status();
+        return;
     }
+
+    if ((channel_1.freq_sweep_time != 0) && (channel_1.freq_shift != 0))
+    {
+        if ((channel_1.freq_clock % channel_1.freq_sweep_time) == 0)
+        {
+            int df = (channel_1.freq >> channel_1.freq_shift) & 0x7ff;
+            channel_1.freq += (channel_1.increase_freq ? df : -df);
+
+            if (channel_1.freq < 0)
+            {
+                channel_1.freq += df;
+            }
+            else if (channel_1.freq >= 0x800)
+            {
+                channel_1.freq_sweep_enable = false;
+            }
+            else
+            {
+                reg_nr13 = channel_1.freq & 0xff;
+                reg_nr14 = (reg_nr14 & (0x1f << 3)) | ((channel_1.freq >> 8) & 7);
+            }
+        }
+    }*/
 }
 
 void APU::update_status()
@@ -282,66 +349,6 @@ void APU::trigger_channel(int channel_num)
     ch.playing = true;
 }
 
-void APU::clock_length_counters()
-{
-    for (auto & ch: channels) {
-        if (ch.decrement_counter && (ch.length_counter > 0)) {
-            ch.length_counter--;
-        }
-        if (ch.length_counter == 0) {
-            ch.playing = false;
-        }
-    }
-}
-
-void APU::clock_vol_envelope()
-{
-    for (auto &ch: channels) {
-        ch.volume_clock++;
-        if (ch.volume_sweep_time != 0) {
-            if ((ch.volume_clock % ch.volume_sweep_time) == 0) {
-                if (ch.increase_volume) {
-                    ch.volume = std::min(15, ch.volume + 1);
-                }
-                else{
-                    ch.volume = std::max(0, ch.volume - 1);
-                }
-            }
-        }
-    }
-}
-
-void APU::clock_freq_sweep()
-{
-    /*if (!channel_1.freq_sweep_enable)
-    {
-        return;
-    }
-
-    if ((channel_1.freq_sweep_time != 0) && (channel_1.freq_shift != 0))
-    {
-        if ((channel_1.freq_clock % channel_1.freq_sweep_time) == 0)
-        {
-            int df = (channel_1.freq >> channel_1.freq_shift) & 0x7ff;
-            channel_1.freq += (channel_1.increase_freq ? df : -df);
-
-            if (channel_1.freq < 0)
-            {
-                channel_1.freq += df;
-            }
-            else if (channel_1.freq >= 0x800)
-            {
-                channel_1.freq_sweep_enable = false;
-            }
-            else
-            {
-                reg_nr13 = channel_1.freq & 0xff;
-                reg_nr14 = (reg_nr14 & (0x1f << 3)) | ((channel_1.freq >> 8) & 7);
-            }
-        }
-    }*/
-}
-
 int APU::square_wave(double t, double freq, int amp, int duty)
 {
     freq = 131072.0 / (0x800 - freq);
@@ -356,61 +363,15 @@ void APU::start()
     SDL_PauseAudioDevice(device_id, 0);
 }
 
-void APU::forward_callback(void *userdata, Uint8 *stream, int len)
-{
-    static_cast<APU *>(userdata)->audio_callback(stream, len);
-}
-
-void APU::audio_callback(Uint8 *stream, int len)
-{
-    Sint16 *_stream = (Sint16 *)stream;
-    for (int i = 0; i < len / 4; i++)
-    {   
-        _stream[2 * i] = 0;
-        _stream[2 * i + 1] = 0;
-        if (master_enable) {
-            for (int j = 0; j < 2; j++) {
-                _stream[2 * i] += channels[j].output_left ? sample_channel(j) : 0;
-                _stream[2 * i + 1] += channels[j].output_right ? sample_channel(j) : 0;
-            }
-        }
-        t += dt;
-    }
-}
-
-void APU::append_audio_sample()
-{
-    if (buffer_ind == audio_buffer.size()) {
-        return;
-    }
-    audio_buffer[buffer_ind] = 0;
-    for (int i = 0; i < 2; i++) {
-        audio_buffer[buffer_ind] += AMPLITUDE * channels[i].volume * channels[i].current_sample;
-    }
-    buffer_ind++;
-}
-
 void APU::flush_buffer()
 {
-    SDL_QueueAudio(device_id, audio_buffer.data(), audio_buffer.size() * sizeof(i16));
+    SDL_ClearQueuedAudio(device_id);
+    std::vector<i16> output_buffer;
+    output_buffer.resize(800, 0);
+    sig::downsample(audio_buffer, CPU_FREQUENCY / 4, output_buffer, AUDIO_SAMPLE_RATE);
+    SDL_QueueAudio(device_id, (void*)output_buffer.data(), output_buffer.size() * sizeof(i16));
     audio_buffer.assign(audio_buffer.size(), 0);
-    buffer_ind = 0;
-}
-
-int APU::sample_channel(int channel_num)
-{
-    Channel &ch = channels[channel_num];
-    if (channel_num <= 1) {
-        if (ch.playing) {
-            return square_wave(t, ch.frequency, ch.volume * AMPLITUDE, ch.duty);
-        }
-        else {
-            return 0;
-        }
-    }
-    else {
-        return 0;
-    }
+    buffer_pos = audio_buffer.begin();
 }
 
 void APU::init_registers()
@@ -468,7 +429,9 @@ void APU::setup_sdl()
     {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
     }
+    
     device_id = SDL_OpenAudioDevice(NULL, 0, &spec, &obtained, 0);
+    SDL_Log("Audio rate: %d", obtained.freq);
     if (device_id == 0)
     {
         SDL_Log("Failed to open audio: %s", SDL_GetError());

@@ -29,7 +29,7 @@ link_libraries(${GLEW_LIBRARIES})
 
 add_library(funcs util.cpp)
 add_library(proc processor.cpp)
-add_library(mem mmu.cpp joypad.cpp cartridge.cpp apu.cpp)
+add_library(mem mmu.cpp joypad.cpp cartridge.cpp apu.cpp signal_processing.cpp)
 add_library(ops operations.cpp)
 
 add_executable(main 

@@ -26,7 +26,7 @@ public:
 
     void flush_buffer();
 
-private:
+// private:
 
     struct Channel
     {
@@ -52,7 +52,7 @@ private:
         int freq_clock;
         int waveform_clock;
         int waveform_step;
-        bool current_sample;
+        int current_sample;
         bool enable;
     } channels[4];
 
@@ -75,6 +75,7 @@ private:
     SDL_AudioDeviceID device_id;
 
     std::vector<i16> audio_buffer;
+    std::vector<i16>::iterator buffer_pos;
     unsigned int buffer_ind;
 
     void reset();
@@ -87,6 +88,7 @@ private:
 
     int sample_channel(int channel_num);
 
+    void clock_waveform_generators();
     void clock_length_counters();
     void clock_freq_sweep();
     void clock_vol_envelope();
