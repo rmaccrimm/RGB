@@ -2,6 +2,7 @@
 #define APU_H
 
 #include "definitions.h"
+#include "signal_processing.h"
 #include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
@@ -26,9 +27,7 @@ public:
 
     void flush_buffer();
 
-    int queued_samples();
-
-// private:
+private:
 
     struct Channel
     {
@@ -77,21 +76,14 @@ public:
     SDL_AudioDeviceID device_id;
     SDL_AudioSpec spec;
 
-    std::vector<i16> right_channel_buffer;
-    std::vector<i16> left_channel_buffer;
-    std::vector<i16>::iterator right_pos;
-    std::vector<i16>::iterator left_pos;
-    unsigned int buffer_ind;
+    AudioBuffer right_channel_buffer;
+    AudioBuffer left_channel_buffer;
+
+    std::vector<i16> right;
+    std::vector<i16> left;
+    std::vector<i16> output_buffer;
 
     void reset();
-
-    // SDL audio callback function. Forwards call to APU object pointed ot by userdata
-    static void forward_callback(void *APU_obj, Uint8 *stream, int len);
-    // Actual function to fill audio buffer
-    void audio_callback(Uint8 *stream, int len);
-    int square_wave(double t, double freq, int amplitude, int duty);
-
-    int sample_channel(int channel_num);
 
     void clock_waveform_generators();
     void clock_length_counters();

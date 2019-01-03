@@ -1,3 +1,6 @@
+#ifndef AUDIO_BUFFER_H
+#define AUDIO_BUFFER_H
+
 #include "definitions.h"
 #include <vector>
 
@@ -10,7 +13,7 @@ public:
     void write(i16 x);
 
     // Resample the audio buffer to the target rate, filling dest with as much data as is available.
-    void downsample(std::vector<i16> &dest);
+    void downsample(std::vector<i16> &dest, int &size);
 
 private:
     // Interpolate between pos and pos + 1 at given distance from pos
@@ -23,3 +26,5 @@ private:
     std::vector<i16>::iterator next_sample;
     bool wrap;
 };
+
+#endif

@@ -29,17 +29,17 @@ APU::APU() :
     volume_right{0},
     SQUARE_WAVEFORM{0b00000001, 0b10000001, 0b10000111, 0b01111110},
     CPU_FREQUENCY{4194304},
-    AUDIO_SAMPLE_RATE{48000}
+    AUDIO_SAMPLE_RATE{48000},
+    right_channel_buffer(0x8000, 4194304.0 / 4.0, 48000.0),
+    left_channel_buffer(0x8000, 4194304.0 / 4.0, 48000.0)
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
-    right_channel_buffer.resize(0x8000, 0);
-    left_channel_buffer.resize(0x8000, 0);
-    right_pos = right_channel_buffer.begin();
-    left_pos = left_channel_buffer.begin();
+    right.resize(4096, 0);
+    left.resize(4096, 0);
+    output_buffer.resize(2 * 4096, 0);
 
-    for (auto &ch: channels)
-    {
+    for (auto &ch: channels) {
         ch.playing = false;
         ch.enable = false;
         ch.output_left = false;
@@ -54,7 +54,6 @@ APU::APU() :
         ch.duty = 0;
         ch.volume = 0;
     }
-
     setup_sdl();
 }
 
@@ -88,10 +87,12 @@ void APU::write(u16 addr, u8 data)
     }
     
     if (!master_enable && addr != reg::NR52) {
+        // Clearing master enable disables writes to APU
         return;
     }
-
+    
     if (addr == reg::NR52) {
+        // Clearing master enable bit immediately clears all registers and flags
         master_enable = utils::bit(data, 7);
         if (!master_enable) {
             reset();
@@ -101,19 +102,21 @@ void APU::write(u16 addr, u8 data)
         data |= (registers[addr] & 0xf);
     }
     else if (addr == reg::NR50) {
+        // Control register
         enable_left = utils::bit(data, 7);
         enable_right = utils::bit(data, 3);
         volume_left = (data >> 4) & 7;
         volume_right = data & 7;
     }
     else if (addr == reg::NR51) {
+        // Left/Right output control register
         for (int i = 0; i < 4; i++) {
             channels[i].output_right = utils::bit(data, i);
             channels[i].output_left = utils::bit(data, 4 + i);
         }
     }
     else {
-        // Parse register address
+        // Parse register address for channel control registers
         int reg = ((addr & 0xff) - 0x10) % 5;
         int ch = ((addr & 0xff) - 0x10) / 5;
         if (reg == 0) { 
@@ -137,6 +140,7 @@ void APU::write(u16 addr, u8 data)
 
 void APU::reset()
 {
+    // Zero all registers
     for (auto &p: registers) {
         p.second = 0;
     }
@@ -162,7 +166,6 @@ void APU::step(int cycles)
         if (frame_clock >= 0x2000)
         {
             frame_clock -= 0x2000;
-
             frame_step++;
             frame_step %= 8;
 
@@ -188,36 +191,43 @@ void APU::step(int cycles)
 
 void APU::clock_waveform_generators()
 {
+    /*  Each duty cycle has 8 steps. When each channel's waveform timer reaches period, move to next
+        step and reset the timer.
+    */
     for (auto &ch: channels) {
         assert(ch.frequency < 0x800);
+        /* Timers are clocked every 4 cpu cycles (1 M-cycle) and have a maximum period of 
+           2048 M-cycle
+        */
         int period = 4 * (0x800 - ch.frequency);
         ch.waveform_clock += 4;
         if (ch.waveform_clock >= period) {
             ch.waveform_step++;
             ch.waveform_step %= 8;
-            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : -1;
+            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : 0;
             ch.waveform_clock -= period;
         }
     }
-
-    *right_pos = 0;
-    *left_pos = 0;    
+    // Left and right channel buffers contain full 1-Mhz (2^20) sampled audio 
+    i16 l_sample = 0;
+    i16 r_sample = 0;
     for (int i = 0; i < 2; i++) {
         if (master_enable) {
             if (channels[i].output_left) {
-                *left_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+                l_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
             }
             if (channels[i].output_right) {
-                *right_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+                r_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
             }
         }
     }
-    left_pos++;
-    right_pos++;
+    left_channel_buffer.write(l_sample);
+    right_channel_buffer.write(r_sample);
 }
 
 void APU::clock_length_counters()
 {
+    // Length counters are driven by the frame sequencer, disable a channel when 0 is reached
     for (auto & ch: channels) {
         if (ch.decrement_counter && (ch.length_counter > 0)) {
             ch.length_counter--;
@@ -230,6 +240,9 @@ void APU::clock_length_counters()
 
 void APU::clock_vol_envelope()
 {
+    /*  Volume envelopes are driven by the frame sequencer. They can set the volume to 0 but do not
+        disable the channel (clear the playing flag)
+    */
     for (auto &ch: channels) {
         ch.volume_clock++;
         if (ch.volume_sweep_time != 0) {
@@ -287,6 +300,7 @@ void APU::update_status()
 
 void APU::update_reg_NRx0(int channel_num, u8 data)
 {
+    // Frequency shift registers, only used by channel 1
     if (channel_num == 0) {
         Channel &ch = channels[channel_num];
         ch.freq_shift = data & 7;
@@ -297,15 +311,19 @@ void APU::update_reg_NRx0(int channel_num, u8 data)
 
 void APU::update_reg_NRx1(int channel_num, u8 data)
 {
+    // Update duty cycle and length counters
     Channel &ch = channels[channel_num];
     if (channel_num <= 1) {
+        // Duty cycle used by channels 1 and 2 
         ch.duty = (data >> 6) & 3;
     }
     if (channel_num == 2) {
+        // Channel 3 uses an 8 bit length counter
         ch.sound_length = data;
         ch.length_counter = 256 - data;
     }
     else {
+        // Other channels use a 6 bit length counter
         data &= 0x3f;
         ch.sound_length = data;
         ch.length_counter = 64 - data;
@@ -314,10 +332,16 @@ void APU::update_reg_NRx1(int channel_num, u8 data)
 
 void APU::update_reg_NRx2(int channel_num, u8 data)
 {
+    // Update volume envelopes
     Channel &ch = channels[channel_num];
     ch.initial_volume = (data >> 4) & 0xf;
     ch.increase_volume = utils::bit(data, 3);
     ch.volume_sweep_time = data & 7;
+
+    /*  Each channel's DAC is controlled by the upper 5 bits of NRx2. Writing all zeroes to these
+        bits disables the DAC and channel. Writing a non-zero enables the DAC again but not the 
+        channel
+    */
     if (((data >> 3) & 0x1f) == 0) {
         ch.playing = false;
         update_status();
@@ -326,6 +350,9 @@ void APU::update_reg_NRx2(int channel_num, u8 data)
 
 void APU::update_reg_NRx3(int channel_num, u8 data)
 {
+    /*  Update lower bits of channel "frequency". This is really the starting value for the timers 
+        that drive each channel's waveform generator, outputing a pulse when it reaches 0
+    */
     int freq = channels[channel_num].frequency;
     freq = (freq & (7 << 8)) | data;
     channels[channel_num].frequency = freq;    
@@ -361,15 +388,6 @@ void APU::trigger_channel(int channel_num)
     ch.playing = true;
 }
 
-int APU::square_wave(double t, double freq, int amp, int duty)
-{
-    freq = 131072.0 / (0x800 - freq);
-    double D = duty == 0 ? 0.5 : duty;
-    double T = 1.0 / (4.0 * freq);
-    t -= 4 * T * std::floor(t / (4 * T));
-    return t <= (D * T) ? amp : -amp;
-}
-
 void APU::start()
 {
     SDL_PauseAudioDevice(device_id, 0);
@@ -377,19 +395,16 @@ void APU::start()
 
 void APU::flush_buffer()
 {
-    int n;
-    while ((n = SDL_GetQueuedAudioSize(device_id)) > 2 * spec.samples * sizeof(i16)) {
-        SDL_Delay(1);
+    int size;
+    right_channel_buffer.downsample(right, size);
+    left_channel_buffer.downsample(left, size);
+    std::cout << size << std::endl;
+    for (int i = 0; i < right.size(); i++) {
+        output_buffer[2*i] = left[i];
+        output_buffer[2*i + 1] = right[i];
     }
-    std::vector<i16> output_buffer;
-    output_buffer.resize(2 * spec.samples, 0);
-
-    right_channel_buffer.push_back(0);
-    right_channel_buffer.push_back(0);
-    left_channel_buffer.push_back(0);
-    left_channel_buffer.push_back(0);
-
-    double ratio = CPU_FREQUENCY / 4 / AUDIO_SAMPLE_RATE;
+    SDL_QueueAudio(device_id, output_buffer.data(), 2 * size * sizeof(i16));
+    /*double ratio = CPU_FREQUENCY / 4 / AUDIO_SAMPLE_RATE;
     for (int i = 1; i < output_buffer.size()/2 + 1; i++) {
         int k = i * ratio;
         std::vector<i16> *src[2] = {&left_channel_buffer, &right_channel_buffer};
@@ -405,7 +420,7 @@ void APU::flush_buffer()
             double h11 = t3 - t2;
             output_buffer[2*(i-1) + j] = h00*(double)src[j]->at(k) + h10*m0 + h01*(double)src[j]->at(k+1) + h11*m1;
         }
-    }
+    }*/
 
     /*sig::downsample(right_channel_buffer, CPU_FREQUENCY / 4, right, AUDIO_SAMPLE_RATE);
     sig::downsample(left_channel_buffer, CPU_FREQUENCY / 4, left, AUDIO_SAMPLE_RATE);
@@ -422,23 +437,7 @@ void APU::flush_buffer()
         output_buffer[2*i] = left_channel_buffer[k];
         output_buffer[2*i + 1] = right_channel_buffer[k];    
     }*/
-    SDL_QueueAudio(device_id, output_buffer.data(), output_buffer.size() * sizeof(i16));
-    // int n;
-    /*while ((n = SDL_GetQueuedAudioSize(device_id)) >= (800 * sizeof(i16))) {
-        std::cout << n << std::endl;
-        SDL_Delay(1);
-    }*/
-    right_channel_buffer.resize(right_channel_buffer.size() - 2);
-    left_channel_buffer.resize(left_channel_buffer.size() - 2);
-    right_channel_buffer.assign(right_channel_buffer.size(), 0);
-    left_channel_buffer.assign(right_channel_buffer.size(), 0);
-    right_pos = right_channel_buffer.begin();
-    left_pos = left_channel_buffer.begin();
-}
-
-int APU::queued_samples()
-{
-    return SDL_GetQueuedAudioSize(device_id);
+    
 }
 
 void APU::init_registers()
