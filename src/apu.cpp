@@ -33,8 +33,10 @@ APU::APU() :
 {
     init_registers();
     wave_pattern_RAM.resize(16, 0);
-    audio_buffer.resize(0x10000, 0);
-    buffer_pos = audio_buffer.begin();
+    right_channel_buffer.resize(0x8000, 0);
+    left_channel_buffer.resize(0x8000, 0);
+    right_pos = right_channel_buffer.begin();
+    left_pos = left_channel_buffer.begin();
 
     for (auto &ch: channels)
     {
@@ -50,6 +52,7 @@ APU::APU() :
         ch.waveform_clock = 0;
         ch.waveform_step = 0;
         ch.duty = 0;
+        ch.volume = 0;
     }
 
     setup_sdl();
@@ -197,19 +200,20 @@ void APU::clock_waveform_generators()
         }
     }
 
-    *buffer_pos = 0;
-    *(buffer_pos + 1) = 0;    
+    *right_pos = 0;
+    *left_pos = 0;    
     for (int i = 0; i < 2; i++) {
         if (master_enable) {
             if (channels[i].output_left) {
-                *buffer_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+                *left_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
             }
             if (channels[i].output_right) {
-                *(buffer_pos + 1) += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+                *right_pos += channels[i].current_sample * channels[i].volume * AMPLITUDE;
             }
         }
     }
-    buffer_pos += 2;
+    left_pos++;
+    right_pos++;
 }
 
 void APU::clock_length_counters()
@@ -373,18 +377,63 @@ void APU::start()
 
 void APU::flush_buffer()
 {
-    
-    std::vector<i16> output_buffer;
-    output_buffer.resize(1600, 0);
-    sig::downsample(audio_buffer, CPU_FREQUENCY / 4, output_buffer, AUDIO_SAMPLE_RATE);
-    SDL_QueueAudio(device_id, output_buffer.data(), output_buffer.size() * sizeof(i16));
     int n;
+    while ((n = SDL_GetQueuedAudioSize(device_id)) > 2 * spec.samples * sizeof(i16)) {
+        SDL_Delay(1);
+    }
+    std::vector<i16> output_buffer;
+    output_buffer.resize(2 * spec.samples, 0);
+
+    right_channel_buffer.push_back(0);
+    right_channel_buffer.push_back(0);
+    left_channel_buffer.push_back(0);
+    left_channel_buffer.push_back(0);
+
+    double ratio = CPU_FREQUENCY / 4 / AUDIO_SAMPLE_RATE;
+    for (int i = 1; i < output_buffer.size()/2 + 1; i++) {
+        int k = i * ratio;
+        std::vector<i16> *src[2] = {&left_channel_buffer, &right_channel_buffer};
+        for (int j = 0; j < 2; j++) {
+            double m0 = 0.5 * (src[j]->at(k+1) - src[j]->at(k-1));
+            double m1 = 0.5 * (src[j]->at(k+2) - src[j]->at(k));
+            double t = (((double)i * ratio) - k);
+            double t2 = t*t;
+            double t3 = t*t*t;
+            double h00 = 2*t3 - 3*t2 + 1;
+            double h01 = -2*t3 + 3*t2;
+            double h10 = t3 - 2*t2 + t;
+            double h11 = t3 - t2;
+            output_buffer[2*(i-1) + j] = h00*(double)src[j]->at(k) + h10*m0 + h01*(double)src[j]->at(k+1) + h11*m1;
+        }
+    }
+
+    /*sig::downsample(right_channel_buffer, CPU_FREQUENCY / 4, right, AUDIO_SAMPLE_RATE);
+    sig::downsample(left_channel_buffer, CPU_FREQUENCY / 4, left, AUDIO_SAMPLE_RATE);
+
+    int i = 0;
+    for (auto &x: output_buffer) {
+        x = ((i & 1) == 0 ? left_channel_buffer[i/2] : right_channel_buffer[i/2]);
+        i++;
+    }*/
+
+    /*double ratio = CPU_FREQUENCY / 4 / AUDIO_SAMPLE_RATE;
+    for (int i = 0; i < output_buffer.size() / 2; i++) {
+        int k = (double)i * ratio;
+        output_buffer[2*i] = left_channel_buffer[k];
+        output_buffer[2*i + 1] = right_channel_buffer[k];    
+    }*/
+    SDL_QueueAudio(device_id, output_buffer.data(), output_buffer.size() * sizeof(i16));
+    // int n;
     /*while ((n = SDL_GetQueuedAudioSize(device_id)) >= (800 * sizeof(i16))) {
         std::cout << n << std::endl;
         SDL_Delay(1);
     }*/
-    audio_buffer.assign(audio_buffer.size(), 0);
-    buffer_pos = audio_buffer.begin();
+    right_channel_buffer.resize(right_channel_buffer.size() - 2);
+    left_channel_buffer.resize(left_channel_buffer.size() - 2);
+    right_channel_buffer.assign(right_channel_buffer.size(), 0);
+    left_channel_buffer.assign(right_channel_buffer.size(), 0);
+    right_pos = right_channel_buffer.begin();
+    left_pos = left_channel_buffer.begin();
 }
 
 int APU::queued_samples()
@@ -433,13 +482,13 @@ void APU::setup_sdl()
         SDL_Log("%s", SDL_GetAudioDeviceName(i, 0));
     }
 
-    SDL_AudioSpec spec, obtained;
+    SDL_AudioSpec obtained;
     SDL_zero(spec);
 
     spec.freq = AUDIO_SAMPLE_RATE;
     spec.format = AUDIO_S16SYS;
     spec.channels = 2;
-    spec.samples = 800;
+    spec.samples = AUDIO_SAMPLE_RATE / 60;
     spec.callback = NULL;
     spec.userdata = NULL;
 
@@ -449,7 +498,8 @@ void APU::setup_sdl()
     }
     
     device_id = SDL_OpenAudioDevice(NULL, 0, &spec, &obtained, 0);
-    SDL_Log("Audio rate: %d", obtained.freq);
+    spec = obtained;
+    SDL_Log("Audio rate: %d", spec.freq);
     if (device_id == 0)
     {
         SDL_Log("Failed to open audio: %s", SDL_GetError());

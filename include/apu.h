@@ -75,9 +75,12 @@ public:
     unsigned int frame_step;
 
     SDL_AudioDeviceID device_id;
+    SDL_AudioSpec spec;
 
-    std::vector<i16> audio_buffer;
-    std::vector<i16>::iterator buffer_pos;
+    std::vector<i16> right_channel_buffer;
+    std::vector<i16> left_channel_buffer;
+    std::vector<i16>::iterator right_pos;
+    std::vector<i16>::iterator left_pos;
     unsigned int buffer_ind;
 
     void reset();

@@ -1,12 +1,52 @@
 #include "signal_processing.h"
 
-void sig::downsample(
-    const std::vector<i16> &src, int src_rate, std::vector<i16> &dest, int dest_rate)
+AudioBuffer::AudioBuffer(int size, double sample_rate, double target_rate)
 {
-    double ratio = (double)src_rate / (double)dest_rate;
-    auto src_it = src.begin();
-    for (int i = 1; i < dest.size()/2 + 1; i++) {
-        // interpolate between src[k] and src[k+1] -> dest[x]
+    buffer.resize(size, 0);
+    position = buffer.begin();    
+    next_sample = buffer.begin();
+    bool wrap = false;
+    ratio = sample_rate / target_rate;
+    sample_position = 0;
+}
+
+void AudioBuffer::write(i16 x)
+{
+    *position = x;
+    position++;
+    if (position == buffer.end()) {
+        position = buffer.begin();
+        wrap = true;
+    }
+}
+
+void AudioBuffer::downsample(std::vector<i16> &dest)
+{
+    dest.clear();
+    while (true) {
+        if (!wrap && ((next_sample + 2) > position)) {
+            break;
+        }
+        dest.push_back(interpolate(next_sample, sample_position - (int)sample_position));
+        sample_position += ratio;
+        if (sample_position > buffer.size()) {
+            sample_position -= buffer.size();
+            wrap = false;
+        }
+        next_sample = buffer.begin() + (int)sample_position;
+    }
+}
+
+i16 AudioBuffer::interpolate(std::vector<i16>::iterator lower, double dist) 
+{
+    // Nearest neighbour
+    auto it = lower + (int)(dist + 0.5);
+    if (it >= buffer.end()) {
+        it = buffer.begin() + (int)(it - buffer.end());
+    }
+    return *it;
+
+    /*for (int i = 1; i < dest.size() + 1; i++) {
         int k = i * ratio;
         double m0 = 0.5 * (src[k+1] - src[k-1]);
         double m1 = 0.5 * (src[k+2] - src[k]);
@@ -19,7 +59,6 @@ void sig::downsample(
         double h10 = t3 - 2*t2 + t;
         double h11 = t3 - t2;
 
-        dest[2 * (i-1)] = h00*(double)src[k] + h10*m0 + h01*(double)src[k+1] + h11*m1;
-        dest[2 * (i-1) + 1] = h00*(double)src[k] + h10*m0 + h01*(double)src[k+1] + h11*m1;
-    }
+        dest[i-1] = h00*(double)src[k] + h10*m0 + h01*(double)src[k+1] + h11*m1;
+    }*/
 }
