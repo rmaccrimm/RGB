@@ -203,7 +203,7 @@ void APU::clock_waveform_generators()
         if (ch.waveform_clock >= period) {
             ch.waveform_step++;
             ch.waveform_step %= 8;
-            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : 0;
+            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : -1;
             ch.waveform_clock -= period;
         }
     }
