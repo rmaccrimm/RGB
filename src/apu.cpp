@@ -3,20 +3,8 @@
 #include "util.h"
 #include <iostream>
 #include <cassert>
-
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include <algorithm>
 
-int v = 0;
-const Sint16 AMPLITUDE = 100;
-const int FREQUENCY1 = 300;
-const int FREQUENCY2 = 60;
-int per_s = 48000;
-int per_call = 1024;
-double call_freq = (double)per_s / (double)per_call;
-double dt = 1.0f / call_freq / (double)1024.0f;
-double t = 0;
 
 APU::APU() : 
     clock{0},
@@ -26,9 +14,11 @@ APU::APU() :
     master_enable{0}, 
     volume_left{0}, 
     volume_right{0},
+    wave_RAM_pos{0},
     SQUARE_WAVEFORM{0b00000001, 0b10000001, 0b10000111, 0b01111110},
     CPU_FREQUENCY{4194304},
     AUDIO_SAMPLE_RATE{48000},
+    AMPLITUDE{200},
     right_channel_buffer(0x8000, 4194304.0 / 4.0, 48000.0),
     left_channel_buffer(0x8000, 4194304.0 / 4.0, 48000.0)
 {
@@ -39,20 +29,7 @@ APU::APU() :
     output_buffer.resize(2 * 4096, 0);
 
     for (auto &ch: channels) {
-        ch.playing = false;
-        ch.DAC_enabled = false;
-        ch.enable = false;
-        ch.output_left = false;
-        ch.output_right = false;
-        ch.initial_volume = 0;
-        ch.length_counter = 0;
-        ch.volume_clock = 0;
-        ch.sweep_clock = 0;
-        ch.frequency = 0;
-        ch.waveform_clock = 0;
-        ch.waveform_step = 0;
-        ch.duty = 0;
-        ch.volume = 0;
+        memset(&ch, 0, sizeof(Channel));
     }
     setup_sdl();
 }
@@ -191,20 +168,39 @@ void APU::step(int cycles)
 
 void APU::clock_waveform_generators()
 {
-    /*  Each duty cycle has 8 steps. When each channel's waveform timer reaches period, move to next
-        step and reset the timer.
+    /*  Channels 1 and 2 contain waveform generators that produce square waves with 4 available 
+        duty cycles. Each duty cycle has 8 steps. When each channel's waveform timer reaches 
+        the set period, it moves to the next step and resets the timer. 
+        Channel 3 outputs samples from wave pattern RAM and has a maximum period of 1024 M-cycles.
     */
-    for (auto &ch: channels) {
-        assert(ch.frequency < 0x800);
+    for (int i = 0; i < 3; i++) {
+        auto &ch = channels[i];
         /* Timers are clocked every 4 cpu cycles (1 M-cycle) and have a maximum period of 
            2048 M-cycle
         */
-        int period = 4 * (0x800 - ch.frequency);
+        int period = (i == 2 ? 2 : 4) * (0x800 - ch.frequency);
         ch.waveform_clock += 4;
         if (ch.waveform_clock >= period) {
-            ch.waveform_step++;
-            ch.waveform_step %= 8;
-            ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : -1;
+            if (i <= 1) {
+                ch.waveform_step++;
+                ch.waveform_step %= 8;
+                ch.current_sample = (SQUARE_WAVEFORM[ch.duty] >> ch.waveform_step) & 1 ? 1 : 0;
+            }
+            else if (i == 2) {
+                wave_RAM_pos++;
+                wave_RAM_pos %= 32;
+                // Even samples taken from upper 4 bits, odd from lower
+                int shift = (wave_RAM_pos & 1 == 0 ? 4 : 0);
+                int sample = (wave_pattern_RAM[wave_RAM_pos / 2] >> shift) & 0xf;
+                if (ch.output_shift == 0) {
+                    ch.volume = 0;
+                }
+                else {
+                    ch.volume = sample >> (ch.output_shift - 1);
+                }
+                // Waveform is not used for channel 3 so output is determined only by volume
+                ch.current_sample = 1;
+            }
             ch.waveform_clock -= period;
         }
     }
@@ -212,7 +208,7 @@ void APU::clock_waveform_generators()
     i16 l_sample = 0;
     i16 r_sample = 0;
     if (master_enable) {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             if (channels[i].playing) {
                 if (channels[i].output_left) {
                     l_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
@@ -309,12 +305,17 @@ void APU::update_status()
 
 void APU::update_reg_NRx0(int channel_num, u8 data)
 {
-    // Frequency shift registers, only used by channel 1
+    Channel &ch = channels[channel_num];
     if (channel_num == 0) {
-        Channel &ch = channels[channel_num];
+        // Frequency shift registers, only used by channel 1
         ch.freq_shift = data & 7;
         ch.increase_freq = !utils::bit(data, 3);
         ch.freq_sweep_period = (data >> 4) & 7;
+    }
+    else if (channel_num == 2) {
+        // Channel 3 has an additional enable/disable
+        ch.playing = utils::bit(data, 7);
+        update_status();
     }
 }
 
@@ -341,12 +342,15 @@ void APU::update_reg_NRx1(int channel_num, u8 data)
 
 void APU::update_reg_NRx2(int channel_num, u8 data)
 {
-    // Update volume envelopes
     Channel &ch = channels[channel_num];
-    ch.initial_volume = (data >> 4) & 0xf;
-    ch.increase_volume = utils::bit(data, 3);
-    ch.volume_sweep_time = data & 7;
-
+    if (channel_num <= 1) {
+        ch.initial_volume = (data >> 4) & 0xf;
+        ch.increase_volume = utils::bit(data, 3);
+        ch.volume_sweep_time = data & 7;
+    }
+    else if (channel_num == 2) {
+        ch.output_shift = (data >> 5) & 0x3;
+    }
     /*  Each channel's DAC is controlled by the upper 5 bits of NRx2. Writing all zeroes to these
         bits disables the DAC and channel. Writing a non-zero enables the DAC again but not the 
         channel
@@ -395,10 +399,10 @@ void APU::trigger_channel(int channel_num)
         - Frequency timer (waveform clock) is reloaded (set to 0)
         - Volume envelope timer is reloaded (set to 0)
         - Channel volume is reloaded from NRx2 register (inital volume)
-        * Several things happen for channel 1's frequency sweep
+        - Several things happen for channel 1's frequency sweep
         * Channel 4's LFSR bits are all set to 1
-        * Channel 3's position is set to 0 but sample buffer is not refilled
-        * If channel's DAC is disabled, channel is re-disabled at end 
+        - Channel 3's position is set to 0 but sample buffer is not refilled
+        - If channel's DAC is disabled, channel is re-disabled at end 
     */
     Channel &ch = channels[channel_num];
     if (ch.length_counter == 0) {
@@ -415,6 +419,9 @@ void APU::trigger_channel(int channel_num)
             // frequency calculation and overflow check performed immediately
             int freq = shift_frequency();
         }
+    }
+    else if (channel_num == 2) {
+        wave_RAM_pos = 0;
     }
     ch.playing = ch.DAC_enabled;
     update_status();

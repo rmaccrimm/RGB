@@ -57,6 +57,7 @@ private:
         int current_sample;
         bool enable;
         bool DAC_enabled;
+        int output_shift;
     } channels[4];
 
     bool master_enable;
@@ -74,6 +75,7 @@ private:
     unsigned int frame_clock;
     unsigned int audio_sampling_clock;
     unsigned int frame_step;
+    unsigned int wave_RAM_pos;
 
     SDL_AudioDeviceID device_id;
     SDL_AudioSpec spec;
@@ -110,6 +112,7 @@ private:
     const unsigned int CPU_FREQUENCY;
     const unsigned int AUDIO_SAMPLE_RATE;
     const u8 SQUARE_WAVEFORM[4];
+    const int AMPLITUDE;
 };
 
 #endif

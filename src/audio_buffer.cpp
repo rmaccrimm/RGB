@@ -50,21 +50,4 @@ i16 AudioBuffer::interpolate(std::vector<i16>::iterator lower, double dist)
         it = buffer.begin() + (int)(it - buffer.end());
     }
     return *it;
-
-    // Cubic interpolation
-    /*for (int i = 1; i < dest.size() + 1; i++) {
-        int k = i * ratio;
-        double m0 = 0.5 * (src[k+1] - src[k-1]);
-        double m1 = 0.5 * (src[k+2] - src[k]);
-
-        double t = (((double)i * ratio) - k);
-        double t2 = t*t;
-        double t3 = t*t*t;
-        double h00 = 2*t3 - 3*t2 + 1;
-        double h01 = -2*t3 + 3*t2;
-        double h10 = t3 - 2*t2 + t;
-        double h11 = t3 - t2;
-
-        dest[i-1] = h00*(double)src[k] + h10*m0 + h01*(double)src[k+1] + h11*m1;
-    }*/
 }
