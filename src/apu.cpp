@@ -40,13 +40,14 @@ APU::APU() :
 
     for (auto &ch: channels) {
         ch.playing = false;
+        ch.DAC_enabled = false;
         ch.enable = false;
         ch.output_left = false;
         ch.output_right = false;
         ch.initial_volume = 0;
         ch.length_counter = 0;
         ch.volume_clock = 0;
-        ch.freq_clock = 0;
+        ch.sweep_clock = 0;
         ch.frequency = 0;
         ch.waveform_clock = 0;
         ch.waveform_step = 0;
@@ -210,13 +211,15 @@ void APU::clock_waveform_generators()
     // Left and right channel buffers contain full 1-Mhz (2^20) sampled audio 
     i16 l_sample = 0;
     i16 r_sample = 0;
-    for (int i = 0; i < 2; i++) {
-        if (master_enable) {
-            if (channels[i].output_left) {
-                l_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
-            }
-            if (channels[i].output_right) {
-                r_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+    if (master_enable) {
+        for (int i = 0; i < 2; i++) {
+            if (channels[i].playing) {
+                if (channels[i].output_left) {
+                    l_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+                }
+                if (channels[i].output_right) {
+                    r_sample += channels[i].current_sample * channels[i].volume * AMPLITUDE;
+                }
             }
         }
     }
@@ -226,7 +229,7 @@ void APU::clock_waveform_generators()
 
 void APU::clock_length_counters()
 {
-    // Length counters are driven by the frame sequencer, disable a channel when 0 is reached
+    // Length counters disable a channel when 0 is reached
     for (auto & ch: channels) {
         if (ch.decrement_counter && (ch.length_counter > 0)) {
             ch.length_counter--;
@@ -239,8 +242,8 @@ void APU::clock_length_counters()
 
 void APU::clock_vol_envelope()
 {
-    /*  Volume envelopes are driven by the frame sequencer. They can set the volume to 0 but do not
-        disable the channel (clear the playing flag)
+    /*  Volume envelopes can set the volume to 0 but do not disable the channel (clear the 
+        playing flag)
     */
     for (auto &ch: channels) {
         ch.volume_clock++;
@@ -259,33 +262,40 @@ void APU::clock_vol_envelope()
 
 void APU::clock_freq_sweep()
 {
-    /*if (!channel_1.freq_sweep_enable)
+    auto &ch = channels[0];
+    if (ch.freq_sweep_enable && (ch.freq_sweep_period != 0))
     {
-        return;
-    }
-
-    if ((channel_1.freq_sweep_time != 0) && (channel_1.freq_shift != 0))
-    {
-        if ((channel_1.freq_clock % channel_1.freq_sweep_time) == 0)
-        {
-            int df = (channel_1.freq >> channel_1.freq_shift) & 0x7ff;
-            channel_1.freq += (channel_1.increase_freq ? df : -df);
-
-            if (channel_1.freq < 0)
-            {
-                channel_1.freq += df;
-            }
-            else if (channel_1.freq >= 0x800)
-            {
-                channel_1.freq_sweep_enable = false;
-            }
-            else
-            {
-                reg_nr13 = channel_1.freq & 0xff;
-                reg_nr14 = (reg_nr14 & (0x1f << 3)) | ((channel_1.freq >> 8) & 7);
+        ch.sweep_clock++;
+        if ((ch.sweep_clock % ch.freq_sweep_period) == 0) {
+            int freq = shift_frequency();
+            if ((freq >= 0) && (freq < 0x800) && (ch.freq_shift != 0)) {
+                ch.frequency = freq;
+                registers[reg::NR13] = freq & 0xff;
+                u8 nr14 = registers[reg::NR14];
+                registers[reg::NR14] = (nr14 & (0x1f << 3)) | ((freq >> 8) & 7);
+                /*  Perform the calculation and overflow check a second time, but don't write the 
+                    value back to registers (can disable channel though)
+                */
+                shift_frequency();
             }
         }
-    }*/
+    }
+}
+
+int APU::shift_frequency()
+{
+    /*  When the new frequency is greater than 2047, channel is disabled. If it is negative, nothing
+        happens
+    */
+    auto &ch = channels[0];
+    int freq = ch.frequency;
+    int df = (freq >> ch.freq_shift);
+    freq += (ch.increase_freq ? df : -df);
+    if (freq >= 0x800) {
+        ch.playing = false;
+        update_status();
+    }
+    return freq;
 }
 
 void APU::update_status()
@@ -304,7 +314,7 @@ void APU::update_reg_NRx0(int channel_num, u8 data)
         Channel &ch = channels[channel_num];
         ch.freq_shift = data & 7;
         ch.increase_freq = !utils::bit(data, 3);
-        ch.freq_sweep_time = (data >> 4) & 7;
+        ch.freq_sweep_period = (data >> 4) & 7;
     }
 }
 
@@ -342,8 +352,12 @@ void APU::update_reg_NRx2(int channel_num, u8 data)
         channel
     */
     if (((data >> 3) & 0x1f) == 0) {
+        ch.DAC_enabled = false;
         ch.playing = false;
         update_status();
+    }
+    else {
+        ch.DAC_enabled = true;
     }
 }
 
@@ -375,16 +389,35 @@ void APU::update_reg_NRx4(int channel_num, u8 data)
 
 void APU::trigger_channel(int channel_num)
 {
+    /*  Triggering a channel causes the following (from Pan Docs):
+        - channel is enabled
+        - if length counter is 0, reload 
+        - Frequency timer (waveform clock) is reloaded (set to 0)
+        - Volume envelope timer is reloaded (set to 0)
+        - Channel volume is reloaded from NRx2 register (inital volume)
+        * Several things happen for channel 1's frequency sweep
+        * Channel 4's LFSR bits are all set to 1
+        * Channel 3's position is set to 0 but sample buffer is not refilled
+        * If channel's DAC is disabled, channel is re-disabled at end 
+    */
     Channel &ch = channels[channel_num];
     if (ch.length_counter == 0) {
         ch.length_counter = channel_num == 2 ? 256 : 64;
     }
-    if (channel_num <= 1) {
-        ch.volume = ch.initial_volume;
-    }
+    ch.volume = ch.initial_volume;
     ch.volume_clock = 0;
-    ch.freq_clock = 0;
-    ch.playing = true;
+    ch.waveform_clock = 0;
+
+    if (channel_num == 0) {
+        ch.sweep_clock = 0;
+        ch.freq_sweep_enable = (ch.freq_sweep_period != 0) || (ch.freq_shift != 0);
+        if (ch.freq_shift != 0) {
+            // frequency calculation and overflow check performed immediately
+            int freq = shift_frequency();
+        }
+    }
+    ch.playing = ch.DAC_enabled;
+    update_status();
 }
 
 void APU::start()

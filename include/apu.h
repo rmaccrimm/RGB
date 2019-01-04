@@ -49,13 +49,14 @@ private:
         int initial_freq;
         bool increase_freq;
         int freq_sweep_enable;
-        int freq_sweep_time;
+        int freq_sweep_period;
         int freq_shift;
-        int freq_clock;
+        int sweep_clock;
         int waveform_clock;
         int waveform_step;
         int current_sample;
         bool enable;
+        bool DAC_enabled;
     } channels[4];
 
     bool master_enable;
@@ -103,6 +104,8 @@ private:
     void trigger_channel(int channel);
 
     void append_audio_sample();
+
+    int shift_frequency();
 
     const unsigned int CPU_FREQUENCY;
     const unsigned int AUDIO_SAMPLE_RATE;
