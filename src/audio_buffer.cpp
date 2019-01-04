@@ -1,4 +1,4 @@
-#include "signal_processing.h"
+#include "audio_buffer.h"
 
 AudioBuffer::AudioBuffer(int size, double sample_rate, double target_rate)
 {

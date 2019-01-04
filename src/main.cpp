@@ -130,7 +130,8 @@ int main(int argc, char *argv[])
         gb_apu.step(cycles);
 
         if (gb_gpu.frame_drawn) {
-            gb_apu.flush_buffer();            
+            int queued = gb_apu.flush_buffer();
+            std::cout << queued << std::endl;
             auto t_draw = steady_clock::now();
             dt = duration_cast<duration<double>>(t_draw - t);
             if ((dt < T) && !unlock_framerate) {

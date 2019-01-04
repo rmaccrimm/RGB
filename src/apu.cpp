@@ -1,7 +1,6 @@
 #include "apu.h"
 #include "registers.h"
 #include "util.h"
-#include "signal_processing.h"
 #include <iostream>
 #include <cassert>
 
@@ -393,51 +392,18 @@ void APU::start()
     SDL_PauseAudioDevice(device_id, 0);
 }
 
-void APU::flush_buffer()
-{
+int APU::flush_buffer()
+{   
     int size;
     right_channel_buffer.downsample(right, size);
     left_channel_buffer.downsample(left, size);
-    std::cout << size << std::endl;
+    // std::cout << SDL_GetQueuedAudioSize(device_id) << std::endl;
     for (int i = 0; i < right.size(); i++) {
         output_buffer[2*i] = left[i];
         output_buffer[2*i + 1] = right[i];
     }
-    SDL_QueueAudio(device_id, output_buffer.data(), 2 * size * sizeof(i16));
-    /*double ratio = CPU_FREQUENCY / 4 / AUDIO_SAMPLE_RATE;
-    for (int i = 1; i < output_buffer.size()/2 + 1; i++) {
-        int k = i * ratio;
-        std::vector<i16> *src[2] = {&left_channel_buffer, &right_channel_buffer};
-        for (int j = 0; j < 2; j++) {
-            double m0 = 0.5 * (src[j]->at(k+1) - src[j]->at(k-1));
-            double m1 = 0.5 * (src[j]->at(k+2) - src[j]->at(k));
-            double t = (((double)i * ratio) - k);
-            double t2 = t*t;
-            double t3 = t*t*t;
-            double h00 = 2*t3 - 3*t2 + 1;
-            double h01 = -2*t3 + 3*t2;
-            double h10 = t3 - 2*t2 + t;
-            double h11 = t3 - t2;
-            output_buffer[2*(i-1) + j] = h00*(double)src[j]->at(k) + h10*m0 + h01*(double)src[j]->at(k+1) + h11*m1;
-        }
-    }*/
-
-    /*sig::downsample(right_channel_buffer, CPU_FREQUENCY / 4, right, AUDIO_SAMPLE_RATE);
-    sig::downsample(left_channel_buffer, CPU_FREQUENCY / 4, left, AUDIO_SAMPLE_RATE);
-
-    int i = 0;
-    for (auto &x: output_buffer) {
-        x = ((i & 1) == 0 ? left_channel_buffer[i/2] : right_channel_buffer[i/2]);
-        i++;
-    }*/
-
-    /*double ratio = CPU_FREQUENCY / 4 / AUDIO_SAMPLE_RATE;
-    for (int i = 0; i < output_buffer.size() / 2; i++) {
-        int k = (double)i * ratio;
-        output_buffer[2*i] = left_channel_buffer[k];
-        output_buffer[2*i + 1] = right_channel_buffer[k];    
-    }*/
-    
+    SDL_QueueAudio(device_id, output_buffer.data(), 2 * size * sizeof(i16));   
+    return SDL_GetQueuedAudioSize(device_id);
 }
 
 void APU::init_registers()

@@ -2,7 +2,7 @@
 #define APU_H
 
 #include "definitions.h"
-#include "signal_processing.h"
+#include "audio_buffer.h"
 #include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
@@ -25,7 +25,8 @@ public:
     
     void write(u16 addr, u8 data);
 
-    void flush_buffer();
+    // Pass samples to SDL and return number of queued samples 
+    int flush_buffer();
 
 private:
 
