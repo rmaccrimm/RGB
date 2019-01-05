@@ -58,7 +58,13 @@ private:
         bool enable;
         bool DAC_enabled;
         int output_shift;
-    } channels[4];
+        bool width_mode;
+    };
+
+    Channel channels[4];
+
+    // Linear feedback shift register - used for noise generation in channel 4
+    u16 LFSR;
 
     bool master_enable;
     bool enable_left;
