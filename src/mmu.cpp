@@ -4,19 +4,21 @@
 #include <map>
 #include <cassert>
 
-Memory::Memory(Cartridge *cart, Joypad *pad, bool enable_boot) : 
+Memory::Memory(Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot) : 
     joypad(pad), 
     cartridge(cart), 
+    apu(audio),
     enable_boot_rom(enable_boot),
     enable_break_pt(false), 
     paused(false), 
     vram_updated(false),
-    reset_clock(false)
+    reset_clock(false),
+    audio_trigger{0, 0, 0, 0},
+    reload_audio_counter{0, 0, 0, 0}
 {
     video_RAM.resize(0x2000, 0); // 8kB
     internal_RAM.resize(0x2000, 0); 
     sprite_attribute_table.resize(0xa0, 0);
-    wave_pattern_RAM.resize(0x10, 0);
     high_RAM.resize(0x7f, 0);
     init_registers();
 }
@@ -48,7 +50,12 @@ u8 Memory::read(u16 addr)
         return 0xff;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
-        return read_reg(addr);
+        if (addr >= 0xff10 && addr <= 0xff3f) {
+            return apu->read(addr);
+        }
+        else {
+            return read_reg(addr);
+        }
     }
     else if (addr >= 0xff80 && addr <= 0xfffe) {
         return high_RAM[addr - 0xff80];
@@ -85,7 +92,12 @@ void Memory::write(u16 addr, u8 data)
         return;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
-        write_reg(addr, data);
+        if (addr >= 0xff10 && addr <= 0xff3f) {
+            apu->write(addr, data);
+        }
+        else {
+            write_reg(addr, data);
+        }
     }
     else if (addr >= 0xff80 && addr <= 0xfffe) {
         high_RAM[addr - 0xff80] = data;
@@ -112,6 +124,7 @@ u8 Memory::read_reg(u16 addr)
 
 void Memory::write_reg(u16 addr, u8 data)
 {
+    u8 mask = io_write_masks[addr - 0xff00];
     switch(addr)
     {
     case reg::DIV:
@@ -119,19 +132,14 @@ void Memory::write_reg(u16 addr, u8 data)
         break;
     case 0xff03:
         break;
-    case reg::STAT:
-        // bits 0 - 2 read-only
-        io_registers[addr - 0xff00] = (data & ~7) | (io_registers[addr - 0xff00] & 7);
-        break;
     case reg::DMA:
         dma_transfer(data);
-        io_registers[addr - 0xff00] = data;
         break;
     case 0xff50:
         enable_boot_rom = false;
         break;
     default:
-        io_registers[addr - 0xff00] = data;
+        io_registers[addr - 0xff00] = (data & (~mask)) | (io_registers[addr - 0xff00] & mask);
     }
 }
 
@@ -189,27 +197,7 @@ void Memory::init_registers()
     io[reg::TMA] = 0;
     io[reg::TAC] = 0b11111000;
     io[reg::IF] = 0b11100000;
-    io[reg::NR10] = 0b10000000;
-    io[reg::NR11] = 0b00111111;
-    io[reg::NR12] = 0;
-    io[reg::NR13] = 0;
-    io[reg::NR14] = 0b10111111;
-    io[reg::NR21] = 0b00111111;
-    io[reg::NR22] = 0;
-    io[reg::NR23] = 0;
-    io[reg::NR24] = 0b10111111;
-    io[reg::NR30] = 0b01111111;
-    io[reg::NR31] = 0;
-    io[reg::NR32] = 0b10011111;
-    io[reg::NR33] = 0;
-    io[reg::NR34] = 0b10111111;
-    io[reg::NR41] = 0b11000000;
-    io[reg::NR42] = 0;
-    io[reg::NR43] = 0;
-    io[reg::NR44] = 0b10111111;
-    io[reg::NR50] = 0;
-    io[reg::NR51] = 0;
-    io[reg::NR52] = 0b01110000;
+    
     io[reg::LCDC] = 0;
     io[reg::SCROLLY] = 0;
     io[reg::SCROLLX] = 0;

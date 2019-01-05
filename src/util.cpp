@@ -53,6 +53,12 @@ u8 utils::set_cond(u8 x, int bit, bool cond)
         return x & (~(1 << bit));
 }
 
+u8 utils::copy_bits(int src, u8 dest, int offset, int len)
+{
+    u8 mask = ((1 << len) - 1) << offset;
+    return (src & mask) | (dest & (~mask));
+}
+
 void utils::to_lower(std::string &s) 
 {
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);

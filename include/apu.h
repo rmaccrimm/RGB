@@ -2,7 +2,7 @@
 #define APU_H
 
 #include "definitions.h"
-#include "mmu.h"
+#include "audio_buffer.h"
 #include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
@@ -14,136 +14,111 @@ class APU
 {
 public:
 
-    APU(Memory *mem);
+    APU();
     ~APU();
 
     void step(int cycles);
 
     void start();
 
+    u8 read(u16 addr);
+    
+    void write(u16 addr, u8 data);
+
+    // Pass samples to SDL and return number of queued samples 
+    int flush_buffer();
+
 private:
-    // SDL audio callback function. Forwards call to APU object pointed ot by userdata
-    static void forward_callback(void *APU_obj, Uint8 *stream, int len);
 
-    // Actual function to fill audio buffer
-    void audio_callback(Uint8 *stream, int len);
+    struct Channel
+    {
+        bool playing;
+        bool output_left;
+        bool output_right;
+        int length_counter;
+        int sound_length;
+        bool decrement_counter;
+        bool trigger;
+        int duty;
+        int frequency;
+        int initial_volume;
+        bool increase_volume;
+        int volume_sweep_time;
+        int volume;
+        int volume_clock;
+        int initial_freq;
+        bool increase_freq;
+        int freq_sweep_enable;
+        int freq_sweep_period;
+        int freq_shift;
+        int sweep_clock;
+        int waveform_clock;
+        int waveform_step;
+        int current_sample;
+        bool enable;
+        bool DAC_enabled;
+        int output_shift;
+        bool width_mode;
+    };
 
-    int square_wave(double t, double freq, int amplitude, int duty);
+    Channel channels[4];
 
-    int sample_channel_1();
+    // Linear feedback shift register - used for noise generation in channel 4
+    u16 LFSR;
 
-    int sample_channel_2();
+    bool master_enable;
+    bool enable_left;
+    bool enable_right;
+    int volume_left;
+    int volume_right;
 
-    int sample_channel_3();
-
-    int sample_channel_4();
-
-    void read_registers();
-
-    void clock_length_counters();
-
-    void clock_freq_sweep();
-
-    void clock_vol_envelope();
-
-    const Memory* memory;
-
-    SDL_AudioDeviceID device_id;
+    std::map<u16, u8> registers;
+    std::map<u16, u8> read_masks;
+    std::vector<u8> wave_pattern_RAM;
+    std::map<u16, bool> unused_addr;
 
     unsigned int clock;
-
+    unsigned int frame_clock;
+    unsigned int audio_sampling_clock;
     unsigned int frame_step;
+    unsigned int wave_RAM_pos;
 
-    struct {
-        bool enable;
-        int counter;
-        bool decrement_counter;
-        bool restart;
-        int frequency;
-        int duty;
-        int sweep_time;
-        bool sweep_direction;
-        int sweep_shift;
-        int initial_volume;
-        bool increase_volume;
-        int volume_sweep;
-        int volume;
-        int volume_clock;
-    } channel_1;
+    SDL_AudioDeviceID device_id;
+    SDL_AudioSpec spec;
 
-    struct {
-        bool enable;
-        int counter;
-        bool decrement_counter;
-        bool restart;
-        int frequency;
-        int duty;
-        int initial_volume;
-        bool increase_volume;
-        int volume_sweep;
-        int volume;
-        int volume_clock;
-    } channel_2;
+    AudioBuffer right_channel_buffer;
+    AudioBuffer left_channel_buffer;
 
-    struct {
-        bool enable;
-        int counter;
-        bool stop;
-        int frequency;
-        int volume;
-    } channel_3;
+    std::vector<i16> right;
+    std::vector<i16> left;
+    std::vector<i16> output_buffer;
 
-    struct {
-        int counter;
-        int envelope_init;
-        bool envelope_direction;
-        int envelope_sweep;
-        int shift_frequency;
-        int step_width;
-        int dividing_ratio;
-    } channel_4;
+    void reset();
 
-    struct {
-        bool master_enable;
-        int volume_left;
-        int volume_right;
-        bool enable_channel_1;
-        bool enable_channel_2;
-        bool enable_channel_3;
-        bool enable_channel_4;
-        bool channel_1_left;
-        bool channel_1_right;
-        bool channel_2_left;
-        bool channel_2_right;
-        bool channel_3_left;
-        bool channel_3_right;
-        bool channel_4_left;
-        bool channel_4_right;
-    } sound_control;
+    void clock_waveform_generators();
+    void clock_length_counters();
+    void clock_freq_sweep();
+    void clock_vol_envelope();
 
-    u8 &reg_nr10;
-    u8 &reg_nr11;
-    u8 &reg_nr12;
-    u8 &reg_nr13;
-    u8 &reg_nr14;
-    u8 &reg_nr21;
-    u8 &reg_nr22;
-    u8 &reg_nr23;
-    u8 &reg_nr24;
-    u8 &reg_nr30;
-    u8 &reg_nr31;
-    u8 &reg_nr32;
-    u8 &reg_nr33;
-    u8 &reg_nr34;
-    u8 &reg_nr41;
-    u8 &reg_nr42;
-    u8 &reg_nr43;
-    u8 &reg_nr44;
-    u8 &reg_nr50;
-    u8 &reg_nr51;
-    u8 &reg_nr52;
-    
-    std::map<u16, u8*> audio_reg;
+    void init_registers();
+    void setup_sdl();
+
+    void update_status();
+    void update_reg_NRx0(int channel, u8 data);
+    void update_reg_NRx1(int channel, u8 data);
+    void update_reg_NRx2(int channel, u8 data);
+    void update_reg_NRx3(int channel, u8 data);
+    void update_reg_NRx4(int channel, u8 data);
+    void trigger_channel(int channel);
+
+    void append_audio_sample();
+
+    int shift_frequency();
+
+    const unsigned int CPU_FREQUENCY;
+    const unsigned int AUDIO_SAMPLE_RATE;
+    const u8 SQUARE_WAVEFORM[4];
+    const int AMPLITUDE;
 };
 
 #endif
