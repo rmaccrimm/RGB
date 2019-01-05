@@ -312,7 +312,6 @@ int APU::shift_frequency()
     freq += (ch.increase_freq ? df : -df);
     if (freq >= 0x800) {
         ch.playing = false;
-        update_status();
     }
     return freq;
 }
