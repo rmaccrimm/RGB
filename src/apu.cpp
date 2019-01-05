@@ -214,14 +214,15 @@ void APU::clock_waveform_generators()
             else if (i == 3) {
                 // Pseudo random sample generation
                 u16 prev = LFSR & 0x7fff;
-                int xor = (prev & 1) ^ ((prev >> 1) & 1);
-                LFSR = (xor << 14) | ((prev >> 1) & 0x3fff);
+                int x = utils::bit(prev, 0) ^ utils::bit(prev, 1);
+                LFSR = (x << 14) | (prev >> 1);
                 if (ch.width_mode) {
                     // set bit 6 with xor value
-                    u16 mask = ~(0x40);
-                    LFSR = (LFSR & mask) | (xor << 6);
+                    u16 mask = 0x40;
+                    mask = ~mask;
+                    LFSR = (LFSR & mask) | (x << 6);
                 }
-                ch.current_sample = !(LFSR & 1);
+                ch.current_sample = !utils::bit((u8)LFSR, 0);
             }
             ch.waveform_clock -= period;
         }
@@ -391,7 +392,7 @@ void APU::update_reg_NRx2(int channel_num, u8 data)
 void APU::update_reg_NRx3(int channel_num, u8 data)
 {
     auto &ch = channels[channel_num];
-    if (channel_num == 4) {
+    if (channel_num == 3) {
         // Shift clock frequency
         int shift = (data >> 4) & 0xf;
         int mult = data & 7;
