@@ -57,7 +57,7 @@ void GPU::step(unsigned int cycles)
         if (clock >= 172) {
             clock -= 172;
             // At end of scanline, draw and switch to horizontal blank mode
-            update_color_palettes();
+            // update_color_palettes();
             draw_scanline();
             change_mode(HBLANK);
         }
@@ -129,23 +129,35 @@ void GPU::write(u16 addr, u8 data)
     }
     else if (addr >= 0xff40 && addr <= 0xff4b) {
         // Control registers
-        switch (addr) {
-            case reg::DMA:
-                // handled by MMU
-                assert(false);
-            case reg::STAT: {
-                // Lowest 3 bits are read-only
-                u8 mask = 0x7;
-                registers[addr] = (data & (~mask)) | (registers[addr] & mask);
-                break;
-            }
-            case reg::LCDC:
-                registers[addr] = data;
-                update_LCD_control();
-                break;
-            default:
-                registers[addr] = data;
+        switch (addr) 
+        {
+        case reg::DMA:
+            // handled by MMU
+            assert(false);
+        case reg::STAT: {
+            // Lowest 3 bits are read-only
+            u8 mask = 0x7;
+            data = (data & (~mask)) | (registers[addr] & mask);
+            break;
         }
+        case reg::LCDC:
+            update_LCD_control(data);
+            break;
+        case reg::BGP:
+            for (int i = 0; i < 4; i++) {
+                bg_palette[i] = (data >> (2*i)) & 3;
+            }
+        case reg::OBP0:
+            for (int i = 0; i < 4; i++) {
+                sprite_palette[0][i] = (data >> (2*i)) & 3;
+            }   
+        case reg::OBP1:
+            for (int i = 0; i < 4; i++) {
+                sprite_palette[1][i] = (data >> (2*i)) & 3;
+            }
+            break;
+        }   
+        registers[addr] = data;
     }
     else {
         assert(false);
@@ -365,9 +377,8 @@ void GPU::draw_window()
         Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
         Bit 0 - BG/Window Display/Priority     (0=Off, 1=On) 
 */
-void GPU::update_LCD_control()
+void GPU::update_LCD_control(u8 byte)
 {
-    u8 byte = registers[reg::LCDC];
     LCD_control.enable_display = (byte >> 7) & 1;
     LCD_control.win_tile_map_addr = (byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
     LCD_control.enable_window = (byte >> 5) & 1;
