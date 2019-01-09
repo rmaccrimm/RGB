@@ -4,7 +4,8 @@
 #include <map>
 #include <cassert>
 
-Memory::Memory(Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot) : 
+Memory::Memory(
+    Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, GPU *video,bool enable_boot) : 
     joypad(pad), 
     cartridge(cart), 
     apu(audio),
@@ -17,9 +18,7 @@ Memory::Memory(Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, bool
     audio_trigger{0, 0, 0, 0},
     reload_audio_counter{0, 0, 0, 0}
 {
-    video_RAM.resize(0x2000, 0); // 8kB
     internal_RAM.resize(0x2000, 0); 
-    sprite_attribute_table.resize(0xa0, 0);
     high_RAM.resize(0x7f, 0);
     init_registers();
 }
@@ -30,29 +29,44 @@ u8 Memory::read(u16 addr)
         return boot_ROM[addr];
     }
     else if (addr <= 0x7fff) {
+        // Cartridge ROM banks
         return cartridge->read(addr);
     }
     else if (addr >= 0x8000 && addr <= 0x9fff) {
-        return video_RAM[addr - 0x8000];
+        // VRAM
+        return gpu->read(addr);
+        // return video_RAM[addr - 0x8000];
     }
     else if (addr >= 0xa000 && addr <= 0xbfff) {
+        // Cartridge RAM
         return cartridge->read(addr);
     }
     else if (addr >= 0xc000 && addr <= 0xdfff) {
+        // Main RAM
         return internal_RAM[addr - 0xc000];
     }
     else if (addr >= 0xe000 && addr <= 0xfdff) {
+        // Echo RAM
         return read(addr - 0x2000);
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
-        return sprite_attribute_table[addr - 0xfe00];
+        // Sprite attribute table (OAM)
+        return gpu->read(addr);
+        // return sprite_attribute_table[addr - 0xfe00];
     }
     else if (addr >= 0xfea0 && addr <= 0xfeff) {
+        // Unused
         return 0xff;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
+        // IO registers
         if (addr >= 0xff10 && addr <= 0xff3f) {
+            // APU registers
             return apu->read(addr);
+        }
+        else if (addr >= 0xff40 && addr <= 0xff4b && addr != reg::DMA) {
+            // GPU registers, excluding DMA which is still handled by MMU
+            return gpu->read(addr);
         }
         else {
             return read_reg(addr);
@@ -72,29 +86,44 @@ void Memory::write(u16 addr, u8 data)
         paused = true; 
 
     if (addr <= 0x7fff) {
+        // Cartridge ROM banks
         cartridge->write(addr, data);
     }
     else if (addr >= 0x8000 && addr <= 0x9fff) {
-        video_RAM[addr - 0x8000] = data;
+        // VRAM
+        gpu->write(addr, data);
+        // video_RAM[addr - 0x8000] = data;
     }
     else if (addr >= 0xa000 && addr <= 0xbfff) {
+        // Cartridge RAM
         cartridge->write(addr, data);
     }
     else if (addr >= 0xc000 && addr <= 0xdfff) {
+        // Main RAM
         internal_RAM[addr - 0xc000] = data;
     }
     else if (addr >= 0xe000 && addr <= 0xfdff) {
+        // Echo RAM
         write(addr - 0x2000, data);
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
-        sprite_attribute_table[addr - 0xfe00] = data;
+        // Sprite attribute table (OAM)
+        gpu->write(addr, data);
+        // sprite_attribute_table[addr - 0xfe00] = data;
     }
     else if (addr >= 0xfea0 && addr <= 0xfeff) {
+        // Unused
         return;
     }
     else if (addr >= 0xff00 && addr <= 0xff7f) {
+        // IO registers
         if (addr >= 0xff10 && addr <= 0xff3f) {
+            // APU registers
             apu->write(addr, data);
+        }
+        else if (addr >= 0xff40 && addr <= 0xff4b && addr != reg::DMA) {
+            // GPU registers, excluding DMA which is still handled by MMU
+            gpu->write(addr, data);
         }
         else {
             write_reg(addr, data);
@@ -177,8 +206,10 @@ bool Memory::pause() { return paused; }
 void Memory::dma_transfer(u8 src)
 {
     u16 start_addr = src << 8;
+    u16 oam_base = 0xfe00;
     for (int i = 0; i <= 0x9f; i++) {
-        sprite_attribute_table[i] =  read(start_addr + i);
+        gpu->write(oam_base + i, read(start_addr + i));
+        // sprite_attribute_table[i] =  read(start_addr + i);
     }
 }
 

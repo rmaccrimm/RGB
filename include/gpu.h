@@ -27,6 +27,9 @@ public:
     GPU(Interrupts *inter, Memory *mem, GameWindow *win);
     void step(unsigned int cpu_clock);
 
+    u8 read(u16 addr);
+    void write(u16 addr, u8 data);
+
     static const int LCD_WIDTH;
     static const int LCD_HEIGHT;
 
@@ -37,6 +40,8 @@ private:
     GameWindow *window;
     Interrupts *interrupts;
     std::vector<u8> screen_texture;
+    std::vector<u8> video_RAM;
+    std::vector<u8> sprite_attribute_table;
 
     int clock;
     int line;

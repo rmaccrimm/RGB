@@ -31,6 +31,8 @@ GPU::GPU(Interrupts *inter, Memory *mem, GameWindow *win):
     prev_cpu_clock(0),
     frame_drawn(false)
 {
+    video_RAM.resize(0x2000, 0); // 8kB
+    sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
 }
 
@@ -91,6 +93,16 @@ void GPU::step(unsigned int cycles)
         break;    
     }
     update_STAT_register();
+}
+
+u8 GPU::read(u16 addr) 
+{
+
+}
+
+void GPU::write(u16 addr, u8 data)
+{
+
 }
 
 void GPU::update_STAT_register()

@@ -5,6 +5,7 @@
 #include "joypad.h"
 #include "cartridge.h"
 #include "apu.h"
+#include "gpu.h"
 #include "interrupts.h"
 #include <iterator>
 #include <string>
@@ -13,7 +14,8 @@
 class Memory
 {    
 public:
-    Memory(Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot = 0);
+    Memory(Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, GPU *video, 
+        bool enable_boot = 0);
 
     void write(u16 addr, u8 data);
 
@@ -30,9 +32,9 @@ public:
     u8& get_mem_reference(u16 addr);
 
     std::vector<u8> boot_ROM;
-    std::vector<u8> video_RAM;
+    
     std::vector<u8> internal_RAM;
-    std::vector<u8> sprite_attribute_table;
+    
     std::vector<u8> wave_pattern_RAM;
     std::vector<u8> high_RAM;
     std::vector<u8> io_registers;
@@ -49,6 +51,7 @@ private:
     Joypad *joypad;
     Cartridge *cartridge;
     APU *apu;
+    GPU *gpu;
     Interrupts *interrupts;
     
     std::vector<u8> io_read_masks;
