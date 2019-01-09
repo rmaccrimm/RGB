@@ -5,6 +5,7 @@
 #include "joypad.h"
 #include "cartridge.h"
 #include "apu.h"
+#include "interrupts.h"
 #include <iterator>
 #include <string>
 
@@ -12,7 +13,7 @@
 class Memory
 {    
 public:
-    Memory(Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot = 0);
+    Memory(Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot = 0);
 
     void write(u16 addr, u8 data);
 
@@ -50,6 +51,7 @@ private:
     Joypad *joypad;
     Cartridge *cartridge;
     APU *apu;
+    Interrupts *interrupts;
     
     std::vector<u8> io_read_masks;
     std::vector<u8> io_write_masks;

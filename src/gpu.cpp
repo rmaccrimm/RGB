@@ -20,7 +20,8 @@ const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
 const u16 GPU::VRAM_ADDR = 0x8000;
 const u16 GPU::OAM_ADDR = 0xfe00;
 
-GPU::GPU(Memory *mem, GameWindow *win): 
+GPU::GPU(Interrupts *inter, Memory *mem, GameWindow *win): 
+    interrupts{inter},
     memory(mem), 
     window(win), 
     clock(0), 

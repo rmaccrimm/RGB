@@ -8,9 +8,9 @@
 #include <iomanip>
 #include <cassert>
 
-Processor::Processor(Memory *mem) : 
+Processor::Processor(Interrupts *inter, Memory *mem) : 
     A(AF.high), F(AF.low), B(BC.high), C(BC.low), D(DE.high), E(DE.low), H(HL.high), L(HL.low),
-    memory(mem), internal_timer(), div_reg(mem->get_mem_reference(reg::DIV)),
+    interrupts{inter}, memory(mem), internal_timer(), div_reg(mem->get_mem_reference(reg::DIV)),
     IME_flag(0), ei_count(0), cond_taken(false), timer_count(0), halted(0), halt_bug(false)
 {}
 

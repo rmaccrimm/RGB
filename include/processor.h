@@ -3,6 +3,7 @@
 
 #include <map>
 #include "definitions.h"
+#include "interrupts.h"
 #include "util.h"
 #include "mmu.h"
 #include "operations.h"
@@ -10,7 +11,7 @@
 class Processor
 {
 public:
-    Processor(Memory *mem);
+    Processor(Interrupts *inter, Memory *mem);
     void init_state();
     int step(bool print = false);
     void set_flags(u8 mask, bool b);
@@ -46,6 +47,7 @@ public:
     u8 &L;
 
     Memory *memory; 
+    Interrupts *interrupts;
 
     reg16 internal_timer;
     u8 timer_lsb;

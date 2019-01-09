@@ -5,6 +5,7 @@
 #include "definitions.h"
 #include "mmu.h"
 #include "window.h"
+#include "interrupts.h"
 
 class GPU 
 {
@@ -23,7 +24,7 @@ public:
         bool signed_tile_map;
     } LCD_control;
 
-    GPU(Memory *mem, GameWindow *win);
+    GPU(Interrupts *inter, Memory *mem, GameWindow *win);
     void step(unsigned int cpu_clock);
 
     static const int LCD_WIDTH;
@@ -34,6 +35,7 @@ public:
 private:
     Memory *memory;
     GameWindow *window;
+    Interrupts *interrupts;
     std::vector<u8> screen_texture;
 
     int clock;

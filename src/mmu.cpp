@@ -4,10 +4,11 @@
 #include <map>
 #include <cassert>
 
-Memory::Memory(Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot) : 
+Memory::Memory(Interrupts *inter, Cartridge *cart, Joypad *pad, APU *audio, bool enable_boot) : 
     joypad(pad), 
     cartridge(cart), 
     apu(audio),
+    interrupts(inter),
     enable_boot_rom(enable_boot),
     enable_break_pt(false), 
     paused(false), 
