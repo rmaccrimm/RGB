@@ -155,7 +155,8 @@ void Processor::update_timer(int cycles)
 
                 if (memory->read(reg::TIMA) == 0) { // overflow
                     memory->write(reg::TIMA, memory->read(reg::TMA));
-                    memory->set_interrupt(Interrupts::TIMER_bit);
+                    interrupts->set(Interrupts::TIMER_bit);
+                    // memory->set_interrupt(Interrupts::TIMER_bit);
                 }
             }
         }
@@ -175,7 +176,8 @@ void Processor::process_interrupts()
                     if ((int_enable >> i) & 1) {
                         // Reset master enable and reqest bit
                         IME_flag = false;
-                        memory->write(reg::IF, utils::reset(int_request, i));
+                        interrupts->clear(i);
+                        // memory->write(reg::IF, utils::reset(int_request, i));
                         // Jump to interrupt routine
                         op::PUSH(this, PC);
                         PC.value = interrupt_addr[i];
@@ -198,7 +200,8 @@ bool Processor::half_carry_flag() { return F & HALF_CARRY; }
 
 bool Processor::carry_flag() { return F & CARRY; }
 
-bool Processor::interrupt_pending() { 
+bool Processor::interrupt_pending() 
+{ 
     return (memory->read(reg::IF) & memory->read(reg::IE) & 0x1f) != 0; 
 }
 

@@ -113,6 +113,8 @@ u8 Memory::read_reg(u16 addr)
     u8 reg_val = io_registers[addr - 0xff00] | io_read_masks[addr - 0xff00];
     switch(addr) 
     {
+    case reg::IF:
+        return interrupts->read();
     case reg::P1: 
     {
         bool select_dpad = !utils::bit(reg_val, 4);
@@ -128,6 +130,9 @@ void Memory::write_reg(u16 addr, u8 data)
     u8 mask = io_write_masks[addr - 0xff00];
     switch(addr)
     {
+    case reg::IF:
+        interrupts->write(data);
+        break;
     case reg::DIV:
         reset_clock = true;
         break;
@@ -152,12 +157,6 @@ u8& Memory::get_mem_reference(u16 addr)
     else {
         assert(false);
     }
-}
-
-void Memory::set_interrupt(int interrupt_bit)
-{
-    u8 int_request = read(reg::IF);
-    write(reg::IF, utils::set(int_request, interrupt_bit));
 }
 
 void Memory::load_boot(std::string file_path)
@@ -197,8 +196,7 @@ void Memory::init_registers()
     io[reg::TIMA] = 0;
     io[reg::TMA] = 0;
     io[reg::TAC] = 0b11111000;
-    io[reg::IF] = 0b11100000;
-    
+    interrupts->write(0b11100000);
     io[reg::LCDC] = 0;
     io[reg::SCROLLY] = 0;
     io[reg::SCROLLX] = 0;

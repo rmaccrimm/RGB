@@ -19,8 +19,6 @@ public:
 
     u8 read(u16 addr);
     
-    void set_interrupt(int interrupt_bit);
-
     void load_boot(std::string s);
 
     void set_access_break_pt(u16 addr);
