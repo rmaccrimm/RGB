@@ -2,6 +2,7 @@
 #define GPU_H
 
 #include <vector>
+#include <map>
 #include "definitions.h"
 #include "mmu.h"
 #include "window.h"
@@ -24,7 +25,7 @@ public:
         bool signed_tile_map;
     } LCD_control;
 
-    GPU(Interrupts *inter, Memory *mem, GameWindow *win);
+    GPU(Interrupts *inter, GameWindow *win);
     void step(unsigned int cpu_clock);
 
     u8 read(u16 addr);
@@ -36,18 +37,17 @@ public:
     bool frame_drawn;
 
 private:
-    Memory *memory;
     GameWindow *window;
     Interrupts *interrupts;
     std::vector<u8> screen_texture;
     std::vector<u8> video_RAM;
     std::vector<u8> sprite_attribute_table;
+    std::map<u16, u8> registers;
 
     int clock;
     int line;
     Mode mode;
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
-    u8 &STAT_reg;
     int prev_cpu_clock;
     
     void draw_scanline();

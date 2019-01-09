@@ -20,20 +20,29 @@ const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
 const u16 GPU::VRAM_ADDR = 0x8000;
 const u16 GPU::OAM_ADDR = 0xfe00;
 
-GPU::GPU(Interrupts *inter, Memory *mem, GameWindow *win): 
+GPU::GPU(Interrupts *inter, GameWindow *win): 
     interrupts{inter},
-    memory(mem), 
     window(win), 
     clock(0), 
     line(0),
     mode(OAM), 
-    STAT_reg(mem->get_mem_reference(reg::STAT)),
     prev_cpu_clock(0),
     frame_drawn(false)
 {
     video_RAM.resize(0x2000, 0); // 8kB
     sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
+    registers[reg::LCDC] = 0;
+    registers[reg::STAT] = 0;
+    registers[reg::SCROLLX] = 0;
+    registers[reg::SCROLLY] = 0;
+    registers[reg::LY] = 0;
+    registers[reg::LYC] = 0;
+    registers[reg::BGP] = 0;
+    registers[reg::OBP0] = 0;
+    registers[reg::OBP1] = 0;
+    registers[reg::WY] = 0;
+    registers[reg::WX] = 0;
 }
 
 void GPU::step(unsigned int cycles)
@@ -109,7 +118,8 @@ void GPU::update_STAT_register()
 {
     // set LCDSTAT interrupt request if internal signal goes from 0 to 1
     bool prev_sig = stat_irq_signal;
-    u8 stat = memory->read(reg::STAT);
+    u8 stat = registers[reg::STAT];
+    // u8 stat = memory->read(reg::STAT);
 
     u8 coincidence_enable = 1 << 6;
     u8 oam_enable = 1 << 5;
@@ -131,22 +141,29 @@ void GPU::change_mode(Mode m)
 {
     mode = m;
     // TODO - If LCD is off, set to 0
-    STAT_reg = (STAT_reg & ~3) | (int)mode;
+    registers[reg::STAT] = (registers[reg::STAT] & ~3) | (int)mode;
+    // STAT_reg = (STAT_reg & ~3) | (int)mode;
 }
 
 void GPU::increment_line()
 {
     line++;
-    memory->write(reg::LY, line);
-    bool coincidence_flag = memory->read(reg::LYC) == memory->read(reg::LY);
-    STAT_reg = utils::set_cond(STAT_reg, 2, coincidence_flag);
+    registers[reg::LY] = line;
+    // memory->write(reg::LY, line);
+    bool coincidence_flag = registers[reg::LYC] == registers[reg::LY];
+    // bool coincidence_flag = memory->read(reg::LYC) == memory->read(reg::LY);
+    registers[reg::STAT] = utils::set_cond(registers[reg::STAT], 2, coincidence_flag);
+    // STAT_reg = utils::set_cond(STAT_reg, 2, coincidence_flag);
 }
 
 void GPU::update_color_palettes()
 {
-    u8 bgp = memory->read(reg::BGP);
-    u8 obp1 = memory->read(reg::OBP1);
-    u8 obp0 = memory->read(reg::OBP0);
+    u8 bgp = registers[reg::BGP];
+    u8 obp1 = registers[reg::OBP1];
+    u8 obp0 = registers[reg::OBP0];
+    // u8 bgp = memory->read(reg::BGP);
+    // u8 obp1 = memory->read(reg::OBP1);
+    // u8 obp0 = memory->read(reg::OBP0);
     for (int i = 0; i < 4; i++) {
         bg_palette[i] = (bgp >> (2*i)) & 3;
         sprite_palette[0][i] = (obp0 >> (2*i)) & 3;
@@ -178,9 +195,12 @@ void GPU::draw_pixel(int x, int y, int color)
 
 void GPU::draw_background()
 {
-    int x = memory->read(reg::SCROLLX);
-    int y = memory->read(reg::SCROLLY);
-    auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    // int x = memory->read(reg::SCROLLX);
+    // int y = memory->read(reg::SCROLLY);
+    int x = registers[reg::SCROLLX];
+    int y = registers[reg::SCROLLY];
+    auto vram = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    // auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
     for (int i = 0; i < LCD_WIDTH; i++) {
         int pixel_bg_coord_x = (x + i) % BACKGROUND_DIM;
         int pixel_bg_coord_y = (y + line) % BACKGROUND_DIM;
@@ -189,7 +209,8 @@ void GPU::draw_background()
         int tile_map_y = pixel_bg_coord_y / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
-        int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
+        int tile_index = read(LCD_control.bg_tile_map_addr + tile_map_index);
+        // int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;
         }
@@ -208,7 +229,8 @@ void GPU::draw_sprites()
         return;
     }
 
-    std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
+    std::vector<u8>::iterator sprite_data = sprite_attribute_table.begin();
+    // std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
     int sprite_size = (LCD_control.double_sprite_height ? 2 : 1) * TILE_DIM;
 
     std::vector<std::pair<int, int>> sprites;
@@ -256,11 +278,13 @@ void GPU::draw_sprites()
                     tile_num = flip_y ? upper_tile_index : lower_tile_index;
                     pixel_y -= 8;
                 }
-                auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
+                // auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
+                auto tile_addr = video_RAM.begin() + (BYTES_PER_TILE * tile_num);
                 color = read_pixel(tile_addr, pixel_x, pixel_y, flip_y, flip_x);
             }
             else {
-                auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
+                // auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
+                auto tile_addr = video_RAM.begin() + (BYTES_PER_TILE * tile_num);
                 color = read_pixel(tile_addr, pixel_x, pixel_y, flip_y, flip_x);
             }
             if (color == 0) {
@@ -276,18 +300,22 @@ void GPU::draw_window()
     if (!LCD_control.enable_window) {
         return;
     }
-    int window_x = memory->read(reg::WX) - 7;
-    int window_y = line - memory->read(reg::WY);
+    // int window_x = memory->read(reg::WX) - 7;
+    // int window_y = line - memory->read(reg::WY);
+    int window_x = registers[reg::WX] - 7;
+    int window_y = registers[reg::WY];
     if (window_y < 0) {
         return;
     }
-    auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    // auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    auto vram = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
     for (int i = std::max(window_x, 0); i < LCD_WIDTH; i++) {
         int tile_map_x = (i - window_x) / TILE_DIM;
         int tile_map_y = window_y / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
-        int tile_index = memory->read(LCD_control.win_tile_map_addr + tile_map_index);        
+        // int tile_index = memory->read(LCD_control.win_tile_map_addr + tile_map_index);        
+        int tile_index = read(LCD_control.win_tile_map_addr + tile_map_index);        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;
         }
@@ -312,7 +340,8 @@ void GPU::draw_window()
 */
 void GPU::update_LCD_control()
 {
-    u8 byte = memory->read(reg::LCDC);
+    // u8 byte = memory->read(reg::LCDC);
+    u8 byte = registers[reg::LCDC];
     LCD_control.enable_display = (byte >> 7) & 1;
     LCD_control.win_tile_map_addr = (byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
     LCD_control.enable_window = (byte >> 5) & 1;

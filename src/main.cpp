@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
     Cartridge game_cart(cartridge_filename);
     GameWindow window(&gb_pad, scale, game_cart.title);
     APU gb_apu;
-    Memory gb_mem(&interrupt, &game_cart, &gb_pad, &gb_apu, enable_boot_rom);
+    GPU gb_gpu(&interrupt, &window);
+    Memory gb_mem(&interrupt, &game_cart, &gb_pad, &gb_apu, &gb_gpu, enable_boot_rom);
     Processor gb_cpu(&interrupt, &gb_mem);
-    GPU gb_gpu(&interrupt, &gb_mem, &window);
     gb_apu.start();
 
     std::cout << game_cart.title << std::endl << game_cart.type << std::endl
