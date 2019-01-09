@@ -200,7 +200,7 @@ void APU::clock_waveform_generators()
                 wave_RAM_pos++;
                 wave_RAM_pos %= 32;
                 // Even samples taken from upper 4 bits, odd from lower
-                int shift = (wave_RAM_pos & 1 == 0 ? 4 : 0);
+                int shift = ((wave_RAM_pos & 1) == 0 ? 4 : 0);
                 int sample = (wave_pattern_RAM[wave_RAM_pos / 2] >> shift) & 0xf;
                 if (ch.output_shift == 0) {
                     ch.volume = 0;
@@ -518,6 +518,7 @@ void APU::init_registers()
 
     for (int i = 0xff10; i <= 0xff2f; i++)
     {
+        registers[i] = 0;
         unused_addr[i] = (read_masks.find(i) == read_masks.end());
     }
 }

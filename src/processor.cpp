@@ -156,7 +156,6 @@ void Processor::update_timer(int cycles)
                 if (memory->read(reg::TIMA) == 0) { // overflow
                     memory->write(reg::TIMA, memory->read(reg::TMA));
                     interrupts->set(Interrupts::TIMER_bit);
-                    // memory->set_interrupt(Interrupts::TIMER_bit);
                 }
             }
         }
@@ -177,7 +176,6 @@ void Processor::process_interrupts()
                         // Reset master enable and reqest bit
                         IME_flag = false;
                         interrupts->clear(i);
-                        // memory->write(reg::IF, utils::reset(int_request, i));
                         // Jump to interrupt routine
                         op::PUSH(this, PC);
                         PC.value = interrupt_addr[i];

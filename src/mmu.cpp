@@ -9,6 +9,7 @@ Memory::Memory(
     joypad(pad), 
     cartridge(cart), 
     apu(audio),
+    gpu(video),
     interrupts(inter),
     enable_boot_rom(enable_boot),
     enable_break_pt(false), 

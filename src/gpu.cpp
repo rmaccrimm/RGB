@@ -32,17 +32,10 @@ GPU::GPU(Interrupts *inter, GameWindow *win):
     video_RAM.resize(0x2000, 0); // 8kB
     sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
-    registers[reg::LCDC] = 0;
-    registers[reg::STAT] = 0;
-    registers[reg::SCROLLX] = 0;
-    registers[reg::SCROLLY] = 0;
-    registers[reg::LY] = 0;
-    registers[reg::LYC] = 0;
-    registers[reg::BGP] = 0;
-    registers[reg::OBP0] = 0;
-    registers[reg::OBP1] = 0;
-    registers[reg::WY] = 0;
-    registers[reg::WX] = 0;
+
+    for (int i = 0xff40; i <= 0xff4b; i++) {
+        registers[i] = 0;
+    }
 }
 
 void GPU::step(unsigned int cycles)
@@ -106,12 +99,48 @@ void GPU::step(unsigned int cycles)
 
 u8 GPU::read(u16 addr) 
 {
-
+    if (addr >= 0x8000 && addr <= 0x9fff) {
+        return video_RAM[addr - 0x8000];
+    }
+    else if (addr >= 0xfe00 && addr <= 0xfe9f) {
+        return sprite_attribute_table[addr - 0xfe00];
+    }
+    else if (addr >= 0xff40 && addr <= 0xff4b) {
+        assert(addr != reg::DMA);
+        if (addr == reg::STAT) {
+            // First bit always set 
+            return registers[addr] |= 0x80;
+        }
+        return registers[addr];
+    }
+    else {
+        assert(false);
+        return 0;
+    }
 }
 
 void GPU::write(u16 addr, u8 data)
 {
-
+    if (addr >= 0x8000 && addr <= 0x9fff) {
+        video_RAM[addr - 0x8000] = data;
+    }
+    else if (addr >= 0xfe00 && addr <= 0xfe9f) {
+        sprite_attribute_table[addr - 0xfe00] = data;
+    }
+    else if (addr >= 0xff40 && addr <= 0xff4b) {
+        assert(addr != reg::DMA);
+        if (addr == reg::STAT) {
+            // Lowest 3 bits are read-only
+            u8 mask = 0x7;
+            registers[addr] = (data & (~mask)) | (registers[addr] & mask);
+        }
+        else {
+            registers[addr] = data;
+        }
+    }
+    else {
+        assert(false);
+    }
 }
 
 void GPU::update_STAT_register()
