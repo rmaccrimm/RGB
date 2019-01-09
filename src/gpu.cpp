@@ -66,7 +66,7 @@ void GPU::step(unsigned int cycles)
             if (line == 143) {
                 // On last line, update the screen and switch to vertical blank mode 
                 window->draw_frame(screen_texture.data());
-                memory->set_interrupt(interrupt::VBLANK_bit);
+                memory->set_interrupt(Interrupts::VBLANK_bit);
                 change_mode(VBLANK);
                 frame_drawn = true;
             } else {
@@ -84,7 +84,7 @@ void GPU::step(unsigned int cycles)
                 line = 0;
                 // Clear bit 0 of interrupt request
                 u8 int_request = memory->read(reg::IF);
-                memory->write(reg::IF, utils::reset(int_request, interrupt::VBLANK_bit));
+                memory->write(reg::IF, utils::reset(int_request, Interrupts::VBLANK_bit));
                 change_mode(OAM);
             }
         }
@@ -111,7 +111,7 @@ void GPU::update_STAT_register()
                       ((stat & (vblank_enable | oam_enable)) && mode == VBLANK);
     
     if (!prev_sig && stat_irq_signal) {
-        memory->set_interrupt(interrupt::LCDSTAT_bit);
+        memory->set_interrupt(Interrupts::LCDSTAT_bit);
     }
 }
 

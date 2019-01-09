@@ -28,7 +28,7 @@ include_directories(${GLEW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 link_libraries(${GLEW_LIBRARIES})
 
 add_library(funcs util.cpp)
-add_library(proc processor.cpp)
+add_library(proc processor.cpp interrupts.cpp)
 add_library(mem mmu.cpp joypad.cpp cartridge.cpp apu.cpp audio_buffer.cpp)
 add_library(ops operations.cpp)
 

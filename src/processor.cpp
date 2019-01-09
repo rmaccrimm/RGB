@@ -155,7 +155,7 @@ void Processor::update_timer(int cycles)
 
                 if (memory->read(reg::TIMA) == 0) { // overflow
                     memory->write(reg::TIMA, memory->read(reg::TMA));
-                    memory->set_interrupt(interrupt::TIMER_bit);
+                    memory->set_interrupt(Interrupts::TIMER_bit);
                 }
             }
         }
