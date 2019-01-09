@@ -128,14 +128,23 @@ void GPU::write(u16 addr, u8 data)
         sprite_attribute_table[addr - 0xfe00] = data;
     }
     else if (addr >= 0xff40 && addr <= 0xff4b) {
-        assert(addr != reg::DMA);
-        if (addr == reg::STAT) {
-            // Lowest 3 bits are read-only
-            u8 mask = 0x7;
-            registers[addr] = (data & (~mask)) | (registers[addr] & mask);
-        }
-        else {
-            registers[addr] = data;
+        // Control registers
+        switch (addr) {
+            case reg::DMA:
+                // handled by MMU
+                assert(false);
+            case reg::STAT: {
+                // Lowest 3 bits are read-only
+                u8 mask = 0x7;
+                registers[addr] = (data & (~mask)) | (registers[addr] & mask);
+                break;
+            }
+            case reg::LCDC:
+                registers[addr] = data;
+                update_LCD_control();
+                break;
+            default:
+                registers[addr] = data;
         }
     }
     else {
@@ -148,7 +157,6 @@ void GPU::update_STAT_register()
     // set LCDSTAT interrupt request if internal signal goes from 0 to 1
     bool prev_sig = stat_irq_signal;
     u8 stat = registers[reg::STAT];
-    // u8 stat = memory->read(reg::STAT);
 
     u8 coincidence_enable = 1 << 6;
     u8 oam_enable = 1 << 5;
@@ -171,7 +179,6 @@ void GPU::change_mode(Mode m)
     mode = m;
     // TODO - If LCD is off, set to 0
     registers[reg::STAT] = (registers[reg::STAT] & ~3) | (int)mode;
-    // STAT_reg = (STAT_reg & ~3) | (int)mode;
 }
 
 void GPU::increment_line()
@@ -180,9 +187,7 @@ void GPU::increment_line()
     registers[reg::LY] = line;
     // memory->write(reg::LY, line);
     bool coincidence_flag = registers[reg::LYC] == registers[reg::LY];
-    // bool coincidence_flag = memory->read(reg::LYC) == memory->read(reg::LY);
     registers[reg::STAT] = utils::set_cond(registers[reg::STAT], 2, coincidence_flag);
-    // STAT_reg = utils::set_cond(STAT_reg, 2, coincidence_flag);
 }
 
 void GPU::update_color_palettes()
@@ -190,9 +195,6 @@ void GPU::update_color_palettes()
     u8 bgp = registers[reg::BGP];
     u8 obp1 = registers[reg::OBP1];
     u8 obp0 = registers[reg::OBP0];
-    // u8 bgp = memory->read(reg::BGP);
-    // u8 obp1 = memory->read(reg::OBP1);
-    // u8 obp0 = memory->read(reg::OBP0);
     for (int i = 0; i < 4; i++) {
         bg_palette[i] = (bgp >> (2*i)) & 3;
         sprite_palette[0][i] = (obp0 >> (2*i)) & 3;
@@ -210,7 +212,6 @@ u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool inve
 
 void GPU::draw_scanline()
 {
-    update_LCD_control();
     draw_background();
     draw_sprites();
     draw_window();
@@ -224,12 +225,10 @@ void GPU::draw_pixel(int x, int y, int color)
 
 void GPU::draw_background()
 {
-    // int x = memory->read(reg::SCROLLX);
-    // int y = memory->read(reg::SCROLLY);
     int x = registers[reg::SCROLLX];
     int y = registers[reg::SCROLLY];
     auto vram = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
-    // auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+
     for (int i = 0; i < LCD_WIDTH; i++) {
         int pixel_bg_coord_x = (x + i) % BACKGROUND_DIM;
         int pixel_bg_coord_y = (y + line) % BACKGROUND_DIM;
@@ -329,8 +328,7 @@ void GPU::draw_window()
     if (!LCD_control.enable_window) {
         return;
     }
-    // int window_x = memory->read(reg::WX) - 7;
-    // int window_y = line - memory->read(reg::WY);
+
     int window_x = registers[reg::WX] - 7;
     int window_y = registers[reg::WY];
     if (window_y < 0) {
@@ -369,7 +367,6 @@ void GPU::draw_window()
 */
 void GPU::update_LCD_control()
 {
-    // u8 byte = memory->read(reg::LCDC);
     u8 byte = registers[reg::LCDC];
     LCD_control.enable_display = (byte >> 7) & 1;
     LCD_control.win_tile_map_addr = (byte >> 6) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
