@@ -372,25 +372,25 @@ void GPU::draw_window()
 
     int window_x = registers[reg::WX] - 7;
     int window_y = registers[reg::WY];
-    if (window_y < 0) {
+    if (window_y > line) {
         return;
     }
     // auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
-    auto vram = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    auto vram_base = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
     for (int i = std::max(window_x, 0); i < LCD_WIDTH; i++) {
         int tile_map_x = (i - window_x) / TILE_DIM;
-        int tile_map_y = window_y / TILE_DIM;
+        int tile_map_y = (line - window_y) / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
         // int tile_index = memory->read(LCD_control.win_tile_map_addr + tile_map_index);        
-        int tile_index = read(LCD_control.win_tile_map_addr + tile_map_index);        
+        int tile_index = video_RAM[LCD_control.win_tile_map_addr + tile_map_index - VRAM_ADDR];        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;
         }
         int pixel_tile_coord_x = (i - window_x) % TILE_DIM;
-        int pixel_tile_coord_y = window_y % TILE_DIM;
+        int pixel_tile_coord_y = (line - window_y) % TILE_DIM;
 
-        auto tile_data = vram + (BYTES_PER_TILE * tile_index);
+        auto tile_data = vram_base + (BYTES_PER_TILE * tile_index);
         int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
         draw_pixel(i, line, bg_palette[color]);
     }
