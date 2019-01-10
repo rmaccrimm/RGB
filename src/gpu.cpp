@@ -26,7 +26,7 @@ GPU::GPU(Interrupts *inter, GameWindow *win):
     clock(0), 
     line(0),
     mode(OAM), 
-    prev_cpu_clock(0),
+    // prev_cpu_clock(0),
     frame_drawn(false)
 {
     video_RAM.resize(0x2000, 0); // 8kB
@@ -100,10 +100,22 @@ void GPU::step(unsigned int cycles)
 u8 GPU::read(u16 addr) 
 {
     if (addr >= 0x8000 && addr <= 0x9fff) {
-        return video_RAM[addr - 0x8000];
+        if (mode == VRAM && LCD_control.enable_display) {
+            // GPU is accessing VRAM during this period, so inaccessible by CPU during mode 3
+            return 0xff;
+        }
+        else {
+            return video_RAM[addr - 0x8000];
+        }
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
-        return sprite_attribute_table[addr - 0xfe00];
+        // OAM inaccessible during both mode 2 and 3
+        if ((mode == VRAM || mode == OAM) && LCD_control.enable_display) {
+            return 0xff;
+        }
+        else {
+            return sprite_attribute_table[addr - 0xfe00];
+        }
     }
     else if (addr >= 0xff40 && addr <= 0xff4b) {
         assert(addr != reg::DMA);
@@ -122,9 +134,17 @@ u8 GPU::read(u16 addr)
 void GPU::write(u16 addr, u8 data)
 {
     if (addr >= 0x8000 && addr <= 0x9fff) {
+        // GPU is accessing VRAM during this period, so inaccessible by CPU during mode 3
+        if (mode == VRAM && LCD_control.enable_display) {
+            return;
+        }
         video_RAM[addr - 0x8000] = data;
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
+        // OAM inaccessible during both mode 2 and 3
+        if ((mode == VRAM || mode == OAM) && LCD_control.enable_display) {
+            return;
+        }
         sprite_attribute_table[addr - 0xfe00] = data;
     }
     else if (addr >= 0xff40 && addr <= 0xff4b) {
@@ -147,10 +167,12 @@ void GPU::write(u16 addr, u8 data)
             for (int i = 0; i < 4; i++) {
                 bg_palette[i] = (data >> (2*i)) & 3;
             }
+            break;
         case reg::OBP0:
             for (int i = 0; i < 4; i++) {
                 sprite_palette[0][i] = (data >> (2*i)) & 3;
             }   
+            break;
         case reg::OBP1:
             for (int i = 0; i < 4; i++) {
                 sprite_palette[1][i] = (data >> (2*i)) & 3;
@@ -249,7 +271,7 @@ void GPU::draw_background()
         int tile_map_y = pixel_bg_coord_y / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
-        int tile_index = read(LCD_control.bg_tile_map_addr + tile_map_index);
+        int tile_index = video_RAM[LCD_control.bg_tile_map_addr + tile_map_index - VRAM_ADDR];
         // int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;

@@ -181,6 +181,8 @@ void Memory::write_reg(u16 addr, u8 data)
 
 u8& Memory::get_mem_reference(u16 addr)
 {
+    // plan to remove this function
+    // assert(false);
     if (addr >= 0xff00 && addr <= 0xff7f) {
         return io_registers[addr - 0xff00];
     }

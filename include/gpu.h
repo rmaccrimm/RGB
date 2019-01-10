@@ -47,7 +47,7 @@ private:
     int line;
     Mode mode;
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
-    int prev_cpu_clock;
+    // int prev_cpu_clock;
     
     void draw_scanline();
     void draw_pixel(int x, int y, int color);
