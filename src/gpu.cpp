@@ -411,3 +411,8 @@ void GPU::update_LCD_control(u8 byte)
     LCD_control.enable_sprites = (byte >> 1) & 1;
     LCD_control.bg_priority = byte & 1;    
 }
+
+void GPU::dma_transfer(std::vector<u8>::iterator src) 
+{
+    std::copy(src, src + 0xa0, sprite_attribute_table.begin());
+}

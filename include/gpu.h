@@ -30,6 +30,8 @@ public:
     u8 read(u16 addr);
     void write(u16 addr, u8 data);
 
+    void dma_transfer(std::vector<u8>::iterator src);
+
     static const int LCD_WIDTH;
     static const int LCD_HEIGHT;
 

@@ -168,9 +168,10 @@ void Memory::write_reg(u16 addr, u8 data)
         break;
     case 0xff03:
         break;
-    case reg::DMA:
+    case reg::DMA: {
         dma_transfer(data);
         break;
+    }
     case 0xff50:
         enable_boot_rom = false;
         break;
@@ -208,12 +209,15 @@ bool Memory::pause() { return paused; }
 
 void Memory::dma_transfer(u8 src)
 {
+    // For proper timing CPU should still be running during this time, but only able to access HRAM
     u16 start_addr = src << 8;
     u16 oam_base = 0xfe00;
+    std::vector<u8> transfer_data(0xa0, 0);
     for (int i = 0; i <= 0x9f; i++) {
-        gpu->write(oam_base + i, read(start_addr + i));
-        // sprite_attribute_table[i] =  read(start_addr + i);
+        transfer_data[i] = read(start_addr + i);
     }
+    gpu->dma_transfer(transfer_data.begin());
+    // gpu->write(oam_base + i, read(start_addr + i));
 }
 
 void Memory::init_registers()
