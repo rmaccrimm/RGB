@@ -246,9 +246,16 @@ u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool inve
 
 void GPU::draw_scanline()
 {
-    draw_background();
-    draw_sprites();
-    draw_window();
+    if (LCD_control.enable_display) {
+        draw_background();
+        draw_sprites();
+        draw_window();
+    }
+    else {
+        for (int i = 0; i < LCD_WIDTH; i++) {
+            draw_pixel(i, line, 0);
+        }
+    }
 }
 
 void GPU::draw_pixel(int x, int y, int color)
