@@ -15,31 +15,12 @@ const int GPU::TILE_DIM = 8; // tile are 8x8 pixels
 const int GPU::BYTES_PER_TILE = 16;
 const u16 GPU::TILE_MAP_0_ADDR = 0x9800;
 const u16 GPU::TILE_MAP_1_ADDR = 0x9c00;
-const u16 GPU::TILE_DATA_0_ADDR = 0x9000;
+// const u16 GPU::TILE_DATA_0_ADDR = 0x9000;
+const u16 GPU::TILE_DATA_0_ADDR = 0x8000;
 const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
 const u16 GPU::VRAM_ADDR = 0x8000;
 const u16 GPU::OAM_ADDR = 0xfe00;
 
-GPU::Tile::Tile()
-{
-    lines.resize(8);
-    for (auto &x: lines) {
-        x.resize(8, 0);
-    }
-}
-
-void GPU::Tile::write(int index, u8 byte)
-{   
-    // index is a value from 0 - 16, with 2 bytes determining each line
-    assert(index < 16);
-    assert(index >= 0);
-    // even bytes contain lower bit of pixel color, odd contain upper bit    
-    bool bit = utils::even(index);
-    for (int i = 0; i < 8; i++) {
-        u8 prev = lines[index / 2][i];
-        lines[index / 2][i] = utils::set_cond(prev, bit, utils::bit(byte, i));
-    }
-}
 
 GPU::GPU(Interrupts *inter, GameWindow *win): 
     interrupts{inter},
@@ -53,7 +34,14 @@ GPU::GPU(Interrupts *inter, GameWindow *win):
     video_RAM.resize(0x2000, 0); // 8kB
     sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
+
     tiles.resize(384);
+    Tile *base = tiles.data();
+    for (int i = 0; i < 32*32; i++) {
+        tile_map[0].push_back(TileMapEntry(base));
+        tile_map[1].push_back(TileMapEntry(base));
+    }
+
     for (int i = 0xff40; i <= 0xff4b; i++) {
         registers[i] = 0;
     }
@@ -158,13 +146,18 @@ void GPU::write(u16 addr, u8 data)
         if (mode == VRAM && LCD_control.enable_display) {
             return;
         }
-        else {
-            video_RAM[addr - 0x8000] = data;
-            if (addr <= 0x97ff) {
-                // Update tile data table
-                int index = (addr - 0x8000) / BYTES_PER_TILE;
-                tiles[index].write(addr % 16, data);
-            }
+        video_RAM[addr - 0x8000] = data;
+
+        if (addr <= 0x97ff) {
+            // Update tile data table
+            int index = (addr - 0x8000) / BYTES_PER_TILE;
+            tiles[index].write(addr % 16, data);
+        }
+        else if (addr >= 0x9800 && addr <= 0x9bff) {
+            tile_map[0][addr - 0x9800].update(data);
+        }
+        else if (addr >= 0x9c00) {
+            tile_map[1][addr - 0x9c00].update(data);
         }
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
@@ -308,7 +301,7 @@ void GPU::draw_background()
         int tile_index = video_RAM[LCD_control.bg_tile_map_addr + tile_map_index - VRAM_ADDR];
         // int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
         if (LCD_control.signed_tile_map) {
-            tile_index = (i8)tile_index;
+            tile_index = 256 + (i8)tile_index;
         }
         int pixel_tile_coord_x = pixel_bg_coord_x % TILE_DIM;
         int pixel_tile_coord_y = pixel_bg_coord_y % TILE_DIM;
@@ -412,7 +405,7 @@ void GPU::draw_window()
         // int tile_index = memory->read(LCD_control.win_tile_map_addr + tile_map_index);        
         int tile_index = video_RAM[LCD_control.win_tile_map_addr + tile_map_index - VRAM_ADDR];        
         if (LCD_control.signed_tile_map) {
-            tile_index = (i8)tile_index;
+            tile_index = 256 + (i8)tile_index;
         }
         int pixel_tile_coord_x = (i - window_x) % TILE_DIM;
         int pixel_tile_coord_y = (line - window_y) % TILE_DIM;

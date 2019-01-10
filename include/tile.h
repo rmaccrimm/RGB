@@ -15,6 +15,7 @@ public:
 
 class TileMapEntry
 {
+public:
     TileMapEntry(Tile *table_base);
 
     void update(u8 tile_index);
@@ -24,7 +25,7 @@ class TileMapEntry
     u8 index;
 
     std::pair<Tile*, Tile*> tile_ptrs;
-    
+
     Tile *const tile_table;
 };
 

@@ -6,19 +6,12 @@
 #include "definitions.h"
 #include "window.h"
 #include "interrupts.h"
+#include "tile.h"
 
 class GPU 
 {
 public:
     enum Mode { HBLANK, VBLANK, OAM, VRAM };
-
-    class Tile
-    {
-    public:
-        Tile();
-        std::vector<std::vector<u8>> lines;
-        void write(int index, u8 byte);
-    };
 
     struct {
         bool enable_display;
@@ -33,9 +26,11 @@ public:
     } LCD_control;
 
     GPU(Interrupts *inter, GameWindow *win);
+
     void step(unsigned int cpu_clock);
 
     u8 read(u16 addr);
+
     void write(u16 addr, u8 data);
 
     void dma_transfer(std::vector<u8>::iterator src);
@@ -54,12 +49,12 @@ private:
     std::map<u16, u8> registers;
 
     std::vector<Tile> tiles;
+    std::vector<TileMapEntry> tile_map[2];
 
     int clock;
     int line;
     Mode mode;
     bool stat_irq_signal; // Used to trigger LCDSTAT interrupt
-    // int prev_cpu_clock;
     
     void draw_scanline();
     void draw_pixel(int x, int y, int color);

@@ -38,6 +38,7 @@ add_executable(main
     debug.cpp
     window.cpp
     gpu.cpp
+    tile.cpp
 )
 target_link_libraries(mem funcs)
 target_link_libraries(ops funcs)
