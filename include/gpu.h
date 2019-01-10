@@ -12,6 +12,14 @@ class GPU
 public:
     enum Mode { HBLANK, VBLANK, OAM, VRAM };
 
+    class Tile
+    {
+    public:
+        Tile();
+        std::vector<std::vector<u8>> lines;
+        void write(int index, u8 byte);
+    };
+
     struct {
         bool enable_display;
         u16 win_tile_map_addr;
@@ -44,6 +52,8 @@ private:
     std::vector<u8> video_RAM;
     std::vector<u8> sprite_attribute_table;
     std::map<u16, u8> registers;
+
+    std::vector<Tile> tiles;
 
     int clock;
     int line;

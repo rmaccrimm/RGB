@@ -20,6 +20,27 @@ const u16 GPU::TILE_DATA_1_ADDR = 0x8000;
 const u16 GPU::VRAM_ADDR = 0x8000;
 const u16 GPU::OAM_ADDR = 0xfe00;
 
+GPU::Tile::Tile()
+{
+    lines.resize(8);
+    for (auto &x: lines) {
+        x.resize(8, 0);
+    }
+}
+
+void GPU::Tile::write(int index, u8 byte)
+{   
+    // index is a value from 0 - 16, with 2 bytes determining each line
+    assert(index < 16);
+    assert(index >= 0);
+    // even bytes contain lower bit of pixel color, odd contain upper bit    
+    bool bit = utils::even(index);
+    for (int i = 0; i < 8; i++) {
+        u8 prev = lines[index / 2][i];
+        lines[index / 2][i] = utils::set_cond(prev, bit, utils::bit(byte, i));
+    }
+}
+
 GPU::GPU(Interrupts *inter, GameWindow *win): 
     interrupts{inter},
     window(win), 
@@ -32,7 +53,7 @@ GPU::GPU(Interrupts *inter, GameWindow *win):
     video_RAM.resize(0x2000, 0); // 8kB
     sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
-
+    tiles.resize(384);
     for (int i = 0xff40; i <= 0xff4b; i++) {
         registers[i] = 0;
     }
@@ -57,7 +78,6 @@ void GPU::step(unsigned int cycles)
         if (clock >= 172) {
             clock -= 172;
             // At end of scanline, draw and switch to horizontal blank mode
-            // update_color_palettes();
             draw_scanline();
             change_mode(HBLANK);
         }
@@ -138,7 +158,14 @@ void GPU::write(u16 addr, u8 data)
         if (mode == VRAM && LCD_control.enable_display) {
             return;
         }
-        video_RAM[addr - 0x8000] = data;
+        else {
+            video_RAM[addr - 0x8000] = data;
+            if (addr <= 0x97ff) {
+                // Update tile data table
+                int index = (addr - 0x8000) / BYTES_PER_TILE;
+                tiles[index].write(addr % 16, data);
+            }
+        }
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
         // OAM inaccessible during both mode 2 and 3

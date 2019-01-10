@@ -93,3 +93,8 @@ void utils::load_file(std::vector<u8> &dest, const std::string &file_path)
         std::istream_iterator<u8>(ifs), std::istream_iterator<u8>());
     ifs.close();
 }
+
+bool utils::even(int x)
+{
+    return x & 1 == 0;
+}
