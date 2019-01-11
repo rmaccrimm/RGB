@@ -16,10 +16,21 @@ void Tile::write(int index, u8 byte)
     assert(index < 16);
     assert(index >= 0);
     // even bytes contain lower bit of pixel color, odd contain upper bit    
-    bool bit = utils::even(index);
+    // bool bit = !utils::even(index);
+    int mask;
+    
     for (int i = 0; i < 8; i++) {
         u8 prev = lines[index / 2][i];
-        lines[index / 2][i] = utils::set_cond(prev, bit, utils::bit(byte, i));
+        if ((index & 2) != 0) {
+            // lower bit
+            prev = ((prev & 2) | ((byte >> i) & 1)) & 3;
+        }
+        else {
+            // upper bit
+            prev = ((prev & 1) | (((byte >> i) & 1) << 1)) & 3;
+        }
+        lines[index / 2][i] = prev;
+        // lines[index / 2][i] = utils::set_cond(prev, bit, utils::bit(byte, i)) & 3;
     }
 }
 

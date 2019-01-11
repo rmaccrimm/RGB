@@ -18,6 +18,7 @@ public:
         u16 win_tile_map_addr;
         bool enable_window;
         u16 tile_data_addr;
+        bool tile_map;
         u16 bg_tile_map_addr;
         bool double_sprite_height;
         bool enable_sprites;

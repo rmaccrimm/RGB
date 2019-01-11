@@ -151,7 +151,7 @@ void GPU::write(u16 addr, u8 data)
         if (addr <= 0x97ff) {
             // Update tile data table
             int index = (addr - 0x8000) / BYTES_PER_TILE;
-            tiles[index].write(addr % 16, data);
+            tiles[index].write((addr - 0x8000) % 16, data);
         }
         else if (addr >= 0x9800 && addr <= 0x9bff) {
             tile_map[0][addr - 0x9800].update(data);
@@ -300,14 +300,19 @@ void GPU::draw_background()
 
         int tile_index = video_RAM[LCD_control.bg_tile_map_addr + tile_map_index - VRAM_ADDR];
         // int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
-        if (LCD_control.signed_tile_map) {
-            tile_index = 256 + (i8)tile_index;
-        }
+
+        auto entry = tile_map[LCD_control.tile_map][tile_map_index];
+        Tile *tile = entry.get_tile(LCD_control.signed_tile_map);
+
+        // if (LCD_control.signed_tile_map) {
+            // tile_index = 256 + (i8)tile_index;
+        // }
         int pixel_tile_coord_x = pixel_bg_coord_x % TILE_DIM;
         int pixel_tile_coord_y = pixel_bg_coord_y % TILE_DIM;
 
-        auto tile_data = vram + (BYTES_PER_TILE * tile_index);
-        int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
+        // auto tile_data = vram + (BYTES_PER_TILE * tile_index);
+        // int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
+        int color = tile->lines[pixel_tile_coord_y][pixel_tile_coord_x];
         draw_pixel(i, line, bg_palette[color]);
     }
 }
@@ -433,6 +438,7 @@ void GPU::update_LCD_control(u8 byte)
     LCD_control.enable_window = (byte >> 5) & 1;
     LCD_control.tile_data_addr = (byte >> 4) & 1 ? TILE_DATA_1_ADDR : TILE_DATA_0_ADDR;
     LCD_control.signed_tile_map = !((byte >> 4) & 1);
+    LCD_control.tile_map = (byte >> 3) & 1;
     LCD_control.bg_tile_map_addr = (byte >> 3) & 1 ? TILE_MAP_1_ADDR : TILE_MAP_0_ADDR;
     LCD_control.double_sprite_height = (byte >> 2) & 1;
     LCD_control.enable_sprites = (byte >> 1) & 1;
