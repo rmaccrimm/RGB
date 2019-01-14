@@ -9,6 +9,7 @@ A Game Boy emulator written in C++ for Windows/Linux. My goal for this project i
 - Sound emulation with SDL2
 - Currently supports MBC1, MBC2 and MBC3 (minus real-time clock) cartridge types
 - Includes a command line debugger for stepping through instructions, setting break points and viewing memory and register contents
+- Keyboard controls (not currently changeable) - arrow keys for d-pad, A, B, enter and backspace for a, b, start and select
 
 ## Building
 - Uses CMake to build
