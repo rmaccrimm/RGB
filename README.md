@@ -15,7 +15,7 @@ A Game Boy emulator written in C++ for Windows/Linux. My goal for this project i
 - Depends on OpenGL, SDL2, and Booost program_options
 
 # Usage
-- After compiling run from command line with the ROM to load as first argument. Use --help or -h to see all commands
+- After compiling run from command line with the filename of the ROM to load as first argument. Use --help or -h to see all commands
 
 ## Tests
 
