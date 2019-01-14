@@ -4,17 +4,17 @@ A Game Boy emulator written in C++ for Windows/Linux. My goal for this project i
 
 ![dr mario](/screenshots/dr_mario.jpg)![super mario land](/screenshots/super_mario_land.jpg)
 
-# Features
+## Features
 - Video emulation using OpenGL to render graphics
 - Sound emulation with SDL2
 - Currently supports MBC1, MBC2 and MBC3 (minus real-time clock) cartridge types
 - Includes a command line debugger for stepping through instructions, setting break points and viewing memory and register contents
 
-# Building
+## Building
 - Uses CMake to build
 - Depends on OpenGL, SDL2, and Booost program_options
 
-# Usage
+## Usage
 - After compiling run from command line with the filename of the ROM to load as first argument. Use --help or -h to see all commands
 
 ## Tests
