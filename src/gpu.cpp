@@ -234,6 +234,7 @@ void GPU::update_color_palettes()
     u8 obp1 = registers[reg::OBP1];
     u8 obp0 = registers[reg::OBP0];
     for (int i = 0; i < 4; i++) {
+        // Color palettes are stored in a single byte, 2 bits per color
         bg_palette[i] = (bgp >> (2*i)) & 3;
         sprite_palette[0][i] = (obp0 >> (2*i)) & 3;
         sprite_palette[1][i] = (obp1 >> (2*i)) & 3;
@@ -272,13 +273,14 @@ void GPU::draw_pixel(int x, int y, int color)
 
 void GPU::draw_background()
 {
+    // Coordinates of upper left corner of screen on 256 x 256 background
     int x = registers[reg::SCROLLX];
     int y = registers[reg::SCROLLY];
     auto tile_data_base = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
 
-    // Screen space coordinates are (i, line) 
+    // Screen-space coordinates are (i, line) 
     for (int i = 0; i < LCD_WIDTH; i++) {
-        // Coordinates on the 256 x 256 background
+        // Pixel coordinates on the 256 x 256 background
         int bg_x = (x + i) % BACKGROUND_DIM;
         int bg_y = (y + line) % BACKGROUND_DIM;
 
@@ -299,6 +301,7 @@ void GPU::draw_background()
         auto tile_ptr = tile_data_base + (BYTES_PER_TILE * tile_index);
         // Background tiles are never inverted on x or y 
         int color = read_pixel(tile_ptr, tile_x, tile_y, false, false);
+        // The 2-bit pixel data read is the index for the color palette
         draw_pixel(i, line, bg_palette[color]);
     }
 }
@@ -392,29 +395,36 @@ void GPU::draw_window()
     if (!LCD_control.enable_window) {
         return;
     }
-
-    int window_x = registers[reg::WX] - 7;
-    int window_y = registers[reg::WY];
-    if (window_y > line) {
+    // Screen-space coordinates of the window's upper left corner
+    int x = registers[reg::WX] - 7;
+    int y = registers[reg::WY];
+    if (y > line) {
+        // Window not visible on current scanline
         return;
     }
-    // auto vram = memory->video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
-    auto vram_base = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
-    for (int i = std::max(window_x, 0); i < LCD_WIDTH; i++) {
-        int tile_map_x = (i - window_x) / TILE_DIM;
-        int tile_map_y = (line - window_y) / TILE_DIM;
+
+    auto tile_data = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    // (i, line) are the screen space pixel coordinates
+    for (int i = std::max(x, 0); i < LCD_WIDTH; i++) {
+        // Window-space coordinates of the current pixel, translated left/up as window moves
+        int window_x = i - x;
+        int window_y = line - y;
+
+        // Coordinates of the tile containing current pixel in 32 x 32 tile map
+        int tile_map_x = (i - x) / TILE_DIM;
+        int tile_map_y = (line - y) / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
-        // int tile_index = memory->read(LCD_control.win_tile_map_addr + tile_map_index);        
         int tile_index = video_RAM[LCD_control.win_tile_map_addr + tile_map_index - VRAM_ADDR];        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;
         }
-        int pixel_tile_coord_x = (i - window_x) % TILE_DIM;
-        int pixel_tile_coord_y = (line - window_y) % TILE_DIM;
+        // Coordinates of the pixel within the 8 x 8 tile
+        int tile_x = window_x % TILE_DIM;
+        int tile_y = window_y % TILE_DIM;
 
-        auto tile_data = vram_base + (BYTES_PER_TILE * tile_index);
-        int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
+        auto tile_ptr = tile_data + (BYTES_PER_TILE * tile_index);
+        int color = read_pixel(tile_data, tile_x, tile_y, false, false);
         draw_pixel(i, line, bg_palette[color]);
     }
 }
