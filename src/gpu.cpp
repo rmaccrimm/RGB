@@ -26,13 +26,11 @@ GPU::GPU(Interrupts *inter, GameWindow *win):
     clock(0), 
     line(0),
     mode(OAM), 
-    // prev_cpu_clock(0),
     frame_drawn(false)
 {
     video_RAM.resize(0x2000, 0); // 8kB
     sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
-
     for (int i = 0xff40; i <= 0xff4b; i++) {
         registers[i] = 0;
     }
@@ -53,11 +51,10 @@ void GPU::step(unsigned int cycles)
         break;
 
     case VRAM:
-    // Second step of drawing a scanline, VRAM not accessible by CPU
+    // Second step of drawing a scanline, VRAM and OAM not accessible by CPU
         if (clock >= 172) {
             clock -= 172;
             // At end of scanline, draw and switch to horizontal blank mode
-            // update_color_palettes();
             draw_scanline();
             change_mode(HBLANK);
         }
@@ -100,6 +97,7 @@ void GPU::step(unsigned int cycles)
 u8 GPU::read(u16 addr) 
 {
     if (addr >= 0x8000 && addr <= 0x9fff) {
+        // VRAM
         if (mode == VRAM && LCD_control.enable_display) {
             // GPU is accessing VRAM during this period, so inaccessible by CPU during mode 3
             return 0xff;
@@ -109,8 +107,9 @@ u8 GPU::read(u16 addr)
         }
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
-        // OAM inaccessible during both mode 2 and 3
+        // OAM
         if ((mode == VRAM || mode == OAM) && LCD_control.enable_display) {
+            // OAM inaccessible during both mode 2 and 3
             return 0xff;
         }
         else {
@@ -118,6 +117,7 @@ u8 GPU::read(u16 addr)
         }
     }
     else if (addr >= 0xff40 && addr <= 0xff4b) {
+        // Control registers - DMA access handled by MMU, not GPU
         assert(addr != reg::DMA);
         if (addr == reg::STAT) {
             // First bit always set 
@@ -134,15 +134,17 @@ u8 GPU::read(u16 addr)
 void GPU::write(u16 addr, u8 data)
 {
     if (addr >= 0x8000 && addr <= 0x9fff) {
-        // GPU is accessing VRAM during this period, so inaccessible by CPU during mode 3
+        // VRAM
         if (mode == VRAM && LCD_control.enable_display) {
+            // GPU is accessing VRAM during this period, so inaccessible by CPU during mode 3
             return;
         }
         video_RAM[addr - 0x8000] = data;
     }
     else if (addr >= 0xfe00 && addr <= 0xfe9f) {
-        // OAM inaccessible during both mode 2 and 3
+        // OAM
         if ((mode == VRAM || mode == OAM) && LCD_control.enable_display) {
+            // OAM inaccessible during both mode 2 and 3
             return;
         }
         sprite_attribute_table[addr - 0xfe00] = data;
@@ -188,21 +190,23 @@ void GPU::write(u16 addr, u8 data)
 
 void GPU::update_STAT_register()
 {
-    // set LCDSTAT interrupt request if internal signal goes from 0 to 1
+    
     bool prev_sig = stat_irq_signal;
     u8 stat = registers[reg::STAT];
 
+    // Masks for STAT register - coincidence flag set when current line = LYC register 
     u8 coincidence_enable = 1 << 6;
     u8 oam_enable = 1 << 5;
     u8 vblank_enable = 1 << 4;
     u8 hblank_enable = 1 << 3;
     u8 coincidence_set = 1 << 2;
 
+    // Internal signal which can trigger STAT interrupts. Depends on a number of factors
     stat_irq_signal = ((stat & coincidence_enable) && (stat & coincidence_set)) ||
                       ((stat & hblank_enable) && mode == HBLANK) ||
                       ((stat & oam_enable) && mode == OAM) ||
                       ((stat & (vblank_enable | oam_enable)) && mode == VBLANK);
-    
+    // set LCDSTAT interrupt request if internal signal goes from 0 to 1. 
     if (!prev_sig && stat_irq_signal) {
         interrupts->set(Interrupts::LCDSTAT_bit);
     }
@@ -219,7 +223,7 @@ void GPU::increment_line()
 {
     line++;
     registers[reg::LY] = line;
-    // memory->write(reg::LY, line);
+    // Set coincidence flag in STAT whenever current line = LYC
     bool coincidence_flag = registers[reg::LYC] == registers[reg::LY];
     registers[reg::STAT] = utils::set_cond(registers[reg::STAT], 2, coincidence_flag);
 }
@@ -238,6 +242,7 @@ void GPU::update_color_palettes()
 
 u8 GPU::read_pixel(std::vector<u8>::iterator &tile_data, int x, int y, bool invert_y, bool invert_x)
 {
+    // 2 bit data for each pixel spread across 2 bytes, one storing the lower bit and one the upper
     int byte_ind = 2 * (invert_y ? TILE_DIM - 1 - y : y);
     u8 lsb = (tile_data[byte_ind] >> (invert_x ? x : TILE_DIM - 1 - x)) & 1;
     u8 msb = (tile_data[byte_ind + 1] >> (invert_x ? x: TILE_DIM - 1 - x)) & 1;
@@ -252,6 +257,7 @@ void GPU::draw_scanline()
         draw_sprites();
     }
     else {
+        // Blank screen
         for (int i = 0; i < LCD_WIDTH; i++) {
             draw_pixel(i, line, 0);
         }
@@ -260,7 +266,7 @@ void GPU::draw_scanline()
 
 void GPU::draw_pixel(int x, int y, int color)
 {
-    // opengl texture coordinates are inverted relative to screen
+    // OpenGL texture coordinates are bottom-up whereas GB is top-down
     screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x] = color;
 }
 
@@ -268,26 +274,31 @@ void GPU::draw_background()
 {
     int x = registers[reg::SCROLLX];
     int y = registers[reg::SCROLLY];
-    auto vram = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
+    auto tile_data_base = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
 
+    // Screen space coordinates are (i, line) 
     for (int i = 0; i < LCD_WIDTH; i++) {
-        int pixel_bg_coord_x = (x + i) % BACKGROUND_DIM;
-        int pixel_bg_coord_y = (y + line) % BACKGROUND_DIM;
+        // Coordinates on the 256 x 256 background
+        int bg_x = (x + i) % BACKGROUND_DIM;
+        int bg_y = (y + line) % BACKGROUND_DIM;
 
-        int tile_map_x = pixel_bg_coord_x / TILE_DIM;
-        int tile_map_y = pixel_bg_coord_y / TILE_DIM;
+        // Coordinates of the tile containing current pixel on the 32 x 32 tile map
+        int tile_map_x = bg_x / TILE_DIM;
+        int tile_map_y = bg_y / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
+        // Lookup the index for the tile in the tile map
         int tile_index = video_RAM[LCD_control.bg_tile_map_addr + tile_map_index - VRAM_ADDR];
-        // int tile_index = memory->read(LCD_control.bg_tile_map_addr + tile_map_index);        
         if (LCD_control.signed_tile_map) {
             tile_index = (i8)tile_index;
         }
-        int pixel_tile_coord_x = pixel_bg_coord_x % TILE_DIM;
-        int pixel_tile_coord_y = pixel_bg_coord_y % TILE_DIM;
+        // Pixel coordinates within the 8 x 8 tile
+        int tile_x = bg_x % TILE_DIM;
+        int tile_y = bg_y % TILE_DIM;
 
-        auto tile_data = vram + (BYTES_PER_TILE * tile_index);
-        int color = read_pixel(tile_data, pixel_tile_coord_x, pixel_tile_coord_y, false, false);
+        auto tile_ptr = tile_data_base + (BYTES_PER_TILE * tile_index);
+        // Background tiles are never inverted on x or y 
+        int color = read_pixel(tile_ptr, tile_x, tile_y, false, false);
         draw_pixel(i, line, bg_palette[color]);
     }
 }
@@ -299,31 +310,39 @@ void GPU::draw_sprites()
     }
 
     std::vector<u8>::iterator sprite_data = sprite_attribute_table.begin();
-    // std::vector<u8>::iterator sprite_data = memory->sprite_attribute_table.begin();
     int sprite_size = (LCD_control.double_sprite_height ? 2 : 1) * TILE_DIM;
 
     std::vector<std::pair<int, int>> sprites;
-    // Figure out which sprites are on the current scan line
+
+    // Construct a list of the sprites on the current scan line
     for (int i = 0; i < 40; i++) {
+        // The index of the first byte for the sprite in the sprite attribute table
         int byte_ind = 4 * i;
         int y_pos = sprite_data[byte_ind] - 16;
         int x_pos = sprite_data[byte_ind + 1] - 8;
-        if (x_pos == -8 || x_pos >= 160 || !(line >= y_pos && line < y_pos + sprite_size)) {
+
+        // Sprites can be disabled by placing them offscreen (x: -8 to 0, 1)
+        bool offscreen = x_pos == -8 || x_pos >= 160;
+        bool on_current_scanline = (line >= y_pos) && (line < y_pos + sprite_size);
+
+        if (offscreen || !on_current_scanline) {
             continue;
         }
         sprites.emplace_back(x_pos, i);
     }
-    // Sort sprites by x position
+    // Sprite priority is determined by x coordinate
     sort(sprites.begin(), sprites.end());
 
-    // Draw only first 10 sprites 
+    /*  Maximum of 10 sprites are drawn for each scanline. By default sorted by descending x value
+        so draw the last 10 in the list
+    */
     int s = std::max((int)(sprites.size() - 10), 0);
     for (auto it = sprites.rbegin() + s; it < sprites.rend(); it++) {
         int byte_ind = it->second * 4;
 
+        // 4 bytes per sprite
         int y_pos = sprite_data[byte_ind] - 16;
         int x_pos = sprite_data[byte_ind + 1] - 8;
-
         u8 tile_num = sprite_data[byte_ind + 2];
         int flags = sprite_data[byte_ind + 3];
 
@@ -332,27 +351,31 @@ void GPU::draw_sprites()
         bool flip_x = utils::bit(flags, 5);
         bool palette_num = utils::bit(flags, 4);
 
+        // Might start or end in the middle of a tile if partially offscreen
         for (int i = std::max(0, x_pos); i < std::min(LCD_WIDTH, x_pos + TILE_DIM); i++) {
             int pixel_x = i - x_pos;
             int pixel_y = line - y_pos;
             int color;
             if (LCD_control.double_sprite_height) {
+                /*  For double-tile sprites, lower tile is found by ignoring the first bit of the
+                    tile number and the lower by setting the first bit
+                */
                 u8 upper_tile_index = tile_num & 0xfe;
                 u8 lower_tile_index = tile_num | 1;
+
                 bool upper = pixel_y < 8;
                 if (upper) {
+                    // Also have to invert the tile order for double-height sprites
                     tile_num = flip_y ? lower_tile_index : upper_tile_index;
                 }
                 else {
                     tile_num = flip_y ? upper_tile_index : lower_tile_index;
                     pixel_y -= 8;
                 }
-                // auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
                 auto tile_addr = video_RAM.begin() + (BYTES_PER_TILE * tile_num);
                 color = read_pixel(tile_addr, pixel_x, pixel_y, flip_y, flip_x);
             }
             else {
-                // auto tile_addr = memory->video_RAM.begin() + (BYTES_PER_TILE * tile_num);
                 auto tile_addr = video_RAM.begin() + (BYTES_PER_TILE * tile_num);
                 color = read_pixel(tile_addr, pixel_x, pixel_y, flip_y, flip_x);
             }
@@ -421,5 +444,6 @@ void GPU::update_LCD_control(u8 byte)
 
 void GPU::dma_transfer(std::vector<u8>::iterator src) 
 {
+    // 40 tiles - each tiles has 4 bytes
     std::copy(src, src + 0xa0, sprite_attribute_table.begin());
 }
