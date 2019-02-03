@@ -70,6 +70,8 @@ private:
 
     // Data passed to window to be drawn to texture 
     std::vector<u8> screen_texture;
+    // True for color 0 on window/bg - used when sprite drawn in background
+    std::vector<std::vector<u8>> transparent;
 
     // VRAM, addresses 0x8000 - 0x9fff (8kB)
     std::vector<u8> video_RAM;
@@ -82,9 +84,14 @@ private:
     // Color palettes
     u8 bg_palette[4];
     u8 sprite_palette[2][4];
+
+
+    // Get a reference to the screen texture at (x, y)
+    u8& get_pixel(int x, int y);
+
+    void draw_pixel(int x, int y, int color);
     
     void draw_scanline();
-    void draw_pixel(int x, int y, int color);
     void draw_background();
     void draw_sprites();
     void draw_window();

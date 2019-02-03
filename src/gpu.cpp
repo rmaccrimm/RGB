@@ -31,6 +31,10 @@ GPU::GPU(Interrupts *inter, GameWindow *win):
     video_RAM.resize(0x2000, 0); // 8kB
     sprite_attribute_table.resize(0xa0, 0);
     screen_texture.resize(LCD_WIDTH * LCD_HEIGHT);
+    transparent.resize(LCD_HEIGHT);
+    for (auto &row: transparent) {
+        row.resize(LCD_WIDTH, 0);
+    }
     for (int i = 0xff40; i <= 0xff4b; i++) {
         registers[i] = 0;
     }
@@ -271,6 +275,12 @@ void GPU::draw_pixel(int x, int y, int color)
     screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x] = color;
 }
 
+u8& GPU::get_pixel(int x, int y)
+{
+    // OpenGL texture coordinates are bottom-up whereas GB is top-down
+    return screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x];
+}
+
 void GPU::draw_background()
 {
     // Coordinates of upper left corner of screen on 256 x 256 background
@@ -303,6 +313,7 @@ void GPU::draw_background()
         int color = read_pixel(tile_ptr, tile_x, tile_y, false, false);
         // The 2-bit pixel data read is the index for the color palette
         draw_pixel(i, line, bg_palette[color]);
+        transparent[line][i] = color == 0;
     }
 }
 
@@ -356,6 +367,11 @@ void GPU::draw_sprites()
 
         // Might start or end in the middle of a tile if partially offscreen
         for (int i = std::max(0, x_pos); i < std::min(LCD_WIDTH, x_pos + TILE_DIM); i++) {
+
+            if (behind_bg && !transparent[line][i]) {
+                continue;
+            }
+
             int pixel_x = i - x_pos;
             int pixel_y = line - y_pos;
             int color;
@@ -426,6 +442,7 @@ void GPU::draw_window()
         auto tile_ptr = tile_data + (BYTES_PER_TILE * tile_index);
         int color = read_pixel(tile_data, tile_x, tile_y, false, false);
         draw_pixel(i, line, bg_palette[color]);
+        transparent[line][i] = color == 0;
     }
 }
 
