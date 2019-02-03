@@ -69,8 +69,8 @@ void GPU::step(unsigned int cycles)
             clock -= 204;
             increment_line();
             
-            if (line == 143) {
-                // On last line, update the screen and switch to vertical blank mode 
+            if (line == 144) {
+                // After last line, update the screen and switch to vertical blank mode 
                 window->draw_frame(screen_texture.data());
                 interrupts->set(Interrupts::VBLANK_bit);
                 change_mode(VBLANK);
@@ -271,6 +271,11 @@ void GPU::draw_scanline()
 
 void GPU::draw_pixel(int x, int y, int color)
 {
+    assert(y >= 0);
+    assert(y < LCD_HEIGHT);
+    assert(x >= 0);
+    assert(x < LCD_WIDTH);
+
     // OpenGL texture coordinates are bottom-up whereas GB is top-down
     screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x] = color;
 }
@@ -278,7 +283,7 @@ void GPU::draw_pixel(int x, int y, int color)
 u8& GPU::get_pixel(int x, int y)
 {
     // OpenGL texture coordinates are bottom-up whereas GB is top-down
-    return screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x];
+    return screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 2 - y)) + x];
 }
 
 void GPU::draw_background()
