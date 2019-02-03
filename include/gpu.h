@@ -85,10 +85,6 @@ private:
     u8 bg_palette[4];
     u8 sprite_palette[2][4];
 
-
-    // Get a reference to the screen texture at (x, y)
-    u8& get_pixel(int x, int y);
-
     void draw_pixel(int x, int y, int color);
     
     void draw_scanline();

@@ -280,12 +280,6 @@ void GPU::draw_pixel(int x, int y, int color)
     screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 1 - y)) + x] = color;
 }
 
-u8& GPU::get_pixel(int x, int y)
-{
-    // OpenGL texture coordinates are bottom-up whereas GB is top-down
-    return screen_texture[(LCD_WIDTH * (LCD_HEIGHT - 2 - y)) + x];
-}
-
 void GPU::draw_background()
 {
     // Coordinates of upper left corner of screen on 256 x 256 background
