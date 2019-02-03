@@ -418,7 +418,6 @@ void GPU::draw_window()
         // Window not visible on current scanline
         return;
     }
-
     auto tile_data = video_RAM.begin() + (LCD_control.tile_data_addr - VRAM_ADDR);
     // (i, line) are the screen space pixel coordinates
     for (int i = std::max(x, 0); i < LCD_WIDTH; i++) {
@@ -427,8 +426,8 @@ void GPU::draw_window()
         int window_y = line - y;
 
         // Coordinates of the tile containing current pixel in 32 x 32 tile map
-        int tile_map_x = (i - x) / TILE_DIM;
-        int tile_map_y = (line - y) / TILE_DIM;
+        int tile_map_x = window_x / TILE_DIM;
+        int tile_map_y = window_y / TILE_DIM;
         int tile_map_index = (TILE_MAP_DIM * tile_map_y) + tile_map_x; 
 
         int tile_index = video_RAM[LCD_control.win_tile_map_addr + tile_map_index - VRAM_ADDR];        
@@ -440,7 +439,7 @@ void GPU::draw_window()
         int tile_y = window_y % TILE_DIM;
 
         auto tile_ptr = tile_data + (BYTES_PER_TILE * tile_index);
-        int color = read_pixel(tile_data, tile_x, tile_y, false, false);
+        int color = read_pixel(tile_ptr, tile_x, tile_y, false, false);
         draw_pixel(i, line, bg_palette[color]);
         transparent[line][i] = color == 0;
     }
