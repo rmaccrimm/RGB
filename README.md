@@ -31,7 +31,7 @@ Tested using [Blargg's test ROMs](https://github.com/retrio/gb-test-roms), and t
 - [ ] boot_hwio-dmgABCmgb.gb
 - [ ] boot_hwio-S.gb
 - [ ] boot_regs-dmg0.gb
-- [ ] boot_regs-dmgABC.gb
+- [x] boot_regs-dmgABC.gb
 - [ ] boot_regs-mgb.gb
 - [ ] boot_regs-sgb.gb
 - [ ] boot_regs-sgb2.gb
@@ -42,11 +42,11 @@ Tested using [Blargg's test ROMs](https://github.com/retrio/gb-test-roms), and t
 - [ ] di_timing-GS.gb
 - [ ] div_timing.gb
 - [ ] ei_sequence.gb
-- [ ] halt_ime0_ei.gb
+- [x] halt_ime0_ei.gb
 - [ ] halt_ime0_nointr_timing.gb
-- [ ] halt_im1_timing.gb
-- [ ] halt_im1_timing2-GS.gb
-- [ ] if_ie_registers.gb
+- [x] halt_ime1_timing.gb
+- [ ] halt_ime1_timing2-GS.gb
+- [x] if_ie_registers.gb
 - [ ] intr_timing.gb
 - [ ] jp_cc_timing.gb
 - [ ] jp_timing.gb
@@ -57,19 +57,15 @@ Tested using [Blargg's test ROMs](https://github.com/retrio/gb-test-roms), and t
 - [ ] rapid_di_ei.gb
 - [ ] ret_cc_timing.gb
 - [ ] ret_timing.gb
-- [ ] reti_intr_timing.gb
+- [x] reti_intr_timing.gb
 - [ ] reti_timing.gb
-
-- [ ] bits/mem_oam.gb
-- [ ] bits/reg_f.gb
-- [ ] bits/unused_hwio-GS.gb
-
+- [x] bits/mem_oam.gb
+- [x] bits/reg_f.gb
+- [x] bits/unused_hwio-GS.gb
 - [ ] interrupts/ie_push
-
-- [ ] oam_dma/basic.gb
+- [x] oam_dma/basic.gb
 - [ ] oam_dma/reg_read.gb
 - [ ] oam_dma/sources-dmgABCmgbS.gb
-
 - [ ] ppu/hblank_ly_scx_timing-GS.gb
 - [ ] ppu/intr_1_2_timing-GS.gb
 - [ ] ppu/intr_2_0_timing.gb
@@ -82,19 +78,17 @@ Tested using [Blargg's test ROMs](https://github.com/retrio/gb-test-roms), and t
 - [ ] ppu/stat_irq_blocking.gb
 - [ ] ppu/stat_lyc_onoff.gb
 - [ ] ppu/vblank_stat_intr-GS.gb
-
 - [ ] serial/boot_sclk_align-dmgABCmgb.gb
-
 - [ ] timer/div_write.gb
 - [ ] timer/rapid_toggle.gb
 - [ ] timer/tim00.gb
-- [ ] timer/tim00_div_trigger.gb
-- [ ] timer/tim01.gb
+- [x] timer/tim00_div_trigger.gb
+- [x] timer/tim01.gb
 - [ ] timer/tim01_div_trigger.ab
 - [ ] timer/tim10.gb
 - [ ] timer/tim10_div_trigger.gb
 - [ ] timer/tim11.gb
-- [ ] timer/tim11_div_trigger.gb
+- [x] timer/tim11_div_trigger.gb
 - [ ] timer/tima_reload.gb
 - [ ] timer/tima_write_reloading.gb
 - [ ] timer/tma_write_reloading.gb
