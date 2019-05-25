@@ -13,7 +13,7 @@ const unsigned int GameWindow::color_palettes[9][4] = {
     {0xe0f8d0U, 0x88c070U, 0x346856U, 0x081820U},   // bgb
     {0xcececeU, 0x6f9edfU, 0x42678eU, 0x102533U},   // Megaman SGB (blue)
     {0xaedf1eU, 0xb62558U, 0x047e60U, 0x2c1700U},   // Metroid II SGB
-    {0x422936U, 0xa9604cU, 0xdca456U, 0xffe4c2U}    // Brown
+    {0xffefffU, 0xf7b58cU, 0x84739cU, 0x181010U}    // Pokemon SGB
 };
 
 void check_glError(std::string msg)
