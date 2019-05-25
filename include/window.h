@@ -36,18 +36,21 @@ private:
     GLuint shader_id;
     GLuint screen_tex;
     GLuint sprite_tex;
-	GLuint color_palette;
     const int window_scale;
     int key_pressed[8];
     
     bool pause;
     bool quit;
+
     // shader uniforms
     bool background;
     int scrollx;
     int scrolly;
     int tex_type;
-
+    
+    int current_palette;
+    static const unsigned int color_palettes[9][4];
+    bool invert_colors;
 
     enum Textures { BACKGROUND, SPRITES, WINDOW };
 

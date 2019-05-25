@@ -4,6 +4,18 @@
 #include <fstream>
 #include <streambuf>
 
+const unsigned int GameWindow::color_palettes[9][4] = {
+    {0xf7e7c6U, 0xd68e49U, 0xa63725U, 0x331e50U},   // super GameBoy
+    {0xffffffU, 0xb6b6b6U, 0x676767U, 0x000000U},   // grayscale
+    {0xc4cfa1U, 0x8b956dU, 0x4d533cU, 0x1f1f1fU},   // green
+    {0xe2f3e4U, 0x94e344U, 0x46878fU, 0x332c50U},   // green-blue
+    {0xffffb5U, 0x7bc67bU, 0x6b8c42U, 0x5a3921U},   // Link's Awakening SGB
+    {0xe0f8d0U, 0x88c070U, 0x346856U, 0x081820U},   // bgb
+    {0xcececeU, 0x6f9edfU, 0x42678eU, 0x102533U},   // Megaman SGB (blue)
+    {0xaedf1eU, 0xb62558U, 0x047e60U, 0x2c1700U},   // Metroid II SGB
+    {0x422936U, 0xa9604cU, 0xdca456U, 0xffe4c2U}    // Brown
+};
+
 void check_glError(std::string msg)
 {
 	GLenum err;
@@ -26,7 +38,12 @@ const float SCREEN_QUAD[] = {
 };
 
 GameWindow::GameWindow(Joypad *pad, int scale, std::string title) :
-    joypad(pad), window_scale(scale), key_pressed{0}, draw(0), quit(false)
+    joypad(pad), 
+    window_scale(scale), 
+    key_pressed{0}, 
+    draw(0), 
+    quit(false), 
+    current_palette(0)
 {
     init_window(title);
     init_glcontext();
@@ -67,6 +84,7 @@ bool GameWindow::paused()
 
 void GameWindow::draw_frame(u8 pixel_buffer[])
 {
+    glUniform1uiv(get_uniform("palette"), 4, color_palettes[current_palette]);
     glActiveTexture(GL_TEXTURE0);
     glTexSubImage2D(
         GL_TEXTURE_2D, 
@@ -175,6 +193,7 @@ void GameWindow::init_screen_texture()
 
     glUseProgram(shader_id);
     glUniform1i(get_uniform("screen_texture"), 0);
+    glUniform4uiv(get_uniform("palette"), 1, color_palettes[current_palette]);
 
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR) {
@@ -243,8 +262,7 @@ void GameWindow::process_input()
             quit = true;
             return;
         }
-        // TODO - define a map with reconfigurable keys, just do keymap[event.key...]
-        switch (event.key.keysym.sym)
+        switch (auto key_code = event.key.keysym.sym)
         {
         case SDLK_LEFT:
             key = Joypad::LEFT;
@@ -273,6 +291,18 @@ void GameWindow::process_input()
             break;
         case SDLK_BACKSPACE:
             key = Joypad::SELECT;
+            break;
+        case SDLK_1:
+        case SDLK_2:
+        case SDLK_3:
+        case SDLK_4:
+        case SDLK_5:
+        case SDLK_6:
+        case SDLK_7:
+        case SDLK_8:
+        case SDLK_9:
+            key = Joypad::NONE;
+            current_palette = key_code - SDLK_1;
             break;
         default:
             return;
