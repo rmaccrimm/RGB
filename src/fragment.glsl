@@ -3,6 +3,7 @@ out vec4 frag_color;
 in vec2 tex_coords;
 uniform usampler2D screen_texture;
 uniform uint palette[4];
+uniform bool invert_colors;
 
 // Color palettes
 // const uint super_gameboy[4] = uint[](0xf7e7c6U, 0xd68e49U, 0xa63725U, 0x331e50U);
@@ -12,6 +13,9 @@ uniform uint palette[4];
 
 void main() {
     uint val = texture(screen_texture, tex_coords).r;
+    if (invert_colors) {
+        val = 3U - val;
+    }
     vec3 rgb_col = vec3((palette[val] >> 16) & 0xffU, 
                         (palette[val] >> 8) & 0xffU, 
                         palette[val] & 0xffU) / 255.0;

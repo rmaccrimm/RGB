@@ -1,5 +1,6 @@
 #include "window.h"
 #include "config.h"
+#include "keymap.h"
 #include <iostream>
 #include <fstream>
 #include <streambuf>
@@ -40,7 +41,6 @@ const float SCREEN_QUAD[] = {
 GameWindow::GameWindow(Joypad *pad, int scale, std::string title) :
     joypad(pad), 
     window_scale(scale), 
-    key_pressed{0}, 
     draw(0), 
     quit(false), 
     current_palette(0)
@@ -49,6 +49,9 @@ GameWindow::GameWindow(Joypad *pad, int scale, std::string title) :
     init_glcontext();
     compile_shader();
     init_screen_texture();
+    for (auto k: key_map) {
+        key_pressed[k.first] = false;
+    }
 }
 
 GameWindow::~GameWindow()
@@ -84,6 +87,7 @@ bool GameWindow::paused()
 
 void GameWindow::draw_frame(u8 pixel_buffer[])
 {
+    glUniform1i(get_uniform("invert_colors"), invert_colors);
     glUniform1uiv(get_uniform("palette"), 4, color_palettes[current_palette]);
     glActiveTexture(GL_TEXTURE0);
     glTexSubImage2D(
@@ -256,67 +260,46 @@ void GameWindow::compile_shader()
 
 void GameWindow::process_input()
 {
-    int key;
     if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-        if (event.key.keysym.sym == SDLK_ESCAPE) {
+        auto key_code = event.key.keysym.sym;
+        if (key_code == SDLK_ESCAPE) {
             quit = true;
             return;
         }
-        switch (auto key_code = event.key.keysym.sym)
-        {
-        case SDLK_LEFT:
-            key = Joypad::LEFT;
-            break;
-        case SDLK_RIGHT:
-            key = Joypad::RIGHT;
-            break;
-        case SDLK_UP:
-            key = Joypad::UP;
-            break;
-        case SDLK_DOWN:
-            key = Joypad::DOWN;
-            break;
-        case SDLK_a:
-            key = Joypad::A;
-            break;
-        case SDLK_b:
-            key = Joypad::B;
-            break;
-        case SDLK_p:
-            key = Joypad::NONE;
-            pause = true;
-            break;
-        case SDLK_RETURN:
-            key = Joypad::START;
-            break;
-        case SDLK_BACKSPACE:
-            key = Joypad::SELECT;
-            break;
-        case SDLK_1:
-        case SDLK_2:
-        case SDLK_3:
-        case SDLK_4:
-        case SDLK_5:
-        case SDLK_6:
-        case SDLK_7:
-        case SDLK_8:
-        case SDLK_9:
-            key = Joypad::NONE;
-            current_palette = key_code - SDLK_1;
-            break;
-        default:
+        if (key_map.find(key_code) == key_map.end()) {
             return;
-        };
+        }
+        int joy_key = key_map.at(key_code);
+        
         if (event.type == SDL_KEYDOWN) {
-            if (!key_pressed[key]) {
-                joypad->press_key(key);
-                key_pressed[key] = !key_pressed[key];
+            if (!key_pressed[key_code]) {
+                switch (key_code) 
+                {
+                case SDLK_p:
+                    pause = true;
+                    break;
+                case SDLK_1:
+                case SDLK_2:
+                case SDLK_3:
+                case SDLK_4:
+                case SDLK_5:
+                case SDLK_6:
+                case SDLK_7:
+                case SDLK_8:
+                case SDLK_9:
+                    current_palette = key_code - SDLK_1;
+                    break;
+                case SDLK_BACKQUOTE:
+                    invert_colors = !invert_colors;
+                };
+                key_pressed[key_code] = !key_pressed[key_code];
+                joypad->press_key(joy_key);
             }
         }
         else {
-            if (key_pressed[key]) {
-                joypad->release_key(key);
-                key_pressed[key] = !key_pressed[key];
+            if (key_pressed[key_code]) {
+                joypad->release_key(joy_key);
+                key_pressed[key_code] = !key_pressed[key_code];
             }
         }
     }

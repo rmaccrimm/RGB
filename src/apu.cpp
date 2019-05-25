@@ -177,7 +177,7 @@ void APU::clock_waveform_generators()
     for (int i = 0; i < 4; i++) {
         auto &ch = channels[i];
         /* Timers are clocked every 4 cpu cycles (1 M-cycle) and have a maximum period of 
-           2048 M-cycle
+           2048 M-cycle (0x800)
         */
         int period;
         if (i <= 1) {

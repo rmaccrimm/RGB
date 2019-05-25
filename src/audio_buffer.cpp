@@ -44,7 +44,7 @@ void AudioBuffer::downsample(std::vector<i16> &dest, int &size)
 
 i16 AudioBuffer::interpolate(std::vector<i16>::iterator lower, double dist) 
 {
-    // Nearest neighbour sampling
+    // Just nearest neighbour interpolation
     auto it = lower + (int)(dist + 0.5);
     if (it >= buffer.end()) {
         it = buffer.begin() + (int)(it - buffer.end());

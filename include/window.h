@@ -7,6 +7,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <string>
+#include <map>
 
 
 class GameWindow 
@@ -37,7 +38,7 @@ private:
     GLuint screen_tex;
     GLuint sprite_tex;
     const int window_scale;
-    int key_pressed[8];
+    std::map<SDL_Keycode, bool> key_pressed;
     
     bool pause;
     bool quit;
